@@ -6,6 +6,8 @@
 #include "GameFramework/Pawn.h"
 #include "NGSpectatorPawn.generated.h"
 
+class UCameraComponent;
+
 
 /**
  * 게임 안에서 관전자 역할만 담당하는 Player Pawn
@@ -30,4 +32,7 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UCameraComponent> CameraComponent;
 };
