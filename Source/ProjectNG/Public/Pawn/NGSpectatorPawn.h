@@ -3,7 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Pawn.h"
+#include "InputMappingContext.h"
+#include "NGPawnBase.h"
 #include "NGSpectatorPawn.generated.h"
 
 class UCameraComponent;
@@ -13,7 +14,7 @@ class UCameraComponent;
  * 게임 안에서 관전자 역할만 담당하는 Player Pawn
  */
 UCLASS()
-class PROJECTNG_API ANGSpectatorPawn : public APawn
+class PROJECTNG_API ANGSpectatorPawn : public ANGPawnBase
 {
 	GENERATED_BODY()
 
@@ -21,18 +22,26 @@ public:
 	// Sets default values for this pawn's properties
 	ANGSpectatorPawn();
 
+	virtual void PossessedBy(AController* NewController) override;
+	virtual void OnRep_PlayerState() override;
+
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+private:
+	/** PlayerPawn에서 GAS Component를 초기화 합니다. */
+	virtual void InitAbilityActorInfo() override;
 
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	TObjectPtr<UCameraComponent> CameraComponent;
+
+	// Enhanced Input 관련
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	TSoftObjectPtr<UInputMappingContext> InputMappingContext;
 };
