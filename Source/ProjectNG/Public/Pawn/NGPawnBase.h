@@ -4,11 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "AbilitySystemInterface.h"
-#include "AbilitySystem/NGAbilitySystemComponent.h"
 #include "GameFramework/Pawn.h"
 #include "NGPawnBase.generated.h"
 
-UCLASS()
+
+UCLASS(Abstract)
 class PROJECTNG_API ANGPawnBase : public APawn, public IAbilitySystemInterface
 {
 private:
@@ -22,6 +22,10 @@ public:
 	//~End IAbilitySystemInterface
 
 protected:
+	/** 파생 클래스에서 GAS 초기화를 위한 로직을 작성 */
+	virtual void InitAbilityActorInfo()	PURE_VIRTUAL(ANGPawnBase::InitAbilityActorInfo);
+
+protected:
 	UPROPERTY(BlueprintReadOnly, Category = "AbilitySystemComponent")
-	TObjectPtr<UNGAbilitySystemComponent> AbilitySystemComponent;
+	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
 };
