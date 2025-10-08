@@ -3,8 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AbilitySystemInterface.h"
+#include "AbilitySystem/NGAbilitySystemComponent.h"
 #include "GameFramework/PlayerState.h"
 #include "NGPlayerState.generated.h"
+
 
 /**
  * In-Game에서의 플레이어의 상태 정보를 저장하는 클래스
@@ -13,7 +16,19 @@
  * 플레이어가 구매하여 보유 중인 **유닛들의 목록(로스터)**을 관리
  */
 UCLASS()
-class PROJECTNG_API ANGPlayerState : public APlayerState
+class PROJECTNG_API ANGPlayerState : public APlayerState, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
+
+public:
+	ANGPlayerState();
+
+public:
+	//~Begin IAbilitySystemInterface
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override { return AbilitySystemComponent; }
+	//~End IAbilitySystemInterface
+
+protected:
+	UPROPERTY()
+	TObjectPtr<UNGAbilitySystemComponent> AbilitySystemComponent;
 };
