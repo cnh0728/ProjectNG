@@ -1,7 +1,7 @@
 ﻿// Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 
-#include "Pawns/NGSpectatorPawn.h"
+#include "Pawn/NGSpectatorPawn.h"
 #include "Camera/CameraComponent.h"
 
 
