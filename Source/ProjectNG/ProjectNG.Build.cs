@@ -24,11 +24,15 @@ public class ProjectNG : ModuleRules
 			"GameplayTags",
 		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] {  });
+		PrivateDependencyModuleNames.AddRange(new string[]
+		{
+			// GAS 관련 모듈
+			"GameplayAbilitiesEditor",
+		});
 
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
-		
+
 		// Uncomment if you are using online features
 		// PrivateDependencyModuleNames.Add("OnlineSubsystem");
 
