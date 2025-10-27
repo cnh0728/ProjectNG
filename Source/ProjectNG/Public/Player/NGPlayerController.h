@@ -13,4 +13,9 @@ UCLASS()
 class PROJECTNG_API ANGPlayerController : public APlayerController
 {
 	GENERATED_BODY()
+
+public:
+
+protected:
+	virtual void BeginPlay() override;
 };

@@ -17,12 +17,12 @@ struct FShopProbability : public FTableRowBase
 public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, DisplayName = "Tier 1 확률")
-	float PercentOfTier1;
+	float PercentOfTier1 = 0.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, DisplayName = "Tier 2 확률")
-	float PercentOfTier2;
+	float PercentOfTier2 = 0.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, DisplayName = "Tier 3 확률")
-	float PercentOfTier3;
+	float PercentOfTier3 = 0.0f;
 
 };

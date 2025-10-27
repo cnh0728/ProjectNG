@@ -16,7 +16,7 @@ class PROJECTNG_API UNGPocketComponent : public UActorComponent
 public:
 	UNGPocketComponent();
 
-	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override; // Server
 
 	UFUNCTION(BlueprintCallable, Category = "Game|Shop")
 	void RequestRoll();

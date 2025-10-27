@@ -2,3 +2,10 @@
 
 
 #include "Player/NGPlayerController.h"
+
+void ANGPlayerController::BeginPlay()
+{
+	Super::BeginPlay();
+
+	SetShowMouseCursor(true);
+}

@@ -24,17 +24,17 @@ struct FUnitData : public FTableRowBase
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, DisplayName = "유닛 식별 아이디")
-	int32 UnitID;
+	int32 UnitID = -1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, DisplayName = "유닛 이름")
-	FText UnitName;
+	FText UnitName = FText();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, DisplayName = "유닛 티어")
-	EUnitTier Tier;
+	EUnitTier Tier = EUnitTier::Tier1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, DisplayName = "생성 할 유닛 액터 클래스")
 	TSubclassOf<AActor> UnitClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, DisplayName = "유닛 총 개수")
-	int32  TotalCountInPool;
+	int32  TotalCountInPool = -1;
 };

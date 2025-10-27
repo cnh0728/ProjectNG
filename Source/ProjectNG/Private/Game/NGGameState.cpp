@@ -1,7 +1,7 @@
 ﻿// Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 
-#include "Core/Game/NGGameState.h"
+#include "Game/NGGameState.h"
 
 ANGGameState::ANGGameState()
 {
@@ -74,10 +74,10 @@ void ANGGameState::InitializeUnitPool()
 {
 	if (!UnitDataTable.Get()->IsValidLowLevel()) return;
 
-	FString ContextString;
 	TArray<FName> RowNames = UnitDataTable.Get()->GetRowNames();
 	for (const FName& RowName : RowNames)
 	{
+		FString ContextString;
 		FUnitData* Row = UnitDataTable.Get()->FindRow<FUnitData>(RowName, ContextString);
 		if (Row && Row->UnitClass)
 		{

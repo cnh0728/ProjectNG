@@ -4,13 +4,13 @@
 #include "Components/NGPocketComponent.h"
 
 #include "Core/NGShopProbability.h"
-#include "Core/Game/NGGameState.h"
+#include "Game/NGGameState.h"
 #include "Net/UnrealNetwork.h"
 
 
 UNGPocketComponent::UNGPocketComponent()
 {
-	SetIsReplicated(true);
+	SetIsReplicatedByDefault(true);
 }
 
 void UNGPocketComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
