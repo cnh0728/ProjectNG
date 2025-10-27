@@ -8,13 +8,31 @@ public class ProjectNG : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput" });
+		PublicDependencyModuleNames.AddRange(new string[]
+		{
+			"Core",
+			"CoreUObject",
+			"Engine",
 
-		PrivateDependencyModuleNames.AddRange(new string[] {  });
+			// Input 관련 모듈
+			"InputCore",
+			"EnhancedInput",
+
+			// GAS 관련 모듈
+			"GameplayAbilities",
+			"GameplayTasks",
+			"GameplayTags",
+		});
+
+		PrivateDependencyModuleNames.AddRange(new string[]
+		{
+			// GAS 관련 모듈
+			"GameplayAbilitiesEditor",
+		});
 
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
-		
+
 		// Uncomment if you are using online features
 		// PrivateDependencyModuleNames.Add("OnlineSubsystem");
 
