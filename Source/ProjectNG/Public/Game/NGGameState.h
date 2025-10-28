@@ -20,13 +20,13 @@ public:
 	
 	virtual void BeginPlay() override;
 
-	// if true, grab the unit from pool.
+	// true일 경우, UnitPool에서 유닛 하나를 가져옵니다.
 	bool GrabUnitFromPool(TSubclassOf<AActor> UnitClass);
 
-	// return the unit to pool
+	// UnitPool로 유닛을 반환합니다.
 	void ReturnUnitToPool(TSubclassOf<AActor> UnitClass);
 
-	// return unit of specified tier, to random.
+	// 특정 티어의 유닛을 랜덤으로 반환합니다.
 	TSubclassOf<AActor> GetRandomUnitByTier(EUnitTier Tier);
 
 protected:

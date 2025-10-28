@@ -35,6 +35,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, DisplayName = "생성 할 유닛 액터 클래스")
 	TSubclassOf<AActor> UnitClass;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, DisplayName = "유닛 이미지")
+	TSoftObjectPtr<UTexture2D> UnitTexture;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, DisplayName = "유닛 총 개수")
 	int32  TotalCountInPool = -1;
 };
