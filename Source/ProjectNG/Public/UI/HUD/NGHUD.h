@@ -7,7 +7,7 @@
 #include "NGHUD.generated.h"
 
 struct FWidgetParams;
-class UMainWidgetController;
+class URollShopWidgetController;
 class UNGUserWidget;
 class UAbilitySystemComponent;
 class UAttributeSet;
@@ -21,7 +21,7 @@ class PROJECTNG_API ANGHUD : public AHUD
 	GENERATED_BODY()
 
 public:
-	UMainWidgetController* GetMainWidgetController(const FWidgetParams& WidgetControllerParams);
+	URollShopWidgetController* GetRollShopWidgetController(const FWidgetParams& WidgetControllerParams);
 
 	void InitializeHUD(APlayerController* PC, APlayerState* PS, UAbilitySystemComponent* ASC, UAttributeSet* AS);
 
@@ -33,12 +33,14 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<UUserWidget> MainWidgetClass;
+	//~ End Main Widget
 
+	//~ Begin RollShop Widget
 	UPROPERTY()
-	TObjectPtr<UMainWidgetController> MainWidgetController;
+	TObjectPtr<URollShopWidgetController> RollShopWidgetController;
 
 	// 새롭게 생성 시 필요한 StaticClass
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<UMainWidgetController> MainWidgetControllerClass;
-	//~ End Main Widget
+	TSubclassOf<URollShopWidgetController> RollShopWidgetControllerClass;
+	//~ End RollShop Widget
 };

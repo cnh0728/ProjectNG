@@ -18,11 +18,11 @@ void ANGGameState::BeginPlay()
 	}
 }
 
-bool ANGGameState::GrabUnitFromPool(const TSubclassOf<AActor> UnitClass)
+bool ANGGameState::GrabUnitFromPool(FName UnitRowName)
 {
 	if (!HasAuthority()) return false;
 
-	if (int32* Count = UnitPool.Find(UnitClass))
+	if (int32* Count = UnitPool.Find(UnitRowName))
 	{
 		if (*Count > 0)
 		{
@@ -33,31 +33,31 @@ bool ANGGameState::GrabUnitFromPool(const TSubclassOf<AActor> UnitClass)
 	return false;
 }
 
-void ANGGameState::ReturnUnitToPool(const TSubclassOf<AActor> UnitClass)
+void ANGGameState::ReturnUnitToPool(FName UnitRowName)
 {
 	if (!HasAuthority()) return;
 
-	if (UnitPool.Contains(UnitClass))
+	if (int32* Count = UnitPool.Find(UnitRowName))
 	{
-		UnitPool[UnitClass]++;
+		(*Count)++;
 	}
 }
 
-TSubclassOf<AActor> ANGGameState::GetRandomUnitByTier(EUnitTier Tier)
+FName ANGGameState::GetRandomUnitByTier(EUnitTier Tier)
 {
-	if (!HasAuthority()) return nullptr;
+	if (!HasAuthority()) return NAME_None;
 
 	if (TieredUnitPool.Contains(Tier))
 	{
-		TArray<TSubclassOf<AActor>> AvailableUnits;
-		const TArray<TSubclassOf<AActor>>& UnitsInTier = TieredUnitPool[Tier];
+		TArray<FName> AvailableUnits;
+		const TArray<FName>& UnitsInTier = TieredUnitPool[Tier];
 
 		// 현재 남아 있는 유닛만 필터링
-		for (TSubclassOf UnitClass : UnitsInTier)
+		for (FName UnitRowName : UnitsInTier)
 		{
-			if (UnitPool.Contains(UnitClass) && UnitPool[UnitClass] > 0)
+			if (UnitPool.Contains(UnitRowName) && UnitPool[UnitRowName] > 0)
 			{
-				AvailableUnits.Add(UnitClass);
+				AvailableUnits.Add(UnitRowName);
 			}
 		}
 
@@ -67,7 +67,7 @@ TSubclassOf<AActor> ANGGameState::GetRandomUnitByTier(EUnitTier Tier)
 			return AvailableUnits[RandomIndex];
 		}
 	}
-	return nullptr;
+	return NAME_None;
 }
 
 void ANGGameState::InitializeUnitPool()
@@ -82,10 +82,10 @@ void ANGGameState::InitializeUnitPool()
 		if (Row && Row->UnitClass)
 		{
 			// 총 개수 추가
-			UnitPool.Add(Row->UnitClass, Row->TotalCountInPool);
+			UnitPool.Add(RowName, Row->TotalCountInPool);
 
 			// 등급별로 유닛 클래스 추가
-			TieredUnitPool.FindOrAdd(Row->Tier).Add(Row->UnitClass);
+			TieredUnitPool.FindOrAdd(Row->Tier).Add(RowName);
 		}
 	}
 	UE_LOG(LogTemp, Warning, TEXT("Unit Pool Initialized on Server."));

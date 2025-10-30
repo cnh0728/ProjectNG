@@ -17,11 +17,18 @@ void UNGPocketComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProper
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(UNGPocketComponent, RollPocket);
+	DOREPLIFETIME(UNGPocketComponent, BuyingPocket);
 }
 
 void UNGPocketComponent::RequestRoll()
 {
 	Server_RequestRoll();
+}
+
+void UNGPocketComponent::AddUnitToBuyingPocket(FName UnitName)
+{
+	BuyingPocket.Add(UnitName);
+	RollPocket.Remove(UnitName);
 }
 
 void UNGPocketComponent::OnRep_RollPocket()
@@ -31,16 +38,17 @@ void UNGPocketComponent::OnRep_RollPocket()
 
 void UNGPocketComponent::Server_RequestRoll_Implementation()
 {
+	checkf(ProbabilityTable, TEXT("[PocketComponent] Not initialized probability table."))
+	
 	AController* OwnerController = Cast<AController>(GetOwner());
 	if (!OwnerController || !ProbabilityTable) return;
 
 	ANGGameState* GameState = GetWorld()->GetGameState<ANGGameState>();
-	int32 PlayerLevel = 1; // TODO: 실제 플레이어 레벨을 가져옴
 
 	if (!GameState) return;
 
 	// 기존 포켓 안의 유닛을 다시 반환
-	for (TSubclassOf<AActor> UnitToReturn : RollPocket)
+	for (FName UnitToReturn : RollPocket)
 	{
 		GameState->ReturnUnitToPool(UnitToReturn);
 	}
@@ -69,11 +77,11 @@ void UNGPocketComponent::Server_RequestRoll_Implementation()
 			SelectedTier = EUnitTier::Tier3;
 		}
 
-		TSubclassOf<AActor> SelectedUnitClass = GameState->GetRandomUnitByTier(SelectedTier);
+		FName SelectedUnitRowName = GameState->GetRandomUnitByTier(SelectedTier);
 
-		if (SelectedUnitClass && GameState->GrabUnitFromPool(SelectedUnitClass))
+		if (!SelectedUnitRowName.IsNone() && GameState->GrabUnitFromPool(SelectedUnitRowName))
 		{
-			RollPocket.Add(SelectedUnitClass);
+			RollPocket.Add(SelectedUnitRowName);
 		}
 		else
 		{

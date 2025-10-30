@@ -21,20 +21,20 @@ public:
 	virtual void BeginPlay() override;
 
 	// true일 경우, UnitPool에서 유닛 하나를 가져옵니다.
-	bool GrabUnitFromPool(TSubclassOf<AActor> UnitClass);
+	bool GrabUnitFromPool(FName UnitRowName);
 
 	// UnitPool로 유닛을 반환합니다.
-	void ReturnUnitToPool(TSubclassOf<AActor> UnitClass);
+	void ReturnUnitToPool(FName UnitRowName);
 
 	// 특정 티어의 유닛을 랜덤으로 반환합니다.
-	TSubclassOf<AActor> GetRandomUnitByTier(EUnitTier Tier);
+	FName GetRandomUnitByTier(EUnitTier Tier);
 
 protected:
-	// Key: Unit class, Value: remain count
-	TMap<TSubclassOf<AActor>, int32> UnitPool;
+	// Key: DataTable RowName, Value: remain count
+	TMap<FName, int32> UnitPool;
 
 	// Tier unit pool
-	TMap<EUnitTier, TArray<TSubclassOf<AActor>>> TieredUnitPool;
+	TMap<EUnitTier, TArray<FName>> TieredUnitPool;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Game|DataTable")
 	TObjectPtr<UDataTable> UnitDataTable;
