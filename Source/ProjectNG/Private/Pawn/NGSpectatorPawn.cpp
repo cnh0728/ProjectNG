@@ -81,6 +81,7 @@ void ANGSpectatorPawn::InitAbilityActorInfo()
 	AbilitySystemComponent = PS->GetAbilitySystemComponent();
 	AbilitySystemComponent->InitAbilityActorInfo(PS, this);
 
+	// HUD 추가
 	if (ANGPlayerController* PC = Cast<ANGPlayerController>(GetController()))
 	{
 		if (ANGHUD* MainHUD = Cast<ANGHUD>(PC->GetHUD()))
