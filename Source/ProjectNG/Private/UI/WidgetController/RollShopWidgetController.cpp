@@ -4,7 +4,6 @@
 #include "UI/WidgetController/RollShopWidgetController.h"
 
 #include "Components/NGPocketComponent.h"
-#include "Game/NGGameState.h"
 #include "Player/NGPlayerController.h"
 
 void URollShopWidgetController::BroadcastInitialValues()
@@ -21,7 +20,7 @@ void URollShopWidgetController::GetPlayerRollPocket(TArray<FName>& RollPockets) 
 {
 	if (ANGPlayerController* NGP = Cast<ANGPlayerController>(PlayerController))
 	{
-		if (UNGPocketComponent* Pocket = NGP->GetPlayerPocket())
+		if (const UNGPocketComponent* Pocket = NGP->GetPlayerPocket())
 		{
 			RollPockets = Pocket->GetRollPocket();
 		}
@@ -45,7 +44,7 @@ int32 URollShopWidgetController::GainPlayerLevel() const
 	{
 		if (UNGPocketComponent* Pocket = NGP->GetPlayerPocket())
 		{
-			int32 NewLevel = FMath::Clamp(Pocket->PlayerLevel + 1, 1, 5);;
+			int32 NewLevel = FMath::Clamp(Pocket->PlayerLevel + 1, 1, 5);
 			Pocket->PlayerLevel = NewLevel;
 			return NewLevel;
 		}
@@ -61,7 +60,7 @@ void URollShopWidgetController::BuyUnitFromPocket(FName UnitName)
 		if (UNGPocketComponent* Pocket = NGP->GetPlayerPocket())
 		{
 			Pocket->AddUnitToBuyingPocket(UnitName);
-			UE_LOG(LogTemp, Warning, TEXT("BuyUnitFromPocket Success"));
+			UE_LOG(LogTemp, Display, TEXT("BuyUnitFromPocket Success"));
 		}
 	}
 }

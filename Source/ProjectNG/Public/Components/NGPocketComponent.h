@@ -44,7 +44,7 @@ private:
 	TArray<FName> RollPocket; // 플레이어의 상점에 표시된 유닛 목록
 
 	UPROPERTY(VisibleAnywhere, Replicated, Category = "Game|Shop")
-	TArray<FName> BuyingPocket; // 플레이어가 구매한 유닛 목록
+	TArray<FName> PlayerUnitPocket; // 플레이어가 가진 유닛 목록
 
 	UFUNCTION()
 	void OnRep_RollPocket();

@@ -21,8 +21,8 @@ URollShopWidgetController* ANGHUD::GetRollShopWidgetController(const FWidgetPara
 
 void ANGHUD::InitializeHUD(APlayerController* PC, APlayerState* PS, UAbilitySystemComponent* ASC, UAttributeSet* AS)
 {
-	checkf(MainWidgetClass, TEXT("[HUD] MainWidget not initialized"));
-	checkf(RollShopWidgetControllerClass, TEXT("[HUD] MainWidgetController not initialized"));
+	checkf(MainWidgetClass, TEXT("[HUD] MainWidgetClass not initialized"));
+	checkf(RollShopWidgetControllerClass, TEXT("[HUD] RollShopWidgetController not initialized"));
 
 	UUserWidget* Widget = CreateWidget<UUserWidget>(GetWorld(), MainWidgetClass);
 	MainWidget = Cast<UNGUserWidget>(Widget);

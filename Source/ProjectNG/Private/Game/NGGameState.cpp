@@ -18,28 +18,35 @@ void ANGGameState::BeginPlay()
 	}
 }
 
-bool ANGGameState::GrabUnitFromPool(FName UnitRowName)
+int32 ANGGameState::GrabUnitFromPool(FName UnitRowName)
 {
 	if (!HasAuthority()) return false;
-
+	
 	if (int32* Count = UnitPool.Find(UnitRowName))
 	{
 		if (*Count > 0)
 		{
 			(*Count)--;
-			return true;
+			return *Count;
 		}
 	}
-	return false;
+	return -1;
 }
 
-void ANGGameState::ReturnUnitToPool(FName UnitRowName)
+bool ANGGameState::IsExistUnit(FName UnitRowName)
+{
+	if (!HasAuthority()) return false;
+
+	return *UnitPool.Find(UnitRowName) > 0;
+}
+
+void ANGGameState::ReturnUnitToPool(FName UnitRowName, int32 UnitCount)
 {
 	if (!HasAuthority()) return;
 
 	if (int32* Count = UnitPool.Find(UnitRowName))
 	{
-		(*Count)++;
+		(*Count) += UnitCount;
 	}
 }
 
@@ -72,7 +79,7 @@ FName ANGGameState::GetRandomUnitByTier(EUnitTier Tier)
 
 void ANGGameState::InitializeUnitPool()
 {
-	if (!UnitDataTable.Get()->IsValidLowLevel()) return;
+	if (!IsValid(UnitDataTable.Get())) return;
 
 	TArray<FName> RowNames = UnitDataTable.Get()->GetRowNames();
 	for (const FName& RowName : RowNames)

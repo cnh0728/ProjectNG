@@ -10,3 +10,13 @@ void UNGWidgetController::AssignWidgetControllerParams(const FWidgetParams& InWi
 	AbilitySystemComponent = InWidgetParams.AbilitySystemComponent;
 	AttributeSet = InWidgetParams.AttributeSet;
 }
+
+void UNGWidgetController::BroadcastInitialValues()
+{
+	
+}
+
+void UNGWidgetController::BindCallbacksToDependencies()
+{
+	
+}

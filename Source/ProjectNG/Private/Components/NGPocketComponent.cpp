@@ -17,7 +17,7 @@ void UNGPocketComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProper
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(UNGPocketComponent, RollPocket);
-	DOREPLIFETIME(UNGPocketComponent, BuyingPocket);
+	DOREPLIFETIME(UNGPocketComponent, PlayerUnitPocket);
 }
 
 void UNGPocketComponent::RequestRoll()
@@ -27,7 +27,7 @@ void UNGPocketComponent::RequestRoll()
 
 void UNGPocketComponent::AddUnitToBuyingPocket(FName UnitName)
 {
-	BuyingPocket.Add(UnitName);
+	PlayerUnitPocket.Add(UnitName);
 	RollPocket.Remove(UnitName);
 }
 
@@ -38,26 +38,26 @@ void UNGPocketComponent::OnRep_RollPocket()
 
 void UNGPocketComponent::Server_RequestRoll_Implementation()
 {
-	checkf(ProbabilityTable, TEXT("[PocketComponent] Not initialized probability table."))
+	checkf(ProbabilityTable, TEXT("[PocketComponent] Not initialized Probability table."))
 	
 	AController* OwnerController = Cast<AController>(GetOwner());
 	if (!OwnerController || !ProbabilityTable) return;
 
 	ANGGameState* GameState = GetWorld()->GetGameState<ANGGameState>();
-
 	if (!GameState) return;
-
-	// 기존 포켓 안의 유닛을 다시 반환
-	for (FName UnitToReturn : RollPocket)
-	{
-		GameState->ReturnUnitToPool(UnitToReturn);
-	}
-	RollPocket.Empty();
-
+	
 	// 레벨에 맞는 확률 데이터 가져오기
 	FString RowName = FString::FromInt(PlayerLevel);
 	FShopProbability* ProbabilityData = ProbabilityTable->FindRow<FShopProbability>(*RowName, TEXT(""));
+	UE_LOG(LogTemp, Warning, TEXT("ProbabilityData is not found, PlayerLevel has invalid value."));
 	if (!ProbabilityData) return;
+	
+	// 기존 포켓 안의 유닛을 다시 반환
+	for (FName UnitToReturn : RollPocket)
+	{
+		GameState->ReturnUnitToPool(UnitToReturn, 1);
+	}
+	RollPocket.Empty();
 
 	for (int32 i = 0; i < ShopSlotCount; ++i)
 	{
@@ -79,8 +79,9 @@ void UNGPocketComponent::Server_RequestRoll_Implementation()
 
 		FName SelectedUnitRowName = GameState->GetRandomUnitByTier(SelectedTier);
 
-		if (!SelectedUnitRowName.IsNone() && GameState->GrabUnitFromPool(SelectedUnitRowName))
+		if (!SelectedUnitRowName.IsNone() && GameState->IsExistUnit(SelectedUnitRowName))
 		{
+			GameState->GrabUnitFromPool(SelectedUnitRowName);
 			RollPocket.Add(SelectedUnitRowName);
 		}
 		else
@@ -88,7 +89,5 @@ void UNGPocketComponent::Server_RequestRoll_Implementation()
 			i--; // 다시 시도
 		}
 	}
-
-	OnRep_RollPocket();
 }
 

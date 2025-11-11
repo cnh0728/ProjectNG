@@ -49,9 +49,9 @@ public:
 
 	// 데이터가 연결되고 초기값 브로드캐스팅
 	UFUNCTION(BlueprintCallable, Category = "WidgetController|Functions")
-	virtual void BroadcastInitialValues() PURE_VIRTUAL(UNGWidgetController::BroadcastInitialValues);
+	virtual void BroadcastInitialValues();
 	
-	virtual void BindCallbacksToDependencies() PURE_VIRTUAL(UNGWidgetController::BindCallbacksToDependencies);
+	virtual void BindCallbacksToDependencies();
 	
 protected:
 	UPROPERTY(BlueprintReadOnly, Category = "WidgetController")
