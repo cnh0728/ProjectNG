@@ -6,7 +6,9 @@
 #include "EnhancedInputSubsystems.h"
 #include "Camera/CameraComponent.h"
 #include "Input/NGInputComponent.h"
+#include "Player/NGPlayerController.h"
 #include "Player/NGPlayerState.h"
+#include "UI/HUD/NGHUD.h"
 
 
 // Sets default values
@@ -78,5 +80,15 @@ void ANGSpectatorPawn::InitAbilityActorInfo()
 	// ASC 복사 및 아바타 설정
 	AbilitySystemComponent = PS->GetAbilitySystemComponent();
 	AbilitySystemComponent->InitAbilityActorInfo(PS, this);
+
+	// HUD 추가
+	if (ANGPlayerController* PC = Cast<ANGPlayerController>(GetController()))
+	{
+		if (ANGHUD* MainHUD = Cast<ANGHUD>(PC->GetHUD()))
+		{
+			// TODO: AttributeSet 데이터 추가
+			MainHUD->InitializeHUD(PC, PS, AbilitySystemComponent, nullptr);
+		}
+	}
 }
 
