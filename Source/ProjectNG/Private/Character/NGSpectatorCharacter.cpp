@@ -3,11 +3,10 @@
 
 #include "Character/NGSpectatorCharacter.h"
 
-#include "EnhancedInputSubsystems.h"
 #include "Camera/CameraComponent.h"
-#include "Input/NGInputComponent.h"
 #include "Player/NGPlayerController.h"
 #include "Player/NGPlayerState.h"
+#include "UI/HUD/NGHUD.h"
 
 
 // Sets default values

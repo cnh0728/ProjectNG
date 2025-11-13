@@ -3,12 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "InputMappingContext.h"
 #include "NGCharacterBase.h"
 #include "NGSpectatorCharacter.generated.h"
 
 class UCameraComponent;
-
 
 /**
  * 게임 안에서 관전자 역할만 담당하는 Player Pawn

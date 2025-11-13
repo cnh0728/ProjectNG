@@ -103,10 +103,10 @@ void ANGPlayerController::PerformSingleSelect()
 		AActor* HitActor = HitResult.GetActor();
 
 		// 디버깅용 로그 (매우 중요: 실제로 무엇이 맞았는지 확인)
-		// if(HitActor)
-		// {
-		// 	UE_LOG(LogTemp, Warning, TEXT("Hit Actor: %s"), *HitActor->GetName());
-		// }
+		if(HitActor)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Hit Actor: %s"), *HitActor->GetName());
+		}
 		
 		if (HitActor && HitActor->Implements<USelectableInterface>())
 		{
