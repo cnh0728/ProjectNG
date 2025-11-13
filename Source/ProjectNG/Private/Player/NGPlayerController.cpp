@@ -3,6 +3,7 @@
 
 #include "Player/NGPlayerController.h"
 
+#include "Components/NGPocketComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Character/SelectableInterface.h"
 #include "Input/NGInputComponent.h"
@@ -18,7 +19,10 @@ ANGPlayerController::ANGPlayerController() : bIsDragging(false)
 	bShowMouseCursor = true;
 	bEnableClickEvents = true; 
 	bEnableMouseOverEvents = true;
-	DefaultMouseCursor = EMouseCursor::Default; 
+	DefaultMouseCursor = EMouseCursor::Default;
+
+	PlayerPocket = CreateDefaultSubobject<UNGPocketComponent>("PocketComponent");
+
 }
 
 void ANGPlayerController::BeginPlay()

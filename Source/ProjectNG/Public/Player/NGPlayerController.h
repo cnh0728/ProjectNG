@@ -9,6 +9,7 @@
 struct FInputActionValue;
 class UInputMappingContext;
 class UInputAction;
+class UNGPocketComponent;
 
 /**
  * 플레이어의 입력을 처리하는 Class
@@ -20,7 +21,10 @@ class PROJECTNG_API ANGPlayerController : public APlayerController
 	GENERATED_BODY()
 
 	ANGPlayerController();
-	
+
+/*************************************/
+/*				피킹 관련			 */
+/*************************************/
 protected:
 	virtual void BeginPlay() override;
 	
@@ -31,7 +35,7 @@ protected:
 
 	void PerformSingleSelect();
 	void PerformDragSelect();
-	
+
 	// Enhanced Input 관련
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputMappingContext> InputMappingContext;
@@ -49,5 +53,15 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Selection")
 	TArray<TObjectPtr<AActor>> SelectedUnits;
+
+/*************************************/
+/*				리롤 관련			 */
+/*************************************/
+public:
+	UNGPocketComponent* GetPlayerPocket() { return PlayerPocket; }
+
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Game|Pocket")
+	TObjectPtr<UNGPocketComponent> PlayerPocket;
 	
 };
