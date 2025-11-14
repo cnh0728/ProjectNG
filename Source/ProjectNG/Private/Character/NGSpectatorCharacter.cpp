@@ -3,6 +3,7 @@
 
 #include "Character/NGSpectatorCharacter.h"
 
+#include "AbilitySystem/NGAttributeSet.h"
 #include "Camera/CameraComponent.h"
 #include "Player/NGPlayerController.h"
 #include "Player/NGPlayerState.h"
@@ -67,8 +68,7 @@ void ANGSpectatorCharacter::InitAbilityActorInfo()
 	{
 		if (ANGHUD* MainHUD = Cast<ANGHUD>(PC->GetHUD()))
 		{
-			// TODO: AttributeSet 데이터 추가
-			MainHUD->InitializeHUD(PC, PS, AbilitySystemComponent, nullptr);
+			MainHUD->InitializeHUD(PC, PS, AbilitySystemComponent, AttributeSet);
 		}
 	}
 }

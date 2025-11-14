@@ -16,7 +16,6 @@ UNGPocketComponent::UNGPocketComponent()
 void UNGPocketComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(UNGPocketComponent, RollPocket);
 	DOREPLIFETIME(UNGPocketComponent, PlayerUnitPocket);
 }
 
@@ -29,11 +28,6 @@ void UNGPocketComponent::AddUnitToBuyingPocket(FName UnitName)
 {
 	PlayerUnitPocket.Add(UnitName);
 	RollPocket.Remove(UnitName);
-}
-
-void UNGPocketComponent::OnRep_RollPocket()
-{
-	OnUnitsUpdated.Broadcast();
 }
 
 void UNGPocketComponent::Server_RequestRoll_Implementation()
@@ -49,8 +43,12 @@ void UNGPocketComponent::Server_RequestRoll_Implementation()
 	// 레벨에 맞는 확률 데이터 가져오기
 	FString RowName = FString::FromInt(PlayerLevel);
 	FShopProbability* ProbabilityData = ProbabilityTable->FindRow<FShopProbability>(*RowName, TEXT(""));
-	UE_LOG(LogTemp, Warning, TEXT("ProbabilityData is not found, PlayerLevel has invalid value."));
-	if (!ProbabilityData) return;
+	
+	if (!ProbabilityData)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ProbabilityData is not found, PlayerLevel has invalid value."));
+		return;
+	}
 	
 	// 기존 포켓 안의 유닛을 다시 반환
 	for (FName UnitToReturn : RollPocket)
@@ -89,5 +87,7 @@ void UNGPocketComponent::Server_RequestRoll_Implementation()
 			i--; // 다시 시도
 		}
 	}
+	
+	OnUnitsUpdated.Broadcast();
 }
 
