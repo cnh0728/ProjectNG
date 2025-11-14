@@ -8,7 +8,6 @@
 #include "GameFramework/PlayerState.h"
 #include "NGPlayerState.generated.h"
 
-
 /**
  * In-Game에서의 플레이어의 상태 정보를 저장하는 클래스
  *
@@ -28,7 +27,10 @@ public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override { return AbilitySystemComponent; }
 	//~End IAbilitySystemInterface
 
+	UNGAbilitySystemComponent* GetNGAbilitySystemComponent() const { return AbilitySystemComponent; }
+	
 protected:
 	UPROPERTY()
 	TObjectPtr<UNGAbilitySystemComponent> AbilitySystemComponent;
+	
 };
