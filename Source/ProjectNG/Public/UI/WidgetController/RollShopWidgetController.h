@@ -9,7 +9,7 @@
 /**
  * 
  */
-UCLASS(BlueprintType, Blueprintable)
+UCLASS()
 class PROJECTNG_API URollShopWidgetController : public UNGWidgetController
 {
 	GENERATED_BODY()
