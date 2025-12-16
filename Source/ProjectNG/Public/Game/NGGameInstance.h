@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
+#include "Interfaces/OnlineSessionInterface.h"
 #include "NGGameInstance.generated.h"
 
 /**
@@ -16,4 +17,27 @@ UCLASS()
 class PROJECTNG_API UNGGameInstance : public UGameInstance
 {
 	GENERATED_BODY()
+	
+public:
+	UNGGameInstance();
+	
+	virtual void Init() override;
+	
+	UFUNCTION(BlueprintCallable, Category = "NGGameInstance", meta = (ToolTip = "사용자가 직접 방을 만듭니다."))
+	void CreateSession();
+	
+	UFUNCTION(BlueprintCallable, Category = "NGGameInstance")
+	void JoinSession();
+	
+protected:
+	// 세션 인터페이스
+	TWeakPtr<IOnlineSession> SessionInterface;
+	
+	// 세션 검색 결과를 저장할 공유 포인터
+	TSharedPtr<FOnlineSessionSearch> SessionSearch;
+	
+	// 매치 메이킹 콜백
+	void OnCreateSessionComplete(FName SessionName, bool bWasSuccess);
+	void OnFindSessionsComplete(bool bWasSuccess);
+	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
 };
