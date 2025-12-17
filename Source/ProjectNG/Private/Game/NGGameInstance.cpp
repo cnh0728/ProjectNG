@@ -30,6 +30,8 @@ void UNGGameInstance::Init()
 			SessionInterface.Pin()->OnJoinSessionCompleteDelegates.AddUObject(this, &UNGGameInstance::OnJoinSessionComplete);
 		}
 	}
+	
+	PlayerName = FGuid::NewGuid().ToString().Left(8);
 }
 
 // Host mode

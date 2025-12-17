@@ -29,6 +29,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "NGGameInstance")
 	void JoinSession();
 	
+	UPROPERTY(BlueprintReadOnly)
+	FString PlayerName; // Todo: Init 함수에서 GUID로 생성중.
+	
 protected:
 	// 세션 인터페이스
 	TWeakPtr<IOnlineSession> SessionInterface;

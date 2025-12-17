@@ -2,6 +2,8 @@
 
 #include "Player/NGPlayerState.h"
 
+#include "Net/UnrealNetwork.h"
+
 
 ANGPlayerState::ANGPlayerState()
 {
@@ -11,4 +13,9 @@ ANGPlayerState::ANGPlayerState()
 	AbilitySystemComponent = CreateDefaultSubobject<UNGAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	AbilitySystemComponent->SetIsReplicated(true);
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
+}
+
+void ANGPlayerState::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 }

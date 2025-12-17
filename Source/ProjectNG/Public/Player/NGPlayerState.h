@@ -22,13 +22,14 @@ class PROJECTNG_API ANGPlayerState : public APlayerState, public IAbilitySystemI
 public:
 	ANGPlayerState();
 
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 public:
 	//~Begin IAbilitySystemInterface
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override { return AbilitySystemComponent; }
 	//~End IAbilitySystemInterface
 
 	UNGAbilitySystemComponent* GetNGAbilitySystemComponent() const { return AbilitySystemComponent; }
-	
+
 protected:
 	UPROPERTY()
 	TObjectPtr<UNGAbilitySystemComponent> AbilitySystemComponent;
