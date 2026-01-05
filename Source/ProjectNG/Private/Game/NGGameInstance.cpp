@@ -34,13 +34,15 @@ void UNGGameInstance::Init()
 	PlayerName = FGuid::NewGuid().ToString().Left(8);
 }
 
-// Host mode
+// 세션 생성 요청
 void UNGGameInstance::CreateSession()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Call CreateSession()"));
 	
 	if (!SessionInterface.IsValid()) return;
 	
+	// 아래 링크에서 변수 설정 값 확인 가능. 또는 OnlineSessionSetting.h 파일에서 확인 가능.
+	// https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Plugins/OnlineSubsystem/FOnlineSessionSettings#variables
 	FOnlineSessionSettings SessionSettings;
 	SessionSettings.bIsLANMatch = true; // LAN 을 이용한 서버 매칭 (로컬 매칭이 아닌 경우 false)
 	SessionSettings.NumPublicConnections = 2;
@@ -48,9 +50,10 @@ void UNGGameInstance::CreateSession()
 	SessionSettings.bShouldAdvertise = true; // 다른 유저에게 방을 홍보할 것인지.
 	SessionSettings.bUsesPresence = true; // 사용자 상태 표시
 	
-	SessionInterface.Pin()->CreateSession(0, FName("TestSession1"), SessionSettings);
+	SessionInterface.Pin()->CreateSession(0, NAME_GameSession, SessionSettings);
 }
 
+// 세션 참가 요청
 void UNGGameInstance::JoinSession()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Call JoinSession()"));
@@ -58,7 +61,7 @@ void UNGGameInstance::JoinSession()
 	if (!SessionInterface.IsValid()) return;
 	
 	SessionSearch = MakeShareable(new FOnlineSessionSearch());
-	SessionSearch->bIsLanQuery = true;
+	SessionSearch->bIsLanQuery = true; // CreateSession의 설정과 맞추기.
 	SessionSearch->MaxSearchResults = 10000;
 	SessionSearch->QuerySettings.Set(SEARCH_EMPTY_SERVERS_ONLY, true, EOnlineComparisonOp::Equals);
 	
@@ -71,6 +74,7 @@ void UNGGameInstance::OnCreateSessionComplete(FName SessionName, bool bWasSucces
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Session Created Success !"));
 		
+		// 방장이 Listen Server로 맵을 열기
 		UGameplayStatics::OpenLevel(GetWorld(), "/Game/Maps/LobbyMap", true, "listen");
 	}
 	else
@@ -88,7 +92,7 @@ void UNGGameInstance::OnFindSessionsComplete(bool bWasSuccess)
 		if (SessionSearch->SearchResults.Num() > 0)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Join first Success !"));
-			SessionInterface.Pin()->JoinSession(0, FName("TestSession1"), SessionSearch->SearchResults[0]);
+			SessionInterface.Pin()->JoinSession(0, NAME_GameSession, SessionSearch->SearchResults[0]);
 		}
 	}
 }
