@@ -6,6 +6,8 @@
 #include "GameFramework/PlayerController.h"
 #include "NGPlayerController.generated.h"
 
+class UNGUnitInfoWidget;
+class ANGUnitCharacter;
 struct FInputActionValue;
 class UInputMappingContext;
 class UInputAction;
@@ -21,21 +23,35 @@ class PROJECTNG_API ANGPlayerController : public APlayerController
 	GENERATED_BODY()
 
 	ANGPlayerController();
-
-/*************************************/
-/*				피킹 관련			 */
-/*************************************/
+	
 protected:
 	virtual void BeginPlay() override;
 	
 	virtual void SetupInputComponent() override;
-	
+
+	virtual void Tick(float DeltaTime) override;
+
+/*************************************/
+/*				피킹 관련			 */
+/*************************************/
+public:
+	FVector2D GetStartMousePosition() const {return CurrentMouseLocation;}
+	FVector2D GetCurrentMousePosition() const {return CurrentMouseLocation;}
+
+protected:
+	virtual void ProgressDragActor();
+
 	void HandleClickPressed(const FInputActionValue& Value);
 	void HandleClickReleased(const FInputActionValue& Value);
+	
+	void UpdateUnitWidget(ANGUnitCharacter* NewUnit);
 
-	void PerformSingleSelect();
-	void PerformDragSelect();
-
+	void SetSelectedUnit(ANGUnitCharacter* InSelectedUnit);
+	void ResetSelectUnit();
+	
+	void PerformDrag();
+	void ResetDragUnit();
+	
 	// Enhanced Input 관련
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputMappingContext> InputMappingContext;
@@ -47,13 +63,21 @@ protected:
 	TObjectPtr<UInputAction> MousePositionInputAction;
 
 	//상태 관리 변수
-	bool bIsDragging;
+	uint8 bIsDragging : 1;
+	
+	const float DragThreshold = 10.f;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Drag Drop")
+	float DragHeightOffset = 50.0f;
 
-	FVector2D DragStartLocation;
+	FVector2D ClickStartLocation;
+	FVector2D CurrentMouseLocation;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Selection")
-	TArray<TObjectPtr<AActor>> SelectedUnits;
-
+	TWeakObjectPtr<ANGUnitCharacter> DraggingUnit;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Selection")
+	TObjectPtr<ANGUnitCharacter> SelectedUnit;
 /*************************************/
 /*				리롤 관련			 */
 /*************************************/
@@ -63,5 +87,23 @@ public:
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Game|Pocket")
 	TObjectPtr<UNGPocketComponent> PlayerPocket;
+	
+/*************************************/
+/*				UI					 */
+/*************************************/
+protected:
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UNGUnitInfoWidget> UnitInfoWidgetClass;
+	
+	UPROPERTY()
+	TObjectPtr<UNGUnitInfoWidget> UnitInfoWidgetInstance;
+	
+/*************************************/
+/*				Debug				 */
+/*************************************/
+	
+public:
+	UFUNCTION(Exec)
+	void Cmd_StartWave();
 	
 };

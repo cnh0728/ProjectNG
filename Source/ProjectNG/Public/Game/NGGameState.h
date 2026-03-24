@@ -3,10 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Core/NGUnitData.h"
 #include "GameFramework/GameStateBase.h"
 #include "NGGameState.generated.h"
 
+enum class EUnitTier : uint8;
+class ACombatManager;
+class AGridMapManager;
 /**
  * 
  */
@@ -34,15 +36,28 @@ public:
 	// 특정 티어의 유닛을 랜덤으로 반환합니다.
 	FName GetRandomUnitByTier(EUnitTier Tier);
 
+	void InitializeGridMapManager(AGridMapManager* InitGridMap){ GridMapManager = InitGridMap; }
+	void InitializeCombatManager(ACombatManager* InitCombatManager){ CombatManager = InitCombatManager; }
+	
+	AGridMapManager* GetGridMapManager(){ return GridMapManager; }
+	ACombatManager* GetCombatManager(){ return CombatManager; }
+	UDataTable* GetUnitDataTable(){ return UnitDataTable; }
+	
 protected:
 	// Key: DataTable RowName, Value: remain count
 	TMap<FName, int32> UnitPool;
 
 	// Tier unit pool
 	TMap<EUnitTier, TArray<FName>> TieredUnitPool;
-
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Game|DataTable")
 	TObjectPtr<UDataTable> UnitDataTable;
+
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Managers")
+	TObjectPtr<AGridMapManager> GridMapManager;
+	
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Managers")
+	TObjectPtr<ACombatManager> CombatManager;
 
 private:
 	void InitializeUnitPool();
