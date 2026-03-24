@@ -9,8 +9,18 @@
 /**
  * 
  */
+
+class UGameplayAbility;
+
 UCLASS()
 class PROJECTNG_API UNGGameplayAbility_Attack : public UNGGameplayAbility
 {
 	GENERATED_BODY()
+
+protected:
+	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability")
+	TSubclassOf<UGameplayEffect> DamageEffectClass;
+	
 };

@@ -7,6 +7,7 @@
 #include "GameFramework/Actor.h"
 #include "NGProjectile.generated.h"
 
+class ANGCharacterBase;
 class UProjectileMovementComponent;
 class USphereComponent;
 
@@ -19,7 +20,7 @@ public:
 	// Sets default values for this actor's properties
 	ANGProjectile();
 
-	void SetSpecHandle(const FGameplayEffectSpecHandle InSpecHandle) { SpecHandle = InSpecHandle; }
+	virtual void Tick(float DeltaTime) override;
 	
 protected:
 	// Called when the game starts or when spawned
@@ -31,12 +32,19 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	USphereComponent* SphereComponent;
 	
-	UPROPERTY(VisibleAnywhere)
-	UProjectileMovementComponent* ProjectileMovementComponent;
-	
 	//어빌리티로부터 전달받은 데미지 정보
 	FGameplayEffectSpecHandle SpecHandle;	
 	
+	UPROPERTY(VisibleAnywhere)
+	UProjectileMovementComponent* ProjectileMovementComponent;
+	
+	UPROPERTY(VisibleAnywhere)
+	ANGCharacterBase* Target;
+	
 public:
-	virtual void Tick(float DeltaTime) override;
+	void SetSpecHandle(const FGameplayEffectSpecHandle InSpecHandle) { SpecHandle = InSpecHandle; }
+
+	UProjectileMovementComponent* GetProjectileMovement() const { return ProjectileMovementComponent; }
+	
+	void SetTarget(ANGCharacterBase* NewTarget);
 };

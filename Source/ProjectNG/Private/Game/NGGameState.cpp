@@ -3,6 +3,8 @@
 
 #include "Game/NGGameState.h"
 
+#include "Core/NGUnitData.h"
+
 ANGGameState::ANGGameState()
 {
 }

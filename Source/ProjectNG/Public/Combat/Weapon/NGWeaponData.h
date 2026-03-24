@@ -6,6 +6,7 @@
 #include "Engine/DataAsset.h"
 #include "NGWeaponData.generated.h"
 
+class UNGGameplayAbility;
 /**
  * 
  */
@@ -13,4 +14,8 @@ UCLASS()
 class PROJECTNG_API UNGWeaponData : public UDataAsset
 {
 	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere, Category="Weapon")
+	TSubclassOf<UNGGameplayAbility> WeaponAbilityClass;
 };

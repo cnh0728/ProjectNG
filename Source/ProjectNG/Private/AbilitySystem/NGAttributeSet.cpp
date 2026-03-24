@@ -1,7 +1,9 @@
 // Copyright (c) 2025 TeamNG. All Rights Reserved.
 #include "AbilitySystem/NGAttributeSet.h"
 
+#include "Character/NGCharacterBase.h"
 #include "Net/UnrealNetwork.h"
+#include "GameplayEffectExtension.h"
 
 #define DEFAULT_REPLICATION_IMPLEMENTATION(ClassName, Name) \
 	void ClassName::OnRep_##Name(const FGameplayAttributeData& OldValue) \
@@ -41,3 +43,16 @@ DEFAULT_REPLICATION_IMPLEMENTATION(UNGAttributeSet, AttackRange)
 DEFAULT_REPLICATION_IMPLEMENTATION(UNGAttributeSet, AttackSpeed)
 DEFAULT_REPLICATION_IMPLEMENTATION(UNGAttributeSet, TargetCount)
 DEFAULT_REPLICATION_IMPLEMENTATION(UNGAttributeSet, Income)
+
+void UNGAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
+{
+	Super::PostGameplayEffectExecute(Data);
+	
+	if (Data.EvaluatedData.Attribute == GetHealthAttribute() && GetHealth() <= 0.f)
+	{
+		if (ANGCharacterBase* TargetCharacter = Cast<ANGCharacterBase>(Data.Target.GetAvatarActor()))
+		{
+			TargetCharacter->Die();
+		}
+	}
+}

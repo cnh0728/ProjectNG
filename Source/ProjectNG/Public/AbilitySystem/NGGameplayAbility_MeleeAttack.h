@@ -13,4 +13,11 @@ UCLASS()
 class PROJECTNG_API UNGGameplayAbility_MeleeAttack : public UNGGameplayAbility_Attack
 {
 	GENERATED_BODY()
+	
+	
+protected:
+	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
+	
+	UFUNCTION()
+	void OnAttackReceived(FGameplayEventData Payload);
 };

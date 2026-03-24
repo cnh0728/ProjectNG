@@ -2,3 +2,13 @@
 
 
 #include "Core/NGGameplayTags.h"
+
+#include "GameplayTagsManager.h"
+
+FNGGameplayTags FNGGameplayTags::GameplayTags;
+
+void FNGGameplayTags::InitializeNativeTags()
+{
+	
+	
+}

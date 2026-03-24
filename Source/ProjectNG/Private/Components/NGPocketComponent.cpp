@@ -4,6 +4,7 @@
 #include "Components/NGPocketComponent.h"
 
 #include "Core/NGShopProbability.h"
+#include "Core/NGUnitData.h"
 #include "Game/NGGameState.h"
 #include "Net/UnrealNetwork.h"
 
@@ -89,5 +90,7 @@ void UNGPocketComponent::Server_RequestRoll_Implementation()
 			i--; // 다시 시도
 		}
 	}
+	
+	OnUnitsUpdated.Broadcast();
 }
 

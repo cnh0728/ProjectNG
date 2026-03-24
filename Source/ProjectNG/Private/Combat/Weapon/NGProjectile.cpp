@@ -1,10 +1,10 @@
 // Copyright (c) 2025 TeamNG. All Rights Reserved.
 
-
-#include "Combat/NGProjectile.h"
+#include "Combat/Weapon/NGProjectile.h"
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
+#include "Character/NGCharacterBase.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 
@@ -36,9 +36,9 @@ void ANGProjectile::BeginPlay()
 void ANGProjectile::OnProjectileOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	//나를 쏜 주인(Instigator)이랑 내가 아니면
-	if (OtherActor && OtherActor != GetInstigator())
+	if (OtherActor && OtherActor == Target)
 	{
+		//이거 타겟이랑 같은지 체크
 		UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor);
 		if (TargetASC && SpecHandle.IsValid())
 		{
@@ -46,6 +46,12 @@ void ANGProjectile::OnProjectileOverlap(UPrimitiveComponent* OverlappedComponent
 			Destroy();
 		}
 	}
+}
+
+void ANGProjectile::SetTarget(ANGCharacterBase* NewTarget)
+{
+	Target = NewTarget;
+	ProjectileMovementComponent->HomingTargetComponent = NewTarget->GetRootComponent();
 }
 
 // Called every frame

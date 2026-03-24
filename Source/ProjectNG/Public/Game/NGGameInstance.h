@@ -16,4 +16,6 @@ UCLASS()
 class PROJECTNG_API UNGGameInstance : public UGameInstance
 {
 	GENERATED_BODY()
+	
+	virtual void Init() override;
 };
