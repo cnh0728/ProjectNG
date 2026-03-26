@@ -4,12 +4,10 @@
 
 #include "AbilitySystem/NGAbilitySystemComponent.h"
 #include "AbilitySystem/NGAttributeSet.h"
-#include "Character/NGUnitCharacter.h"
+#include "Combat/CombatManager.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
-#include "GameModes/NGCombatGameMode.h"
-#include "Kismet/KismetMathLibrary.h"
-#include "Misc/OutputDeviceNull.h"
+#include "GameModes/NGInGameGameMode.h"
 #include "UI/NGWidgetInterface.h"
 
 
@@ -143,9 +141,9 @@ void ANGCharacterBase::Die()
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetMesh()->SetSimulatePhysics(true); //레그돌
 	
-	if (ANGCombatGameMode* GM = Cast<ANGCombatGameMode>(GetWorld()->GetAuthGameMode()))
+	if (ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>())
 	{
-		GM->CharacterDied(this);
+		GM->ReportCharacterDeath(this);
 	}
 	
 	SetLifeSpan(1.0f);

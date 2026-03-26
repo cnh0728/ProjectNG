@@ -8,10 +8,8 @@
 #include "Combat/GridMapManager.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SplineComponent.h"
-#include "Core/NGUnitData.h"
-#include "Game/NGGameState.h"
+#include "GameModes/NGInGameGameMode.h"
 #include "Net/UnrealNetwork.h"
-#include "ProjectNG/ProjectNG.h"
 
 
 // Sets default values
@@ -25,16 +23,6 @@ ACombatManager::ACombatManager() : CurrentWaveIndex(0), EnemiesSpawnedSoFar(0)
 void ACombatManager::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	
-	//서버에서만 실행
-	if (HasAuthority())
-	{
-		if (ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>())
-		{
-			GS->InitializeCombatManager(this);
-		}
-	}
 }
 
 // Called every frame
@@ -70,16 +58,27 @@ void ACombatManager::SpawnEnemyTimerElapsed()
 }
 
 void ACombatManager::SpawnEnemy()
-{
-	UpdateGridManagerCache();
+{	
 	
-	if (!IsValid(GridMapManagerCache) || !IsValid(GridMapManagerCache->EnemyPathSpline))	return;
+	AGridMapManager* GridMapManager = nullptr;
+	
+	if (ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>())
+	{
+		GridMapManager = GM->GetGridMapManager();
+	}
+
+	if (!IsValid(GridMapManager))
+	{
+		return;
+	}
+		
+	if (!IsValid(GridMapManager->EnemyPathSpline))	return;
 	
 	UE_LOG(LogTemp, Warning, TEXT("Enemy Spawned!"));
 	
-	FVector SpawnLocation = GridMapManagerCache->EnemyPathSpline->GetLocationAtSplinePoint(0, ESplineCoordinateSpace::World);
+	FVector SpawnLocation = GridMapManager->EnemyPathSpline->GetLocationAtSplinePoint(0, ESplineCoordinateSpace::World);
 	
-	FRotator SpawnRotation = GridMapManagerCache->EnemyPathSpline->GetRotationAtSplinePoint(0, ESplineCoordinateSpace::World);
+	FRotator SpawnRotation = GridMapManager->EnemyPathSpline->GetRotationAtSplinePoint(0, ESplineCoordinateSpace::World);
 	
 	TSubclassOf<ANGEnemyCharacter> EnemyClass = WaveList[CurrentWaveIndex].EnemyClass;
 	
@@ -98,97 +97,64 @@ void ACombatManager::SpawnEnemy()
 	
 	if (ANGEnemyCharacter* NewEnemy = GetWorld()->SpawnActor<ANGEnemyCharacter>(EnemyClass, SpawnLocation, SpawnRotation))
 	{
-		NewEnemy->InitPatrolPath(GridMapManagerCache->EnemyPathSpline, CapsuleHalfHeight);
+		NewEnemy->InitPatrolPath(GridMapManager->EnemyPathSpline, CapsuleHalfHeight);
 	}
 	
 	EnemiesSpawnedSoFar++;
 }
 
-void ACombatManager::UpdateGridManagerCache()
+
+void ACombatManager::StartCombat(FCombatSettingData SettingData)
 {
-	if (ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>())
+	SetupCombat(SettingData);
+	
+	StartWave();
+	//화면띄우고 이것저것
+	
+}
+
+void ACombatManager::FinishCombat()
+{
+	FCombatResultData CombatResult = {};
+	
+	//결과창 띄우기하고 확인 후 값 반환해야할 수 있음
+	
+	//게임 전체 매니저에 FCombatResultData를 주는 식으로 함수호출을 해야겠는데?
+	if (ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>())
 	{
-		if (!IsValid(GridMapManagerCache))
-		{
-			GridMapManagerCache = GS->GetGridMapManager();
-		}
+		GM->OnCombatFinished(CombatResult);
+	}else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Cannot Find GameMode"));
 	}
 }
 
-bool ACombatManager::IsPossibleSpawnCharacter(AGridMapManager* MapManager) const
+void ACombatManager::CharacterDied(ANGCharacterBase* DeadCharacter)
 {
-	TOptional<FIntVector2> EmptyGridIndex = MapManager->GridMap.GetEmptyGridIndex();
+	if (!DeadCharacter)	return;
 	
-	if (!EmptyGridIndex.IsSet())
+	if (DeadCharacter->IsA(ANGEnemyCharacter::StaticClass()))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Grid is full"));
-		return false;
+		UE_LOG(LogTemp, Log, TEXT("적 사망"));
+		++CurrentEnemyCount;
+		//적 사망 이벤트
+		//적 사망 델리게이트 만들어서 구독시키게 하고 델리게이트 호출도 나쁘지 않을듯
+	}else if (DeadCharacter->IsA(ANGUnitCharacter::StaticClass()))
+	{
+		UE_LOG(LogTemp, Log, TEXT("유닛 사망"));
+		//유닛 죽었을때 이벤트
 	}
 	
-	return true;
+	if (CurrentEnemyCount >= TargetKillCount)
+	{
+		FinishCombat();
+	}
 }
 
-bool ACombatManager::SpawnUnitCharacter(FName UnitName) const
+void ACombatManager::SetupCombat(FCombatSettingData SettingData)
 {
-	//여기서부터 아래가 소환로직
-	ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>();
-	if (!GS)	return false;
-	
-	AGridMapManager* MapManager = GS->GetGridMapManager();
-	if (!MapManager)	return false;
-		
-	TOptional<FIntVector2> EmptyGridIndex = MapManager->GridMap.GetEmptyGridIndex();
-		
-	if (!IsPossibleSpawnCharacter(MapManager))
-	{
-		return false;
-	}
-	
-	UDataTable* UnitDataTable = GS->GetUnitDataTable();
-	
-	if (UnitDataTable)
-	{
-		FUnitData* FoundRow = UnitDataTable->FindRow<FUnitData>(UnitName, TEXT(""));
-
-		if (FoundRow && FoundRow->UnitClass)
-		{
-			FVector SpawnLocation = MapManager->GridMap.GetWorldLocation(EmptyGridIndex.GetValue());
-						
-			ANGUnitCharacter* DefaultUnit = FoundRow->UnitClass->GetDefaultObject<ANGUnitCharacter>();
-					
-			if (DefaultUnit)
-			{
-				FVector HalfHeight = DefaultUnit->GetHalfCapsule();
-							
-				SpawnLocation += HalfHeight;
-			}
-						
-			ANGUnitCharacter* NewCharacter = GetWorld()->SpawnActor<ANGUnitCharacter>(FoundRow->UnitClass, SpawnLocation, FRotator::ZeroRotator);
-						
-			if (!NewCharacter)
-			{
-				UE_LOG(LogTemp, Warning, TEXT("NewCharacter is nullptr"));
-				return false;
-			}
-						
-			UCapsuleComponent* Capsule = NewCharacter->GetCapsuleComponent();
-			if (Capsule)
-			{
-				Capsule->SetCollisionResponseToChannel(ECC_SelectableUnit, ECR_Block);
-				Capsule->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-			}
-						
-			//여기서 찾은 그리드에 값 기입
-			FGridData GridData;
-			GridData.PlacedCharacter = NewCharacter;
-			
-			NewCharacter->SetPlacedGridIndex(EmptyGridIndex.GetValue());
-			MapManager->GridMap.SetGridData(EmptyGridIndex.GetValue(), GridData);
-						
-			return true;
-		}
-	}
-	return false;
+	CurrentEnemyCount = 0;
+	TargetKillCount = SettingData.EnemyCount;
 }
 
 void ACombatManager::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

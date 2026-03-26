@@ -18,6 +18,9 @@ class PROJECTNG_API AGridMapManager : public AActor
 
 public:
 	AGridMapManager();
+	bool IsPossibleSpawnCharacter(AGridMapManager* MapManager) const;
+
+	bool SpawnUnitCharacter(FName UnitName) const;
 	
 protected:
 	virtual void BeginPlay() override;

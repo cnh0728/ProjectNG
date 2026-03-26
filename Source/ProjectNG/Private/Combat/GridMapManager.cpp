@@ -4,8 +4,12 @@
 #include "Combat/GridMapManager.h"
 
 #include "Combat/Grid/Grid.h"
+#include "Components/CapsuleComponent.h"
 #include "Components/SplineComponent.h"
+#include "Core/NGUnitData.h"
 #include "Game/NGGameState.h"
+#include "GameModes/NGInGameGameMode.h"
+#include "ProjectNG/ProjectNG.h"
 
 AGridMapManager::AGridMapManager()
 {
@@ -23,13 +27,92 @@ AGridMapManager::AGridMapManager()
 	MakeEnemySpline();
 }
 
+bool AGridMapManager::IsPossibleSpawnCharacter(AGridMapManager* MapManager) const
+{
+	TOptional<FIntVector2> EmptyGridIndex = MapManager->GridMap.GetEmptyGridIndex();
+	
+	if (!EmptyGridIndex.IsSet())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Grid is full"));
+		return false;
+	}
+	
+	return true;
+}
+
+bool AGridMapManager::SpawnUnitCharacter(FName UnitName) const
+{
+	//여기서부터 아래가 소환로직
+	ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>();
+	if (!GS)	return false;
+	
+	ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>();
+	if (!GM)	return false;
+	
+	AGridMapManager* MapManager = GM->GetGridMapManager();
+	if (!MapManager)	return false;
+		
+	TOptional<FIntVector2> EmptyGridIndex = MapManager->GridMap.GetEmptyGridIndex();
+		
+	if (!IsPossibleSpawnCharacter(MapManager))
+	{
+		return false;
+	}
+	
+	UDataTable* UnitDataTable = GS->GetUnitDataTable();
+	
+	if (UnitDataTable)
+	{
+		FUnitData* FoundRow = UnitDataTable->FindRow<FUnitData>(UnitName, TEXT(""));
+
+		if (FoundRow && FoundRow->UnitClass)
+		{
+			FVector SpawnLocation = MapManager->GridMap.GetWorldLocation(EmptyGridIndex.GetValue());
+						
+			ANGUnitCharacter* DefaultUnit = FoundRow->UnitClass->GetDefaultObject<ANGUnitCharacter>();
+					
+			if (DefaultUnit)
+			{
+				FVector HalfHeight = DefaultUnit->GetHalfCapsule();
+							
+				SpawnLocation += HalfHeight;
+			}
+						
+			ANGUnitCharacter* NewCharacter = GetWorld()->SpawnActor<ANGUnitCharacter>(FoundRow->UnitClass, SpawnLocation, FRotator::ZeroRotator);
+						
+			if (!NewCharacter)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("NewCharacter is nullptr"));
+				return false;
+			}
+						
+			UCapsuleComponent* Capsule = NewCharacter->GetCapsuleComponent();
+			if (Capsule)
+			{
+				Capsule->SetCollisionResponseToChannel(ECC_SelectableUnit, ECR_Block);
+				Capsule->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+			}
+						
+			//여기서 찾은 그리드에 값 기입
+			FGridData GridData;
+			GridData.PlacedCharacter = NewCharacter;
+			
+			NewCharacter->SetPlacedGridIndex(EmptyGridIndex.GetValue());
+			MapManager->GridMap.SetGridData(EmptyGridIndex.GetValue(), GridData);
+						
+			return true;
+		}
+	}
+	return false;
+}
+
 void AGridMapManager::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (ANGGameState* GameState = GetWorld()->GetGameState<ANGGameState>())
+	if (ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>())
 	{
-		GameState->InitializeGridMapManager(this);
+		GM->InitializeGridMapManager(this);
 	}
 	
 	GridMap.ResetEmptyGridIndex();

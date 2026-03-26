@@ -3,28 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "NGCombatData.h"
 #include "CombatManager.generated.h"
 
+class ANGCharacterBase;
 class AGridMapManager;
 class ANGEnemyCharacter;
-
-USTRUCT(Blueprintable)
-struct FWaveData
-{
-	GENERATED_BODY()
-	
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<ANGEnemyCharacter> EnemyClass;
-	
-	UPROPERTY(EditAnywhere)
-	int32 EnemyCount = 10;
-	
-	UPROPERTY(EditAnywhere)
-	float SpawnInterval = 1.0f; //스폰 간격
-	
-	UPROPERTY(EditAnywhere)
-	float SpawnRandomDevation = 1.0f; //간격에서 랜덤 간극
-};
 
 UCLASS()
 class PROJECTNG_API ACombatManager : public AActor
@@ -52,11 +36,20 @@ protected:
 	
 	void SpawnEnemy();
 
-	void UpdateGridManagerCache();
-
-	bool IsPossibleSpawnCharacter(AGridMapManager* MapManager) const;
 public:
-	bool SpawnUnitCharacter(FName UnitName) const;
+	
+	void StartCombat(FCombatSettingData SettingData);
+	
+	void CharacterDied(ANGCharacterBase* DeadCharacter);
+	
+protected:
+	
+	void SetupCombat(FCombatSettingData SettingData);
+	
+	void FinishCombat();
+
+	int32 CurrentEnemyCount = 0;
+	int32 TargetKillCount = 10;
 	
 public:
 	UPROPERTY(EditAnywhere, Category = "Combat")
@@ -69,6 +62,6 @@ private:
 	FTimerHandle SpawnTimerHandle;
 	int32 EnemiesSpawnedSoFar; //현재 웨이브에서 몇마리 소환됐는지
 	
-	UPROPERTY()
-	TObjectPtr<AGridMapManager> GridMapManagerCache; //맵 매니저 캐시
+	UPROPERTY(EditDefaultsOnly, Category = "Setup")
+	TSubclassOf<AGridMapManager> GridMapManagerClass;
 };

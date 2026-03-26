@@ -11,6 +11,7 @@
 #include "Combat/CombatManager.h"
 #include "Combat/GridMapManager.h"
 #include "Game/NGGameState.h"
+#include "GameModes/NGInGameGameMode.h"
 #include "Input/NGInputComponent.h"
 
 #include "ProjectNG/ProjectNG.h"
@@ -86,9 +87,9 @@ void ANGPlayerController::ProgressDragActor()
 		{
 			FVector TargetLocation = HitResult.Location;
 
-			if (ANGGameState* GameState = GetWorld()->GetGameState<ANGGameState>())
+			if (ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>())
 			{
-				if (AGridMapManager* MapManager = GameState->GetGridMapManager())
+				if (AGridMapManager* MapManager = GM->GetGridMapManager())
 				{
 					const FGridMap& GridMapCache = MapManager->GridMap;
 					const FIntVector2 GridIndex = GridMapCache.GetCellIndex(TargetLocation);
@@ -227,22 +228,18 @@ void ANGPlayerController::Cmd_StartWave()
 	if (HasAuthority())
 	{
 		// GameState를 통해 CombatManager 가져오기
-		if (ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>())
+		if (ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>()){
+			GM->RequestStartCombat();
+            
+			// 확인용 로그
+			UE_LOG(LogTemp, Warning, TEXT("Cmd: Wave Started!"));
+            
+			// 화면에 디버그 메시지 띄우기 (선택사항)
+			if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Wave Started!"));
+		}
+		else
 		{
-			if (ACombatManager* CombatManager = GS->GetCombatManager())
-			{
-				CombatManager->StartWave();
-                
-				// 확인용 로그
-				UE_LOG(LogTemp, Warning, TEXT("Cmd: Wave Started!"));
-                
-				// 화면에 디버그 메시지 띄우기 (선택사항)
-				if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Wave Started!"));
-			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("CombatManager가 GameState에 없습니다!"));
-			}
+			UE_LOG(LogTemp, Error, TEXT("CombatManager가 GameState에 없습니다!"));
 		}
 	}
 }

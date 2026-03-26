@@ -14,8 +14,8 @@
 #include "Components/SphereComponent.h"
 #include "Core/NGGameplayTags.h"
 #include "Game/NGGameState.h"
+#include "GameModes/NGInGameGameMode.h"
 #include "ProjectNG/ProjectNG.h"
-
 
 // Sets default values
 ANGUnitCharacter::ANGUnitCharacter() : AcceptanceRadius(1.0f), bIsGrabbed(false), bIsSelected(false)
@@ -48,7 +48,7 @@ ANGUnitCharacter::ANGUnitCharacter() : AcceptanceRadius(1.0f), bIsGrabbed(false)
 	RangeDecal->SetupAttachment(RootComponent);
 	RangeDecal->SetRelativeRotation(FRotator(-90.f, 0.f, 0.f));
 
-	RangeDecal->SetVisibility(false);
+	ShowRangeIndicator(false);
 }
 
 void ANGUnitCharacter::OnSelected_Implementation()
@@ -253,9 +253,9 @@ void ANGUnitCharacter::RefreshCache()
 {
 	if (!MapManagerCache)
 	{
-		if (ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>())
+		if (ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>())
 		{
-			if (AGridMapManager* MapManager = GS->GetGridMapManager())
+			if (AGridMapManager* MapManager = GM->GetGridMapManager())
 			{
 				MapManagerCache = MapManager;
 			}else
@@ -273,8 +273,6 @@ void ANGUnitCharacter::UpdateDecalRange()
 	if (RangeDecal)
 	{
 		RangeDecal->DecalSize = FVector(500.f, CurrentRange, CurrentRange);
-	
-		RangeDecal->SetVisibility(CurrentRange > 0.1f);
 	}
 }
 
