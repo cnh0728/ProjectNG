@@ -151,6 +151,18 @@ void ANGCharacterBase::Die()
 	UE_LOG(LogTemp, Log, TEXT("%s has died"), *GetName());
 }
 
+bool ANGCharacterBase::IsDead()
+{
+	if (AbilitySystemComponent)
+	{
+		float CurrentHP = AbilitySystemComponent->GetNumericAttribute(UNGAttributeSet::GetHealthAttribute());
+		
+		return CurrentHP <= 0.f;
+	}
+	
+	return true;
+}
+
 void ANGCharacterBase::UpdateHPBar()
 {
 	if (UUserWidget* HPWidget = HPBarComponent->GetUserWidgetObject())

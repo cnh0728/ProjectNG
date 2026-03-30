@@ -69,6 +69,9 @@ public:
 	UAnimMontage* GetAttackMontage() const;
 	
 	virtual void Die();
+	
+	bool IsDead();
+	
 private:
 	void UpdateHPBar();
 	

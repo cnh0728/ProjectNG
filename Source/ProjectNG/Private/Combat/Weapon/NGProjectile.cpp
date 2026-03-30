@@ -13,16 +13,16 @@
 ANGProjectile::ANGProjectile()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	// PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = true;
 	
 	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComp"));
 	RootComponent = SphereComponent;
 	SphereComponent->SetCollisionProfileName(TEXT("Projectile"));
 	
-	ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComponent"));
-	ProjectileMovementComponent->InitialSpeed = 2000.f;
-	ProjectileMovementComponent->MaxSpeed = 2000.f;
-	ProjectileMovementComponent->bRotationFollowsVelocity = true; // 날아가는 방향으로 고개 돌리기
+	// ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComponent"));
+	// ProjectileMovementComponent->InitialSpeed = 2000.f;
+	// ProjectileMovementComponent->MaxSpeed = 2000.f;
+	// ProjectileMovementComponent->bRotationFollowsVelocity = true; // 날아가는 방향으로 고개 돌리기
 }
 
 // Called when the game starts or when spawned
@@ -43,20 +43,48 @@ void ANGProjectile::OnProjectileOverlap(UPrimitiveComponent* OverlappedComponent
 		if (TargetASC && SpecHandle.IsValid())
 		{
 			TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-			Destroy();
+			//Destroy보다는 Pool사용해서 하는게 좋을듯
+			DestroyProjectile();
 		}
 	}
+}
+
+void ANGProjectile::DestroyProjectile()
+{
+	Destroy();
 }
 
 void ANGProjectile::SetTarget(ANGCharacterBase* NewTarget)
 {
 	Target = NewTarget;
-	ProjectileMovementComponent->HomingTargetComponent = NewTarget->GetRootComponent();
+	// ProjectileMovementComponent->HomingTargetComponent = NewTarget->GetRootComponent();
 }
 
 // Called every frame
 void ANGProjectile::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	
+	if (Target)
+	{		
+		FVector CurrentLocation = GetActorLocation();
+		FVector TargetLocation = Target->GetActorLocation();
+		FVector DesiredDirection = (TargetLocation - CurrentLocation).GetSafeNormal();
+		
+		FRotator CurrentRotation = GetActorRotation();
+		FRotator TargetRotation = Target->GetActorRotation();
+		FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaTime, RotateSpeed);
+		
+		SetActorRotation(NewRotation);
+		
+		//Projectile랑 유동적으로 바꿔가면서 쓸거면 여기서 분기처리
+		AddActorWorldOffset(DesiredDirection * MoveSpeed * DeltaTime, true);
+	}
+	
+	if (Target->IsDead() || !Target)
+	{
+		//TODO: 바로 없애지말고 죽기전 타겟위치까지는 가게하는게 나아보임 -> 매틱 타겟 위치 기록해놓고 타겟없어지면 거기로 가면 될듯
+		DestroyProjectile();
+	}
 }
 
