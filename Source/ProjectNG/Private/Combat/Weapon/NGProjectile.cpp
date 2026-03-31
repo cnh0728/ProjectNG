@@ -36,15 +36,21 @@ void ANGProjectile::BeginPlay()
 void ANGProjectile::OnProjectileOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (OtherActor && OtherActor == Target)
+	if (OtherActor)
 	{
-		//이거 타겟이랑 같은지 체크
-		UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor);
-		if (TargetASC && SpecHandle.IsValid())
+		if (!OtherActor->IsA<ANGProjectile>())
 		{
-			TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-			//Destroy보다는 Pool사용해서 하는게 좋을듯
-			DestroyProjectile();
+			if (OtherActor == Target)
+			{
+				//이거 타겟이랑 같은지 체크
+				UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor);
+				if (TargetASC && SpecHandle.IsValid())
+				{
+					TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+					//Destroy보다는 Pool사용해서 하는게 좋을듯
+					DestroyProjectile();
+				}
+			}
 		}
 	}
 }
@@ -81,7 +87,8 @@ void ANGProjectile::Tick(float DeltaTime)
 		AddActorWorldOffset(DesiredDirection * MoveSpeed * DeltaTime, true);
 	}
 	
-	if (Target->IsDead() || !Target)
+	//Target이 없으면 어짜피 if문 들어가고, 있으면 IsDead까지 실행
+	if (!Target || Target->IsDead())
 	{
 		//TODO: 바로 없애지말고 죽기전 타겟위치까지는 가게하는게 나아보임 -> 매틱 타겟 위치 기록해놓고 타겟없어지면 거기로 가면 될듯
 		DestroyProjectile();

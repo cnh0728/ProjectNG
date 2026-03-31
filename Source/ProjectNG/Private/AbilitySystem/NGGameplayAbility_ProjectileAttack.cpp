@@ -47,13 +47,22 @@ void UNGGameplayAbility_ProjectileAttack::OnReleaseProjectile(FGameplayEventData
 		FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(DamageEffectClass, GetAbilityLevel());
 		Projectile->SetSpecHandle(SpecHandle);
 		
+		//여기서 언제 타겟 선택되는지 확인
+		TWeakObjectPtr<AActor> TargetActor = Payload.TargetData.Get(0)->GetActors()[0];
+		
 		//발사체 클래스에 미리 정의된 함수가 있다면 호출
-		if (Payload.TargetData.Num() > 0 && Payload.TargetData.Get(0)->GetActors()[0] != nullptr)
+		if (Payload.TargetData.Num() > 0 && TargetActor != nullptr)
 		{
-			if (ANGCharacterBase* NewTarget = Cast<ANGCharacterBase>(Payload.TargetData.Get(0)->GetActors()[0].Get()))
+			UE_LOG(LogTemp, Log, TEXT("Target Detected: %s"), *TargetActor->GetName());
+
+			if (ANGCharacterBase* NewTarget = Cast<ANGCharacterBase>(TargetActor.Get()))
 			{
+				//여기서 Target설정이 이상한 경우가 있음
 				Projectile->SetTarget(NewTarget);
 			}
+		}else
+		{
+			UE_LOG(LogTemp, Error, TEXT("No Actor Detected"));
 		}
 		
 	}

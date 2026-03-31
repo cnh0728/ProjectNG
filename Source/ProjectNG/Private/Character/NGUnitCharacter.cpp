@@ -199,7 +199,7 @@ void ANGUnitCharacter::ExecuteAttack()
 	// {
 	// 	AbilitySystemComponent->TryActivateAbility(AttackAbilitySpecHandle);		
 	// }
-	if (CurrentTarget && GetAbilitySystemComponent())
+	if (IsValid(CurrentTarget.Get()) && GetAbilitySystemComponent())
 	{
 		FGameplayEventData Payload;
 		Payload.Instigator = this;
