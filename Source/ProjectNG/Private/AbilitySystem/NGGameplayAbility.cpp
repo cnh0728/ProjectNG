@@ -31,6 +31,14 @@ void UNGGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 		return;
 	}
 	
+	ANGCharacterBase* Target = Unit->GetCurrentTarget();
+	if (!Target)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Target is null"));
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
+	}
+	
 	UAnimMontage* MontageToPlay = Unit->GetAttackMontage();
 	
 	float CurrentAS = GetAbilitySystemComponentFromActorInfo()->GetNumericAttribute(UNGAttributeSet::GetAttackSpeedAttribute());

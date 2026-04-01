@@ -31,6 +31,9 @@ ANGCharacterBase::ANGCharacterBase()
 	HPBarComponent->SetWidgetSpace(EWidgetSpace::Screen);
 	HPBarComponent->SetDrawSize(FVector2D(100.f, 20.f));
 	
+	
+	
+	
 }
 
 UAbilitySystemComponent* ANGCharacterBase::GetAbilitySystemComponent() const
@@ -161,6 +164,11 @@ bool ANGCharacterBase::IsDead()
 	}
 	
 	return true;
+}
+
+ANGCharacterBase* ANGCharacterBase::GetCurrentTarget()
+{
+	return CurrentTarget;
 }
 
 void ANGCharacterBase::UpdateHPBar()

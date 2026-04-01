@@ -6,6 +6,7 @@
 #include "AbilitySystemComponent.h"
 #include "Character/NGCharacterBase.h"
 #include "Components/SphereComponent.h"
+#include "Core/NGPoolSubSystem.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 
 
@@ -36,28 +37,33 @@ void ANGProjectile::BeginPlay()
 void ANGProjectile::OnProjectileOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (OtherActor)
+	if (OtherActor && !OtherActor->IsA<ANGProjectile>())
 	{
-		if (!OtherActor->IsA<ANGProjectile>())
+		//Target이 널일때 Overlap돼서 그렇네; 이거 어케 먼저일어날수있지
+		UE_LOG(LogTemp, Log, TEXT("Other Actor Enter, OtherActorName = %s, TargetName = %s"), *OtherActor->GetName(), *Target->GetName());
+
+		if (OtherActor == Target)
 		{
-			if (OtherActor == Target)
+			UE_LOG(LogTemp, Log, TEXT("Actor is Target"));
+			//이거 타겟이랑 같은지 체크
+			UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor);
+			if (TargetASC && SpecHandle.IsValid())
 			{
-				//이거 타겟이랑 같은지 체크
-				UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor);
-				if (TargetASC && SpecHandle.IsValid())
-				{
-					TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-					//Destroy보다는 Pool사용해서 하는게 좋을듯
-					DestroyProjectile();
-				}
+				ReleaseProjectile();
+				
+				TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 			}
 		}
 	}
 }
 
-void ANGProjectile::DestroyProjectile()
+void ANGProjectile::ReleaseProjectile()
 {
-	Destroy();
+	UNGPoolSubSystem* Pool = GetWorld()->GetSubsystem<UNGPoolSubSystem>();
+	if (Pool)
+	{
+		Pool->ReleaseProjectile(this);
+	}
 }
 
 void ANGProjectile::SetTarget(ANGCharacterBase* NewTarget)
@@ -91,7 +97,7 @@ void ANGProjectile::Tick(float DeltaTime)
 	if (!Target || Target->IsDead())
 	{
 		//TODO: 바로 없애지말고 죽기전 타겟위치까지는 가게하는게 나아보임 -> 매틱 타겟 위치 기록해놓고 타겟없어지면 거기로 가면 될듯
-		DestroyProjectile();
+		ReleaseProjectile();
 	}
 }
 

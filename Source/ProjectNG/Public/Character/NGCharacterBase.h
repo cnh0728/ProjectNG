@@ -4,11 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "AbilitySystemInterface.h"
+#include "GameplayAbilitySpecHandle.h"
 #include "GameplayCueInterface.h"
 #include "SelectableInterface.h"
 #include "GameFramework/Character.h"
 #include "NGCharacterBase.generated.h"
 
+class USphereComponent;
+class ANGEnemyCharacter;
 struct FOnAttributeChangeData;
 class UWidgetComponent;
 class UAttributeSet;
@@ -51,6 +54,37 @@ protected:
 	virtual void PlayHitReaction();
 	
 protected:
+	UPROPERTY(VisibleAnywhere, Category = "Combat")
+	TObjectPtr<USphereComponent> DetectionSphere;
+	
+	//Queue로 하고싶은데
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+	TArray<ANGEnemyCharacter*> DetectedTarget;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+	TObjectPtr<ANGCharacterBase> CurrentTarget;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Combat")
+	float RotationInterpSpeed = 10.0f;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "RangeDecal")
+	TObjectPtr<UDecalComponent> RangeDecal;
+	
+	UPROPERTY(EditAnywhere, Category = "RangeDecal")
+	TObjectPtr<UMaterialInterface> RangeMaterial;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS")
+	TSubclassOf<UGameplayAbility> AttackAbilityClass;
+	
+	UPROPERTY()
+	FGameplayAbilitySpecHandle AttackAbilitySpecHandle;
+	
+	UPROPERTY()
+	FGameplayAbilitySpecHandle CurrentWeaponAbilityHandle;
+	
+	FTimerHandle AttackCheckTimerHandle;
+	
+protected:
 	//캐싱 용도
 	UPROPERTY(BlueprintReadOnly, Category = "GAS|AbilitySystemComponent")
 	TObjectPtr<UNGAbilitySystemComponent> AbilitySystemComponent;
@@ -71,6 +105,8 @@ public:
 	virtual void Die();
 	
 	bool IsDead();
+	
+	ANGCharacterBase* GetCurrentTarget();
 	
 private:
 	void UpdateHPBar();

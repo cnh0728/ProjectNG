@@ -72,37 +72,6 @@ protected:
 	
 	UFUNCTION()
 	void EquipWeapon(UNGWeaponData* NewWeaponData);
-
-protected:
-	UPROPERTY(VisibleAnywhere, Category = "Combat")
-	TObjectPtr<USphereComponent> DetectionSphere;
-	
-	//Queue로 하고싶은데
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
-	TArray<ANGEnemyCharacter*> DetectedTarget;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
-	TObjectPtr<ANGEnemyCharacter> CurrentTarget;
-	
-	UPROPERTY(EditDefaultsOnly, Category = "Combat")
-	float RotationInterpSpeed = 10.0f;
-	
-	UPROPERTY(BlueprintReadOnly, Category = "RangeDecal")
-	TObjectPtr<UDecalComponent> RangeDecal;
-	
-	UPROPERTY(EditAnywhere, Category = "RangeDecal")
-	TObjectPtr<UMaterialInterface> RangeMaterial;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS")
-	TSubclassOf<UGameplayAbility> AttackAbilityClass;
-	
-	UPROPERTY()
-	FGameplayAbilitySpecHandle AttackAbilitySpecHandle;
-	
-	UPROPERTY()
-	FGameplayAbilitySpecHandle CurrentWeaponAbilityHandle;
-	
-	FTimerHandle AttackCheckTimerHandle;
 	
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "Drag Drop")

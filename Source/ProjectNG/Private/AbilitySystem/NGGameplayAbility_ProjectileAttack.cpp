@@ -6,6 +6,7 @@
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "Character/NGCharacterBase.h"
 #include "Combat/Weapon/NGProjectile.h"
+#include "Core/NGPoolSubSystem.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 
 UNGGameplayAbility_ProjectileAttack::UNGGameplayAbility_ProjectileAttack()
@@ -31,39 +32,33 @@ void UNGGameplayAbility_ProjectileAttack::OnReleaseProjectile(FGameplayEventData
 {
 	if (!GetWorld() || !ProjectileClass) return;
 	
-	FVector SpawnLocation = GetUnitCharacterFromActorInfo()->GetActorLocation() + GetUnitCharacterFromActorInfo()->GetActorForwardVector() * 100.f;
-	FRotator SpawnRotation = GetUnitCharacterFromActorInfo()->GetActorRotation();
-	
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = GetUnitCharacterFromActorInfo();
-	SpawnParams.Instigator = Cast<APawn>(GetUnitCharacterFromActorInfo());
-	
-	ANGProjectile* Projectile = GetWorld()->SpawnActor<ANGProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, SpawnParams);
-	
 	//DamageEffectClass를 Instigator의 DamageEffect를 가져와서 넣어야하는거 아닌가?
-	
-	if (Projectile && DamageEffectClass)
+	TWeakObjectPtr<AActor> TargetActor = Payload.TargetData.Get(0)->GetActors()[0];
+	if (Payload.TargetData.Num() > 0 && TargetActor != nullptr)
 	{
-		FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(DamageEffectClass, GetAbilityLevel());
-		Projectile->SetSpecHandle(SpecHandle);
-		
-		//여기서 언제 타겟 선택되는지 확인
-		TWeakObjectPtr<AActor> TargetActor = Payload.TargetData.Get(0)->GetActors()[0];
-		
-		//발사체 클래스에 미리 정의된 함수가 있다면 호출
-		if (Payload.TargetData.Num() > 0 && TargetActor != nullptr)
+		if (ANGCharacterBase* NewTarget = Cast<ANGCharacterBase>(TargetActor.Get()))
 		{
-			UE_LOG(LogTemp, Log, TEXT("Target Detected: %s"), *TargetActor->GetName());
-
-			if (ANGCharacterBase* NewTarget = Cast<ANGCharacterBase>(TargetActor.Get()))
+			UNGPoolSubSystem* Pool = GetWorld()->GetSubsystem<UNGPoolSubSystem>();
+			
+			if (Pool)
 			{
-				//여기서 Target설정이 이상한 경우가 있음
-				Projectile->SetTarget(NewTarget);
+				FVector SpawnLocation = GetUnitCharacterFromActorInfo()->GetActorLocation() + GetUnitCharacterFromActorInfo()->GetActorForwardVector() * 100.f;
+	
+				FTransform SpawnTransform = GetUnitCharacterFromActorInfo()->GetActorTransform();
+				SpawnTransform.SetLocation(SpawnLocation);
+				
+				ANGProjectile* Projectile = Pool->AcquireProjectile(ANGProjectile::StaticClass(), SpawnTransform, NewTarget);
+				UE_LOG(LogTemp, Log, TEXT("Target Detected: %s"), *TargetActor->GetName());
+
+				if (Projectile && DamageEffectClass)
+				{
+					FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(DamageEffectClass, GetAbilityLevel());
+					Projectile->SetSpecHandle(SpecHandle);
+				}
 			}
-		}else
-		{
-			UE_LOG(LogTemp, Error, TEXT("No Actor Detected"));
 		}
-		
+	}else
+	{
+		UE_LOG(LogTemp, Error, TEXT("No Target Detected"));
 	}
 }
