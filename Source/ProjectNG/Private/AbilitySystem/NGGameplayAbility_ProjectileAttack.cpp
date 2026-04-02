@@ -6,6 +6,7 @@
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "Character/NGCharacterBase.h"
 #include "Combat/Weapon/NGProjectile.h"
+#include "Core/NGDeveloperSettings.h"
 #include "Core/NGPoolSubSystem.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 
@@ -30,7 +31,7 @@ void UNGGameplayAbility_ProjectileAttack::ActivateAbility(const FGameplayAbility
 
 void UNGGameplayAbility_ProjectileAttack::OnReleaseProjectile(FGameplayEventData Payload)
 {
-	if (!GetWorld() || !ProjectileClass) return;
+	if (!GetWorld()) return;
 	
 	//DamageEffectClass를 Instigator의 DamageEffect를 가져와서 넣어야하는거 아닌가?
 	TWeakObjectPtr<AActor> TargetActor = Payload.TargetData.Get(0)->GetActors()[0];
@@ -47,7 +48,10 @@ void UNGGameplayAbility_ProjectileAttack::OnReleaseProjectile(FGameplayEventData
 				FTransform SpawnTransform = GetUnitCharacterFromActorInfo()->GetActorTransform();
 				SpawnTransform.SetLocation(SpawnLocation);
 				
-				ANGProjectile* Projectile = Pool->AcquireProjectile(ANGProjectile::StaticClass(), SpawnTransform, NewTarget);
+				//TODO: LoadSynchronous는 로딩시 멈춤유발가능성, 대용량로드시 멈춰도될때 전부 로드해놓기
+				UClass* PC = GetDefault<UNGDeveloperSettings>()->ProjectileClass[ANGProjectile::StaticClass()].LoadSynchronous();
+				
+				ANGProjectile* Projectile = Pool->AcquireProjectile(PC, SpawnTransform, NewTarget);
 				UE_LOG(LogTemp, Log, TEXT("Target Detected: %s"), *TargetActor->GetName());
 
 				if (Projectile && DamageEffectClass)

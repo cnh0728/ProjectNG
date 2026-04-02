@@ -37,6 +37,11 @@ void ANGEnemyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
+	MoveOnSpline(DeltaTime);
+}
+
+void ANGEnemyCharacter::MoveOnSpline(float DeltaTime)
+{
 	if (!IsValid(PathSplineComponent))	return;
 	
 	CurrentDistance += MoveSpeed * DeltaTime;

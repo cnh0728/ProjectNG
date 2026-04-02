@@ -10,14 +10,14 @@ ANGProjectile* UNGPoolSubSystem::AcquireProjectile(TSubclassOf<ANGProjectile> Pr
 {
 	if (!ProjectileClass)	return nullptr;
 	
-	FProjectileList& Pool = ProjectilePools.FindOrAdd(ProjectileClass);
+	FNGProjectileList& Pool = ProjectilePools.FindOrAdd(ProjectileClass);
 	ANGProjectile* Projectile;
 	bool bNewSpawnProjectile = false;
 	
 	//여유분이 있으면 반환
-	if (Pool.FreeList.Num() > 0)
+	if (Pool.FreeProjectileList.Num() > 0)
 	{
-		Projectile = Pool.FreeList.Pop();
+		Projectile = Pool.FreeProjectileList.Pop();
 	}
 	else
 	{
@@ -52,6 +52,42 @@ void UNGPoolSubSystem::ReleaseProjectile(ANGProjectile* Projectile)
 	Projectile->SetActorEnableCollision(false);
 	Projectile->SetActorTickEnabled(false);
 	
-	FProjectileList& Pool = ProjectilePools.FindOrAdd(Projectile->GetClass());
-	Pool.FreeList.Push(Projectile);
+	FNGProjectileList& Pool = ProjectilePools.FindOrAdd(Projectile->GetClass());
+	Pool.FreeProjectileList.Push(Projectile);
 }
+
+ANGCharacterBase* UNGPoolSubSystem::AcquireCharacter(TSubclassOf<ANGCharacterBase> CharacterClass,
+	const FTransform& SpawnTransform)
+{
+	if (!CharacterClass)	return nullptr;
+	
+	FNGCharacterList& Pool = CharacterPools.FindOrAdd(CharacterClass);
+	
+	ANGCharacterBase* Character;
+	
+	//여유분이 있으면 반환
+	if (Pool.FreeCharacterList.Num() > 0)
+	{
+		Character = Pool.FreeCharacterList.Pop();
+	}
+	else
+	{
+		Character = GetWorld()->SpawnActor<ANGCharacterBase>(CharacterClass, SpawnTransform);
+	}
+	
+	return Character;
+}
+
+void UNGPoolSubSystem::ReleaseCharacter(ANGCharacterBase* Character)
+{
+	//TODO: release는 굉장히 유사해서 Template으로 하고 싶었는데 Pool을 통일해버리면 드롭리스트가 전부나와서 지저분해져서 걍 분리 
+	if (!Character)	return;
+	
+	Character->SetActorHiddenInGame(true);
+	Character->SetActorEnableCollision(false);
+	Character->SetActorTickEnabled(false);
+	
+	FNGCharacterList& Pool = CharacterPools.FindOrAdd(Character->GetClass());
+	Pool.FreeCharacterList.Push(Character);
+}
+

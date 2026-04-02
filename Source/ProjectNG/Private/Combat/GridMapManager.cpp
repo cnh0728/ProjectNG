@@ -6,10 +6,14 @@
 #include "Combat/Grid/Grid.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SplineComponent.h"
+#include "Core/NGDeveloperSettings.h"
+#include "Core/NGPoolSubSystem.h"
 #include "Core/NGUnitData.h"
 #include "Game/NGGameState.h"
 #include "GameModes/NGInGameGameMode.h"
 #include "ProjectNG/ProjectNG.h"
+
+class UNGDeveloperSettings;
 
 AGridMapManager::AGridMapManager()
 {
@@ -51,7 +55,10 @@ bool AGridMapManager::SpawnUnitCharacter(FName UnitName) const
 	
 	AGridMapManager* MapManager = GM->GetGridMapManager();
 	if (!MapManager)	return false;
-		
+	
+	UNGPoolSubSystem* Pool = GetWorld()->GetSubsystem<UNGPoolSubSystem>();
+	if (!Pool)	return false;
+	
 	TOptional<FIntVector2> EmptyGridIndex = MapManager->GridMap.GetEmptyGridIndex();
 		
 	if (!IsPossibleSpawnCharacter(MapManager))
@@ -78,7 +85,11 @@ bool AGridMapManager::SpawnUnitCharacter(FName UnitName) const
 				SpawnLocation += HalfHeight;
 			}
 						
-			ANGUnitCharacter* NewCharacter = GetWorld()->SpawnActor<ANGUnitCharacter>(FoundRow->UnitClass, SpawnLocation, FRotator::ZeroRotator);
+			FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLocation);
+			// UClass* CC = GetDefault<UNGDeveloperSettings>()->CharacterClass[FoundRow->UnitClass].LoadSynchronous();
+			
+			// ANGUnitCharacter* NewCharacter = Cast<ANGUnitCharacter>(Pool->AcquireCharacter(CC, SpawnTransform));
+			ANGUnitCharacter* NewCharacter = Cast<ANGUnitCharacter>(Pool->AcquireCharacter(FoundRow->UnitClass, SpawnTransform));
 						
 			if (!NewCharacter)
 			{

@@ -8,10 +8,13 @@
 #include "Combat/GridMapManager.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SplineComponent.h"
+#include "Core/NGDeveloperSettings.h"
+#include "Core/NGPoolSubSystem.h"
 #include "GameModes/NGInGameGameMode.h"
 #include "Net/UnrealNetwork.h"
 
 
+class UNGDeveloperSettings;
 // Sets default values
 ACombatManager::ACombatManager() : CurrentWaveIndex(0), EnemiesSpawnedSoFar(0)
 {
@@ -59,7 +62,6 @@ void ACombatManager::SpawnEnemyTimerElapsed()
 
 void ACombatManager::SpawnEnemy()
 {	
-	
 	AGridMapManager* GridMapManager = nullptr;
 	
 	if (ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>())
@@ -67,12 +69,13 @@ void ACombatManager::SpawnEnemy()
 		GridMapManager = GM->GetGridMapManager();
 	}
 
-	if (!IsValid(GridMapManager))
-	{
-		return;
-	}
+	if (!IsValid(GridMapManager))	return;
 		
 	if (!IsValid(GridMapManager->EnemyPathSpline))	return;
+	
+	UNGPoolSubSystem* Pool = GetWorld()->GetSubsystem<UNGPoolSubSystem>();
+	
+	if (!Pool)	return;
 	
 	UE_LOG(LogTemp, Warning, TEXT("Enemy Spawned!"));
 	
@@ -95,7 +98,9 @@ void ACombatManager::SpawnEnemy()
 	}
 	/////////////////////////
 	
-	if (ANGEnemyCharacter* NewEnemy = GetWorld()->SpawnActor<ANGEnemyCharacter>(EnemyClass, SpawnLocation, SpawnRotation))
+	UClass* CC = GetDefault<UNGDeveloperSettings>()->CharacterClass[ANGEnemyCharacter::StaticClass()].LoadSynchronous();
+	
+	if (ANGEnemyCharacter* NewEnemy = Cast<ANGEnemyCharacter>(Pool->AcquireCharacter(CC, FTransform(SpawnRotation, SpawnLocation))))
 	{
 		NewEnemy->InitPatrolPath(GridMapManager->EnemyPathSpline, CapsuleHalfHeight);
 	}

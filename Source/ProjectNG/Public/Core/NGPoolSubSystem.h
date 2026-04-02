@@ -14,12 +14,21 @@
 class ANGProjectile;
 
 USTRUCT()
-struct FProjectileList
+struct FNGProjectileList
 {
 	GENERATED_BODY()
 	
 	UPROPERTY()
-	TArray<ANGProjectile*> FreeList;
+	TArray<ANGProjectile*> FreeProjectileList;
+};
+
+USTRUCT()
+struct FNGCharacterList
+{
+	GENERATED_BODY()
+	
+	UPROPERTY()
+	TArray<ANGCharacterBase*> FreeCharacterList;
 };
 
 UCLASS()
@@ -31,9 +40,14 @@ public:
 	ANGProjectile* AcquireProjectile(TSubclassOf<ANGProjectile> ProjectileClass, const FTransform& SpawnTransform, ANGCharacterBase* Target);
 	void ReleaseProjectile(ANGProjectile* Projectile);
 	
+	ANGCharacterBase* AcquireCharacter(TSubclassOf<ANGCharacterBase> CharacterClass, const FTransform& SpawnTransform);
+	void ReleaseCharacter(ANGCharacterBase* Character);
+	
 protected:
 	UPROPERTY()
-	TMap<TSubclassOf<ANGProjectile>, FProjectileList> ProjectilePools;
+	TMap<TSubclassOf<ANGProjectile>, FNGProjectileList> ProjectilePools;
 	
+	UPROPERTY()
+	TMap<TSubclassOf<ANGCharacterBase>, FNGCharacterList> CharacterPools;
 	
 };

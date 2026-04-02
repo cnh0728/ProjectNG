@@ -23,9 +23,6 @@ public:
 protected:
 	UFUNCTION()
 	void OnReleaseProjectile(FGameplayEventData Payload);
-	
-	UPROPERTY(EditAnywhere, Category="Projectile")
-	TSubclassOf<AActor> ProjectileClass;
 
 	UPROPERTY(EditAnywhere, Category="Projectile")
 	TSubclassOf<UGameplayEffect> DamageEffectClass;
