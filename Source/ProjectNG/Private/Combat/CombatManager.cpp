@@ -61,7 +61,7 @@ void ACombatManager::SpawnEnemyTimerElapsed()
 }
 
 void ACombatManager::SpawnEnemy()
-{	
+{
 	AGridMapManager* GridMapManager = nullptr;
 	
 	if (ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>())
@@ -98,14 +98,22 @@ void ACombatManager::SpawnEnemy()
 	}
 	/////////////////////////
 	
-	UClass* CC = GetDefault<UNGDeveloperSettings>()->CharacterClass[ANGEnemyCharacter::StaticClass()].LoadSynchronous();
-	
-	if (ANGEnemyCharacter* NewEnemy = Cast<ANGEnemyCharacter>(Pool->AcquireCharacter(CC, FTransform(SpawnRotation, SpawnLocation))))
+	if (TSoftClassPtr<ANGCharacterBase> ClassPtr = GetDefault<UNGDeveloperSettings>()->CharacterClass[ANGEnemyCharacter::StaticClass()])
 	{
-		NewEnemy->InitPatrolPath(GridMapManager->EnemyPathSpline, CapsuleHalfHeight);
+		UClass* CC = ClassPtr.LoadSynchronous();
+		
+		if (ANGEnemyCharacter* NewEnemy = Cast<ANGEnemyCharacter>(Pool->AcquireCharacter(CC, FTransform(SpawnRotation, SpawnLocation))))
+		{
+			NewEnemy->InitPatrolPath(GridMapManager->EnemyPathSpline, CapsuleHalfHeight);
+		}
+		
+		EnemiesSpawnedSoFar++;
+	}else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Cannot Find EnemyClass"));
 	}
+
 	
-	EnemiesSpawnedSoFar++;
 }
 
 

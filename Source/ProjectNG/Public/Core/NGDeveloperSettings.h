@@ -11,7 +11,7 @@ class ANGProjectile;
 /**
  * 
  */
-UCLASS()
+UCLASS(Config = Game, defaultconfig, meta = (DisplayName = "NG Pool Settings"))
 class PROJECTNG_API UNGDeveloperSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
@@ -21,9 +21,10 @@ public:
 	virtual FName GetCategoryName() const override {return TEXT("Game");}
 	virtual FName GetSectionName() const override {return TEXT("NGPoolSettings");}
 	
-	UPROPERTY(EditDefaultsOnly, Category = "Pool Settings")
+	UPROPERTY(Config, EditAnywhere, Category = "NG Pool Settings")
 	TMap<TSubclassOf<ANGProjectile>, TSoftClassPtr<ANGProjectile>> ProjectileClass;
 	
-	UPROPERTY(EditDefaultsOnly, Category = "Pool Settings")
+	UPROPERTY(Config, EditAnywhere, Category = "NG Pool Settings")
 	TMap<TSubclassOf<ANGCharacterBase>, TSoftClassPtr<ANGCharacterBase>> CharacterClass;
+	
 };
