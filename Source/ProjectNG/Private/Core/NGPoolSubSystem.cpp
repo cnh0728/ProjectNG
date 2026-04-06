@@ -44,17 +44,6 @@ ANGProjectile* UNGPoolSubSystem::AcquireProjectile(TSubclassOf<ANGProjectile> Pr
 	return Projectile;
 }
 
-void UNGPoolSubSystem::ReleaseProjectile(ANGProjectile* Projectile)
-{
-	if (!Projectile)	return;
-	
-	Projectile->SetActorHiddenInGame(true);
-	Projectile->SetActorEnableCollision(false);
-	Projectile->SetActorTickEnabled(false);
-	
-	FNGProjectileList& Pool = ProjectilePools.FindOrAdd(Projectile->GetClass());
-	Pool.FreeProjectileList.Push(Projectile);
-}
 
 ANGCharacterBase* UNGPoolSubSystem::AcquireCharacter(TSubclassOf<ANGCharacterBase> CharacterClass,
 	const FTransform& SpawnTransform)
@@ -78,16 +67,32 @@ ANGCharacterBase* UNGPoolSubSystem::AcquireCharacter(TSubclassOf<ANGCharacterBas
 	return Character;
 }
 
-void UNGPoolSubSystem::ReleaseCharacter(ANGCharacterBase* Character)
+void UNGPoolSubSystem::ReleaseDefault(AActor* InActor)
+{
+	check(InActor);
+	
+	InActor->SetActorHiddenInGame(true);
+	InActor->SetActorEnableCollision(false);
+	InActor->SetActorTickEnabled(false);
+}
+
+void UNGPoolSubSystem::ReleaseSegment(ANGCharacterBase* Character)
 {
 	//TODO: release는 굉장히 유사해서 Template으로 하고 싶었는데 Pool을 통일해버리면 드롭리스트가 전부나와서 지저분해져서 걍 분리 
 	if (!Character)	return;
 	
-	Character->SetActorHiddenInGame(true);
-	Character->SetActorEnableCollision(false);
-	Character->SetActorTickEnabled(false);
+	ReleaseDefault(Character);
 	
 	FNGCharacterList& Pool = CharacterPools.FindOrAdd(Character->GetClass());
 	Pool.FreeCharacterList.Push(Character);
 }
 
+void UNGPoolSubSystem::ReleaseSegment(ANGProjectile* Projectile)
+{
+	if (!Projectile)	return;
+	
+	ReleaseDefault(Projectile);
+	
+	FNGProjectileList& Pool = ProjectilePools.FindOrAdd(Projectile->GetClass());
+	Pool.FreeProjectileList.Push(Projectile);
+}

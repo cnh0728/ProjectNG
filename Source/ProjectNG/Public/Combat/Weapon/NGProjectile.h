@@ -39,9 +39,6 @@ protected:
 	FGameplayEffectSpecHandle SpecHandle;	
 	
 	UPROPERTY(VisibleAnywhere)
-	UProjectileMovementComponent* ProjectileMovementComponent;
-	
-	UPROPERTY(VisibleAnywhere)
 	ANGCharacterBase* Target;
 	
 	UPROPERTY(BlueprintReadWrite, Category = "Setting | Projectile")
@@ -52,8 +49,6 @@ protected:
 
 public:
 	void SetSpecHandle(const FGameplayEffectSpecHandle InSpecHandle) { SpecHandle = InSpecHandle; }
-
-	UProjectileMovementComponent* GetProjectileMovement() const { return ProjectileMovementComponent; }
 	
 	void SetTarget(ANGCharacterBase* NewTarget);
 };

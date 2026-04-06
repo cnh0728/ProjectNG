@@ -62,7 +62,7 @@ void ANGProjectile::ReleaseProjectile()
 	UNGPoolSubSystem* Pool = GetWorld()->GetSubsystem<UNGPoolSubSystem>();
 	if (Pool)
 	{
-		Pool->ReleaseProjectile(this);
+		Pool->ReleaseSegment(this);
 	}
 }
 

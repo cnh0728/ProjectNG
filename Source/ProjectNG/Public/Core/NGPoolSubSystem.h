@@ -38,11 +38,12 @@ class PROJECTNG_API UNGPoolSubSystem : public UWorldSubsystem
 	
 public:
 	ANGProjectile* AcquireProjectile(TSubclassOf<ANGProjectile> ProjectileClass, const FTransform& SpawnTransform, ANGCharacterBase* Target);
-	void ReleaseProjectile(ANGProjectile* Projectile);
+	void ReleaseSegment(ANGProjectile* Projectile);
 	
 	ANGCharacterBase* AcquireCharacter(TSubclassOf<ANGCharacterBase> CharacterClass, const FTransform& SpawnTransform);
-	void ReleaseCharacter(ANGCharacterBase* Character);
+	void ReleaseSegment(ANGCharacterBase* Character);
 	
+	void ReleaseDefault(AActor* InActor);
 protected:
 	UPROPERTY()
 	TMap<TSubclassOf<ANGProjectile>, FNGProjectileList> ProjectilePools;
