@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
+#include "Character/NGUnitCharacter.h"
 #include "NGUnitData.generated.h"
 
 UENUM(BlueprintType)
@@ -33,7 +34,7 @@ public:
 	EUnitTier Tier = EUnitTier::Tier1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, DisplayName = "생성 할 유닛 액터 클래스")
-	TSubclassOf<AActor> UnitClass;
+	TSubclassOf<ANGUnitCharacter> UnitClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, DisplayName = "유닛 이미지")
 	TSoftObjectPtr<UTexture2D> UnitTexture;

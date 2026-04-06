@@ -22,6 +22,12 @@ class PROJECTNG_API ISelectableInterface
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category="Drag")
+	void OnDrag();
+	
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category="Drag")
+	void OnUndrag();
+	
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category="Selection")
 	void OnSelected();
 	

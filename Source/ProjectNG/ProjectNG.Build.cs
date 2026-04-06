@@ -22,6 +22,9 @@ public class ProjectNG : ModuleRules
 			"GameplayAbilities",
 			"GameplayTasks",
 			"GameplayTags",
+			
+			// ProjectSetting 모듈
+			"DeveloperSettings",
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]

@@ -3,8 +3,12 @@
 
 #include "UI/WidgetController/RollShopWidgetController.h"
 
+#include "Combat/GridMapManager.h"
 #include "Components/NGPocketComponent.h"
+#include "GameModes/NGInGameGameMode.h"
 #include "Player/NGPlayerController.h"
+
+class ANGGameState;
 
 void URollShopWidgetController::BroadcastInitialValues()
 {
@@ -55,12 +59,22 @@ int32 URollShopWidgetController::GainPlayerLevel() const
 
 void URollShopWidgetController::BuyUnitFromPocket(FName UnitName)
 {
-	if (ANGPlayerController* NGP = Cast<ANGPlayerController>(PlayerController))
+	//여기서 그리드에 칸이 비어있는지 체크 후 사야함
+	if (ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>())
 	{
-		if (UNGPocketComponent* Pocket = NGP->GetPlayerPocket())
+		if (ANGPlayerController* NGP = Cast<ANGPlayerController>(PlayerController))
 		{
-			Pocket->AddUnitToBuyingPocket(UnitName);
-			UE_LOG(LogTemp, Display, TEXT("BuyUnitFromPocket Success"));
+			if (UNGPocketComponent* Pocket = NGP->GetPlayerPocket())
+			{
+				if (AGridMapManager* GridManager = GM->GetGridMapManager())
+				{
+					if (GridManager->SpawnUnitCharacter(UnitName))
+					{
+						Pocket->AddUnitToBuyingPocket(UnitName);
+						UE_LOG(LogTemp, Display, TEXT("BuyUnitFromPocket Success"));
+					}
+				}
+			}
 		}
 	}
 }

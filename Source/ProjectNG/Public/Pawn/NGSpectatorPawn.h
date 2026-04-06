@@ -1,45 +1,39 @@
-﻿// Copyright (c) 2025 TeamNG. All Rights Reserved.
+// Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
-#include "NGCharacterBase.h"
-#include "NGSpectatorCharacter.generated.h"
+#include "NGPawnBase.h"
+#include "NGSpectatorPawn.generated.h"
 
 class UCameraComponent;
 
-/**
- * 게임 안에서 관전자 역할만 담당하는 Player Pawn
- */
 UCLASS()
-class PROJECTNG_API ANGSpectatorCharacter : public ANGCharacterBase
+class PROJECTNG_API ANGSpectatorPawn : public ANGPawnBase
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this pawn's properties
-	ANGSpectatorCharacter();
+	ANGSpectatorPawn();
 
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
-
-protected:
-	virtual void BeginPlay() override;
-	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
-
-public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+protected:
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
+	
+	// Called to bind functionality to input
+	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
 private:
 	/** PlayerPawn에서 GAS Component를 초기화 합니다. */
 	virtual void InitAbilityActorInfo() override;
 
 protected:
-
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> CameraComponent;
-
-
 };

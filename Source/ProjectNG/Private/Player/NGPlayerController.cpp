@@ -5,11 +5,17 @@
 
 #include "Components/NGPocketComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Blueprint/UserWidget.h"
+#include "Character/NGUnitCharacter.h"
 #include "Character/SelectableInterface.h"
+#include "Combat/CombatManager.h"
+#include "Combat/GridMapManager.h"
+#include "Game/NGGameState.h"
+#include "GameModes/NGInGameGameMode.h"
 #include "Input/NGInputComponent.h"
-#include "Kismet/GameplayStatics.h"
 
 #include "ProjectNG/ProjectNG.h"
+#include "UI/NGUnitInfoWidget.h"
 
 class UNGInputComponent;
 
@@ -62,43 +68,129 @@ void ANGPlayerController::SetupInputComponent()
 	}
 }
 
-void ANGPlayerController::HandleClickPressed(const FInputActionValue& Value)
+void ANGPlayerController::Tick(float DeltaTime)
 {
-	bIsDragging = true;
-	GetMousePosition(DragStartLocation.X, DragStartLocation.Y);
+	Super::Tick(DeltaTime);
+	
+	GetMousePosition(CurrentMouseLocation.X, CurrentMouseLocation.Y);
+	
+	//TODO: UI랑 인게임 분기쳐서 인게임에서만 동작하도록 하면 좋을듯
+	ProgressDragActor();
+}
 
-	for (AActor* SelectedUnit: SelectedUnits)
+void ANGPlayerController::ProgressDragActor()
+{
+	if (DraggingUnit.IsValid())
 	{
-		if (SelectedUnit && SelectedUnit->Implements<USelectableInterface>())
+		FHitResult HitResult;
+		if (GetHitResultUnderCursor(ECC_Map, false, HitResult))
 		{
-			ISelectableInterface::Execute_OnDeselected(SelectedUnit);
+			FVector TargetLocation = HitResult.Location;
+
+			if (ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>())
+			{
+				if (AGridMapManager* MapManager = GM->GetGridMapManager())
+				{
+					const FGridMap& GridMapCache = MapManager->GridMap;
+					const FIntVector2 GridIndex = GridMapCache.GetCellIndex(TargetLocation);
+					if (GridMapCache.IsValidIndex(GridIndex))
+					{
+						// TargetLocation = GridMapCache.GetWorldLocation(GridIndex);
+						DraggingUnit->SetDragTargetGridIndex(GridIndex);
+					}
+				}
+			}
+			
 		}
 	}
-	SelectedUnits.Empty();
+}
+
+void ANGPlayerController::HandleClickPressed(const FInputActionValue& Value)
+{
+	GetMousePosition(ClickStartLocation.X, ClickStartLocation.Y);
+		
+	PerformDrag();
 }
 
 void ANGPlayerController::HandleClickReleased(const FInputActionValue& Value)
 {
-	bIsDragging = false;
-
-	FVector2D DragEndLocation;
-	GetMousePosition(DragEndLocation.X, DragEndLocation.Y);
-
-	if (FVector2D::DistSquared(DragStartLocation, DragEndLocation) < 100.f)
+	double MouseDelta = (ClickStartLocation - CurrentMouseLocation).Size();
+		
+	if (MouseDelta > DragThreshold)
 	{
-		PerformSingleSelect();
-	}else
+		// 클릭일땐 선택 유지, 드래그일땐 선택 취소
+		ResetSelectUnit();
+	}
+	
+	ProgressDragActor();
+	
+	ResetDragUnit();
+}
+
+void ANGPlayerController::UpdateUnitWidget(ANGUnitCharacter* NewUnit)
+{
+	//위젯이 없는 상태면 생성
+	if (!UnitInfoWidgetInstance && UnitInfoWidgetClass)
 	{
-		PerformDragSelect();
+		UnitInfoWidgetInstance = CreateWidget<UNGUnitInfoWidget>(this, UnitInfoWidgetClass);
+		if (UnitInfoWidgetInstance)
+		{
+			UnitInfoWidgetInstance->AddToViewport();
+			UnitInfoWidgetInstance->SetVisibility(ESlateVisibility::Collapsed); //일단 숨김
+		}
+	}
+		
+	//위젯 켜고 데이터 주입
+	if (IsValid(UnitInfoWidgetInstance))
+	{
+		UnitInfoWidgetInstance->SetTargetUnit(NewUnit);
+		UnitInfoWidgetInstance->SetVisibility(ESlateVisibility::Visible);
 	}
 }
 
-void ANGPlayerController::PerformSingleSelect()
+void ANGPlayerController::SetSelectedUnit(ANGUnitCharacter* InSelectedUnit)
 {
-	FHitResult HitResult;
+	ResetSelectUnit();
+	
+	SelectedUnit = InSelectedUnit;
+	
+	if (SelectedUnit)
+	{
+		if (SelectedUnit->Implements<USelectableInterface>())
+		{
+			ISelectableInterface::Execute_OnSelected(SelectedUnit.Get());
+		}
+		
+		UpdateUnitWidget(SelectedUnit);
+	}
+}
 
-	// if (GetHitResultUnderCursor(ECC_Visibility, false, HitResult))
-	if (GetHitResultUnderCursor(ECC_Selectable, false, HitResult))
+void ANGPlayerController::ResetSelectUnit()
+{
+	if (SelectedUnit)
+	{
+		if (SelectedUnit->Implements<USelectableInterface>())
+		{
+			ISelectableInterface::Execute_OnDeselected(SelectedUnit.Get());
+		}
+		
+		if (UnitInfoWidgetInstance)
+		{
+			UnitInfoWidgetInstance->ClearTargetUnit();
+			UnitInfoWidgetInstance->SetVisibility(ESlateVisibility::Collapsed);
+		}
+		
+		SelectedUnit = nullptr;
+	}
+}
+
+void ANGPlayerController::PerformDrag()
+{
+	ResetDragUnit();
+	ResetSelectUnit();
+	
+	FHitResult HitResult;
+	if (GetHitResultUnderCursor(ECC_SelectableUnit, false, HitResult))
 	{
 		AActor* HitActor = HitResult.GetActor();
 
@@ -110,40 +202,44 @@ void ANGPlayerController::PerformSingleSelect()
 		
 		if (HitActor && HitActor->Implements<USelectableInterface>())
 		{
-			SelectedUnits.Add(HitActor);
-			ISelectableInterface::Execute_OnSelected(HitActor);
+			DraggingUnit = Cast<ANGUnitCharacter>(HitActor);
+			ISelectableInterface::Execute_OnDrag(HitActor);
+			
+			SetSelectedUnit(DraggingUnit.Get());
 		}
 	}
 }
 
-void ANGPlayerController::PerformDragSelect()
+void ANGPlayerController::ResetDragUnit()
 {
-	//TODO: 드래그 영역 그리기
-
-	TArray<AActor*> AllSelectableActors;
-
-	UGameplayStatics::GetAllActorsWithInterface(GetWorld(), USelectableInterface::StaticClass(), AllSelectableActors);
-
-	FVector2D CurrentMouseLocation;
-	GetMousePosition(CurrentMouseLocation.X, CurrentMouseLocation.Y);
-
-	FBox2D SelectionRectangle(ForceInit);
-	SelectionRectangle += DragStartLocation;
-	SelectionRectangle += CurrentMouseLocation;
-
-	for (AActor* SelectableActor : AllSelectableActors)
+	if (DraggingUnit.IsValid())
 	{
-		FVector ActorLocation = SelectableActor->GetActorLocation();
-		FVector2D ScreenLocation;
-
-		if (ProjectWorldLocationToScreen(ActorLocation, ScreenLocation))
+		if (DraggingUnit->Implements<USelectableInterface>())
 		{
-			if (SelectionRectangle.IsInside(ScreenLocation))
-			{
-				SelectedUnits.Add(SelectableActor);
-				ISelectableInterface::Execute_OnSelected(SelectableActor);
-			}
+			ISelectableInterface::Execute_OnUndrag(DraggingUnit.Get());
+		}
+	
+		DraggingUnit.Reset();
+	}
+}
+
+void ANGPlayerController::Cmd_StartWave()
+{
+	if (HasAuthority())
+	{
+		// GameState를 통해 CombatManager 가져오기
+		if (ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>()){
+			GM->RequestStartCombat();
+            
+			// 확인용 로그
+			UE_LOG(LogTemp, Warning, TEXT("Cmd: Wave Started!"));
+            
+			// 화면에 디버그 메시지 띄우기 (선택사항)
+			if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Wave Started!"));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("CombatManager가 GameState에 없습니다!"));
 		}
 	}
-	
 }
