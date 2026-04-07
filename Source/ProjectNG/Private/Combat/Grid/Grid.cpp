@@ -55,6 +55,8 @@ void FGridMap::ResetGridInfo()
 
 void FGridMap::ResetEmptyGridIndex()
 {	
+	EmptyGridIndex.Reset();
+	
 	for (int32 X=0;X<CountX;++X)
 	{
 		for (int32 Y=0;Y<CountY;++Y)

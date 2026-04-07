@@ -39,7 +39,7 @@ void ANGProjectile::OnProjectileOverlap(UPrimitiveComponent* OverlappedComponent
 {
 	if (OtherActor && !OtherActor->IsA<ANGProjectile>())
 	{
-		//Target이 널일때 Overlap돼서 그렇네; 이거 어케 먼저일어날수있지
+		check(Target);
 		UE_LOG(LogTemp, Log, TEXT("Other Actor Enter, OtherActorName = %s, TargetName = %s"), *OtherActor->GetName(), *Target->GetName());
 
 		if (OtherActor == Target)

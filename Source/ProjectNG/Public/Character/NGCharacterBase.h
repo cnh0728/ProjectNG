@@ -90,7 +90,7 @@ protected:
 	TObjectPtr<UNGAbilitySystemComponent> AbilitySystemComponent;
 	
 	UPROPERTY(BlueprintReadOnly, Category = "GAS|AbilitySystemComponent")
-	TObjectPtr<const UNGAttributeSet> AttributeSet;
+	TObjectPtr<UNGAttributeSet> AttributeSet;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|AbilitySystemComponent")
 	TObjectPtr<UDataTable> DefaultAttributeTable;

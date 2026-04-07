@@ -18,7 +18,7 @@
 #include "ProjectNG/ProjectNG.h"
 
 // Sets default values
-ANGUnitCharacter::ANGUnitCharacter() : AcceptanceRadius(1.0f), bIsGrabbed(false), bIsSelected(false)
+ANGUnitCharacter::ANGUnitCharacter() : AcceptanceRadius(1.0f), bIsGrabbed(false), bIsSelected(false), bIsDragMoving(false)
 {
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -73,7 +73,7 @@ void ANGUnitCharacter::OnDeselected_Implementation()
 
 void ANGUnitCharacter::ShowRangeIndicator(bool bVisible) const
 {
-	UE_LOG(LogTemp, Warning, TEXT("Decal bVisible %s"), bVisible ? TEXT("On") : TEXT("Off"))
+	UE_LOG(LogTemp, Warning, TEXT("Decal bVisible %s"), bVisible ? TEXT("On") : TEXT("Off"));
 	if (RangeDecal)
 	{
 		RangeDecal->SetVisibility(bVisible);
@@ -286,7 +286,7 @@ void ANGUnitCharacter::OnAttackRangeChanged(const FOnAttributeChangeData& Data)
 void ANGUnitCharacter::OnDetectionBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	// 이거 IsA말고 인터페이스로 하게 변경하는게 좋을듯
+	// TODO: 이거 IsA말고 인터페이스로 하게 변경하는게 좋을듯
 	if (OtherActor && OtherActor != this && OtherActor->IsA(ANGEnemyCharacter::StaticClass()))
 	{
 		DetectedTarget.AddUnique(Cast<ANGEnemyCharacter>(OtherActor));
