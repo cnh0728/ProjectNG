@@ -35,7 +35,7 @@ protected:
 /*				피킹 관련			 */
 /*************************************/
 public:
-	FVector2D GetStartMousePosition() const {return CurrentMouseLocation;}
+	FVector2D GetStartMousePosition() const {return ClickStartLocation;}
 	FVector2D GetCurrentMousePosition() const {return CurrentMouseLocation;}
 
 protected:

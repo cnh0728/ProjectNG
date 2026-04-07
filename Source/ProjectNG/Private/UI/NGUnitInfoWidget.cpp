@@ -20,6 +20,8 @@ void UNGUnitInfoWidget::SetTargetUnit(ANGUnitCharacter* NewUnit)
 	
 	TargetASC = Cast<UNGAbilitySystemComponent>(ASC);
 	
+	if (!TargetASC.IsValid())	return;
+	
 	float CurrentHP = ASC->GetNumericAttribute(UNGAttributeSet::GetHealthAttribute());
 	float MaxHP = ASC->GetNumericAttribute(UNGAttributeSet::GetMaxHealthAttribute());
 	float Strength = ASC->GetNumericAttribute(UNGAttributeSet::GetStrengthAttribute());

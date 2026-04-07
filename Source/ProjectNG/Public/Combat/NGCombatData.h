@@ -1,9 +1,11 @@
 #pragma once
+
+#include "CoreMinimal.h"
 #include "NGCombatData.generated.h"
 
 class ANGEnemyCharacter;
 
-USTRUCT(Blueprintable)
+USTRUCT(BlueprintType)
 struct FWaveData
 {
 	GENERATED_BODY()
