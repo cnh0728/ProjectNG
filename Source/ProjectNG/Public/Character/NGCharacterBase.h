@@ -10,6 +10,7 @@
 #include "GameFramework/Character.h"
 #include "NGCharacterBase.generated.h"
 
+class UNGPoolableComponent;
 class USphereComponent;
 class ANGEnemyCharacter;
 struct FOnAttributeChangeData;
@@ -54,6 +55,9 @@ protected:
 	virtual void PlayHitReaction();
 	
 protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pool", meta=(AllowPrivateAccess = "true"))
+	TObjectPtr<UNGPoolableComponent> PoolController;
+	
 	UPROPERTY(VisibleAnywhere, Category = "Combat")
 	TObjectPtr<USphereComponent> DetectionSphere;
 	

@@ -46,6 +46,8 @@ bool AGridMapManager::IsPossibleSpawnCharacter(AGridMapManager* MapManager) cons
 
 bool AGridMapManager::SpawnUnitCharacter(FName UnitName) const
 {
+	if (!HasAuthority())	return false;
+	
 	//여기서부터 아래가 소환로직
 	ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>();
 	if (!GS)	return false;

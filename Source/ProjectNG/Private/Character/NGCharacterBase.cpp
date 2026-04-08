@@ -7,7 +7,9 @@
 #include "Combat/CombatManager.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
+#include "Core/NGPoolableComponent.h"
 #include "GameModes/NGInGameGameMode.h"
+#include "Net/UnrealNetwork.h"
 #include "UI/NGWidgetInterface.h"
 
 
@@ -31,8 +33,9 @@ ANGCharacterBase::ANGCharacterBase()
 	HPBarComponent->SetWidgetSpace(EWidgetSpace::Screen);
 	HPBarComponent->SetDrawSize(FVector2D(100.f, 20.f));
 	
-	
-	
+	bReplicates = true;
+	SetReplicateMovement(true);
+	PoolController = CreateDefaultSubobject<UNGPoolableComponent>(TEXT("PoolController"));
 	
 }
 

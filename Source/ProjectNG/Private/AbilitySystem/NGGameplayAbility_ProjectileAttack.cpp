@@ -32,7 +32,8 @@ void UNGGameplayAbility_ProjectileAttack::ActivateAbility(const FGameplayAbility
 void UNGGameplayAbility_ProjectileAttack::OnReleaseProjectile(FGameplayEventData Payload)
 {
 	if (!GetWorld()) return;
-	
+	if (!K2_HasAuthority())	return;
+
 	//DamageEffectClass를 Instigator의 DamageEffect를 가져와서 넣어야하는거 아닌가?
 	TWeakObjectPtr<AActor> TargetActor = Payload.TargetData.Get(0)->GetActors()[0];
 	if (Payload.TargetData.Num() > 0 && TargetActor != nullptr)
@@ -53,7 +54,7 @@ void UNGGameplayAbility_ProjectileAttack::OnReleaseProjectile(FGameplayEventData
 				
 				ANGProjectile* Projectile = Pool->AcquireProjectile(PC, SpawnTransform, NewTarget);
 				UE_LOG(LogTemp, Log, TEXT("Target Detected: %s"), *TargetActor->GetName());
-
+				
 				if (Projectile && DamageEffectClass)
 				{
 					FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(DamageEffectClass, GetAbilityLevel());
