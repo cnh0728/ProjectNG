@@ -36,15 +36,18 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Server_RequestRoll();
 
+	UPROPERTY(ReplicatedUsing = OnRep_RollChange)
+	int32 RollChangeVersion;
+	
+	UFUNCTION()
+	void OnRep_RollChange();
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Game|Shop")
 	int32 ShopSlotCount = 3;
 
 private:
 	UPROPERTY(VisibleAnywhere, Category = "Game|Shop")
 	TArray<FName> RollPocket; // 플레이어의 상점에 표시된 유닛 목록
-
-	UPROPERTY(VisibleAnywhere, Replicated, Category = "Game|Shop")
-	TArray<FName> PlayerUnitPocket; // 플레이어가 가진 유닛 목록
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Game|Shop")
 	TObjectPtr<UDataTable> ProbabilityTable;

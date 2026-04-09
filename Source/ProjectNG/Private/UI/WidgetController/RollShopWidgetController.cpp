@@ -37,6 +37,7 @@ void URollShopWidgetController::RequestPlayerRollPocket() const
 	{
 		if (UNGPocketComponent* Pocket = NGP->GetPlayerPocket())
 		{
+			UE_LOG(LogTemp, Warning, TEXT("Pocket Address: %p, Owner: %s"), Pocket, *Pocket->GetOwner()->GetName());
 			Pocket->RequestRoll();
 		}
 	}

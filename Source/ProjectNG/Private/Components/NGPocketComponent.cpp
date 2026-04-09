@@ -11,13 +11,13 @@
 
 UNGPocketComponent::UNGPocketComponent()
 {
-	SetIsReplicatedByDefault(true);
+	//SetIsReplicatedByDefault(true);
 }
 
 void UNGPocketComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(UNGPocketComponent, PlayerUnitPocket);
+	DOREPLIFETIME(UNGPocketComponent, RollChangeVersion);
 }
 
 void UNGPocketComponent::RequestRoll()
@@ -27,12 +27,30 @@ void UNGPocketComponent::RequestRoll()
 
 void UNGPocketComponent::AddUnitToBuyingPocket(FName UnitName)
 {
-	PlayerUnitPocket.Add(UnitName);
 	RollPocket.Remove(UnitName);
+}
+
+void UNGPocketComponent::OnRep_RollChange()
+{
+	UE_LOG(LogTemp, Warning, TEXT("OnRep_RollChange: Entered"));
+
+	// 2. 델리게이트 바인딩 상태 확인 (중요)
+	if (OnUnitsUpdated.IsBound())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("OnRep_RollChange: Delegate is Bound. Broadcaster Addr: %p"), &OnUnitsUpdated);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("OnRep_RollChange: NO ONE is listening to this delegate!"));
+	}
+	
+	OnUnitsUpdated.Broadcast();
 }
 
 void UNGPocketComponent::Server_RequestRoll_Implementation()
 {
+	if (!GetOwner()->HasAuthority())	return;
+	
 	checkf(ProbabilityTable, TEXT("[PocketComponent] Not initialized Probability table."))
 	
 	AController* OwnerController = Cast<AController>(GetOwner());
@@ -89,6 +107,6 @@ void UNGPocketComponent::Server_RequestRoll_Implementation()
 		}
 	}
 	
-	OnUnitsUpdated.Broadcast();
+	RollChangeVersion++;
+	OnRep_RollChange(); //서버 본인도 호출해야하기 때문에
 }
-

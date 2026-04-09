@@ -227,7 +227,6 @@ void ANGPlayerController::Cmd_StartWave()
 {
 	if (HasAuthority())
 	{
-		// GameState를 통해 CombatManager 가져오기
 		if (ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>()){
 			GM->RequestStartCombat();
             
