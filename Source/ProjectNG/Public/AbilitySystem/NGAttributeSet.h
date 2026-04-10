@@ -98,27 +98,23 @@ public:
 
     UFUNCTION()
     void OnRep_Agility(const FGameplayAttributeData& OldValue);
-
-    // =========================================================================
-    // Combat
-    // =========================================================================
-public:
-    UPROPERTY(BlueprintReadOnly, Category = "Attributes|Defense", ReplicatedUsing = OnRep_Defense)
-    FGameplayAttributeData Defense;
-    ATTRIBUTE_ACCESSORS(UNGAttributeSet, Defense)
-
+    
+    UPROPERTY(BlueprintReadOnly, Category = "Attributes|Stats", ReplicatedUsing = OnRep_AttackDamage)
+    FGameplayAttributeData AttackDamage;
+    ATTRIBUTE_ACCESSORS(UNGAttributeSet, AttackDamage)
+    
     UFUNCTION()
-    void OnRep_Defense(const FGameplayAttributeData& OldValue);
-
-
-    UPROPERTY(BlueprintReadOnly, Category = "Attributes|Defense", ReplicatedUsing = OnRep_MagicDefense)
-    FGameplayAttributeData MagicDefense;
-    ATTRIBUTE_ACCESSORS(UNGAttributeSet, MagicDefense)
-
+    void OnRep_AttackDamage(const FGameplayAttributeData& OldValue);
+    
+    
+    UPROPERTY(BlueprintReadOnly, Category = "Attributes|Stats", ReplicatedUsing = OnRep_AbilityPower)
+    FGameplayAttributeData AbilityPower;
+    ATTRIBUTE_ACCESSORS(UNGAttributeSet, AbilityPower)
+    
     UFUNCTION()
-    void OnRep_MagicDefense(const FGameplayAttributeData& OldValue);
-
-
+    void OnRep_AbilityPower(const FGameplayAttributeData& OldValue);
+    
+    
     UPROPERTY(BlueprintReadOnly, Category = "Attributes|Combat", ReplicatedUsing = OnRep_AttackRange)
     FGameplayAttributeData AttackRange;
     ATTRIBUTE_ACCESSORS(UNGAttributeSet, AttackRange)
@@ -133,7 +129,46 @@ public:
 
     UFUNCTION()
     void OnRep_AttackSpeed(const FGameplayAttributeData& OldValue);
+    
 
+    UPROPERTY(BlueprintReadOnly, Category = "Attributes|Combat", ReplicatedUsing = OnRep_CriticalRate)
+    FGameplayAttributeData CriticalRate;
+    ATTRIBUTE_ACCESSORS(UNGAttributeSet, CriticalRate)
+    
+    UFUNCTION()
+    void OnRep_CriticalRate(const FGameplayAttributeData& OldValue);
+    
+    UPROPERTY(BlueprintReadOnly, Category = "Attributes|Combat", ReplicatedUsing = OnRep_DodgeRate)
+    FGameplayAttributeData DodgeRate;
+    ATTRIBUTE_ACCESSORS(UNGAttributeSet, DodgeRate)
+    
+    UFUNCTION()
+    void OnRep_DodgeRate(const FGameplayAttributeData& OldValue);
+    
+    UPROPERTY(BlueprintReadOnly, Category = "Attributes|Combat", ReplicatedUsing = OnRep_PhysicalDefense)
+    FGameplayAttributeData PhysicalDefense;
+    ATTRIBUTE_ACCESSORS(UNGAttributeSet, PhysicalDefense)
+    
+    UFUNCTION()
+    void OnRep_PhysicalDefense(const FGameplayAttributeData& OldValue);
+    
+    UPROPERTY(BlueprintReadOnly, Category = "Attributes|Combat", ReplicatedUsing = OnRep_MagicDefense)
+    FGameplayAttributeData MagicDefense;
+    ATTRIBUTE_ACCESSORS(UNGAttributeSet, MagicDefense)
+    
+    UFUNCTION()
+    void OnRep_MagicDefense(const FGameplayAttributeData& OldValue);
+    
+    // =========================================================================
+    // Combat
+    // =========================================================================
+public:
+    UPROPERTY(BlueprintReadOnly, Category = "Attributes|Defense", ReplicatedUsing = OnRep_Defense)
+    FGameplayAttributeData Defense;
+    ATTRIBUTE_ACCESSORS(UNGAttributeSet, Defense)
+
+    UFUNCTION()
+    void OnRep_Defense(const FGameplayAttributeData& OldValue);
     
     UPROPERTY(BlueprintReadOnly, Category = "Attributes|Combat", ReplicatedUsing = OnRep_TargetCount)
     FGameplayAttributeData TargetCount;

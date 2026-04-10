@@ -21,7 +21,6 @@ class PROJECTNG_API ANGUnitCharacter : public ANGCharacterBase, public ISelectab
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this character's properties
 	ANGUnitCharacter();
 	
 	virtual void OnSelected_Implementation() override;
@@ -32,20 +31,18 @@ public:
 	virtual void OnUndrag_Implementation() override;
 	
 protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
 	virtual void InitializeAttributes() override;
 	
 private:
 	virtual void InitAbilityActorInfo() override;
 	
 public:
-	// Called every frame
+	virtual void BeginPlay() override;
+	
 	virtual void Tick(float DeltaTime) override;
 	
 	void ExecuteAttack();
 
-	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
 	void SetDragTargetGridIndex(const TOptional<FIntVector2>& NewIndex);

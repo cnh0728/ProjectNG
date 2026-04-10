@@ -7,6 +7,7 @@
 #include "Combat/CombatManager.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
+#include "Core/UnitAbilityDataRow.h"
 #include "GameModes/NGInGameGameMode.h"
 #include "UI/NGWidgetInterface.h"
 
@@ -116,6 +117,25 @@ void ANGCharacterBase::InitializeAttributes()
 	{
 		AbilitySystemComponent->InitStats(UNGAttributeSet::StaticClass(), DefaultAttributeTable);
 	}
+}
+
+void ANGCharacterBase::InitializeAttributes(const FUnitAbilityData& AbilityData) const
+{
+	if (!AbilitySystemComponent || !AttributeSet) return;
+	
+	// Owned Tags
+	AbilitySystemComponent->AddLooseGameplayTags(AbilityData.OwnedTags);
+	
+	AttributeSet->InitMaxHealth(AbilityData.Health);
+	AttributeSet->InitHealth(AbilityData.Health);
+	AttributeSet->InitAttackDamage(AbilityData.AttackDamage);
+	AttributeSet->InitAbilityPower(AbilityData.AbilityPower);
+	AttributeSet->InitAttackRange(AbilityData.AttackRange);
+	AttributeSet->InitAttackSpeed(AbilityData.AttackSpeed);
+	AttributeSet->InitCriticalRate(AbilityData.CriticalRate);
+	AttributeSet->InitDodgeRate(AbilityData.DodgeRate);
+	AttributeSet->InitPhysicalDefense(AbilityData.PhysicalDefense);
+	AttributeSet->InitMagicDefense(AbilityData.MagicDefense);
 }
 
 FVector ANGCharacterBase::GetHalfCapsule() const

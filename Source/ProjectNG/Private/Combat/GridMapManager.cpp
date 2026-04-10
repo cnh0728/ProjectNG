@@ -10,6 +10,7 @@
 #include "Core/NGPoolSubSystem.h"
 #include "Core/NGUnitData.h"
 #include "Game/NGGameState.h"
+#include "Game/NGUnitDataManager.h"
 #include "GameModes/NGInGameGameMode.h"
 #include "ProjectNG/ProjectNG.h"
 
@@ -47,9 +48,6 @@ bool AGridMapManager::IsPossibleSpawnCharacter(AGridMapManager* MapManager) cons
 bool AGridMapManager::SpawnUnitCharacter(FName UnitName) const
 {
 	//여기서부터 아래가 소환로직
-	ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>();
-	if (!GS)	return false;
-	
 	ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>();
 	if (!GM)	return false;
 	
@@ -66,7 +64,7 @@ bool AGridMapManager::SpawnUnitCharacter(FName UnitName) const
 		return false;
 	}
 	
-	UDataTable* UnitDataTable = GS->GetUnitDataTable();
+	const UDataTable* UnitDataTable = GetGameInstance()->GetSubsystem<UNGUnitDataManager>()->GetUnitDataTable();
 	
 	if (UnitDataTable)
 	{

@@ -10,6 +10,7 @@
 #include "GameFramework/Character.h"
 #include "NGCharacterBase.generated.h"
 
+struct FUnitAbilityData;
 class USphereComponent;
 class ANGEnemyCharacter;
 struct FOnAttributeChangeData;
@@ -33,16 +34,15 @@ public:
 
 	virtual void HandleGameplayCue(UObject* Self, FGameplayTag GameplayCueTag, EGameplayCueEvent::Type EventType, const FGameplayCueParameters& Parameters) override;
 	
+	virtual void BeginPlay() override;
+	
+	virtual void Tick(float DeltaTime) override;
 protected:
 	/** 파생 클래스에서 GAS 초기화를 위한 로직을 작성 */
 	virtual void InitAbilityActorInfo()	PURE_VIRTUAL(ANGPawnBase::InitAbilityActorInfo);
 
 	// virtual void ServerSideInit();
 	// virtual void ClientSideInit();
-	
-	virtual void BeginPlay() override;
-	
-	virtual void Tick(float DeltaTime) override;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
 	TObjectPtr<UWidgetComponent> HPBarComponent; 
@@ -90,14 +90,19 @@ protected:
 	TObjectPtr<UNGAbilitySystemComponent> AbilitySystemComponent;
 	
 	UPROPERTY(BlueprintReadOnly, Category = "GAS|AbilitySystemComponent")
-	TObjectPtr<const UNGAttributeSet> AttributeSet;
+	TObjectPtr<UNGAttributeSet> AttributeSet;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|AbilitySystemComponent")
 	TObjectPtr<UDataTable> DefaultAttributeTable;
 	
-	virtual void InitializeAttributes();
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|AbilitySystemComponent")
+	FGameplayTag IdentificationTag;
 	
+	virtual void InitializeAttributes();
+
 public:
+	void InitializeAttributes(const FUnitAbilityData& AbilityData) const;
+	
 	FVector GetHalfCapsule() const;
 	
 	UAnimMontage* GetAttackMontage() const;

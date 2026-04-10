@@ -24,8 +24,8 @@ struct FUnitData : public FTableRowBase
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, DisplayName = "유닛 식별 아이디")
-	int32 UnitID = -1;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, DisplayName = "유닛 식별 태그")
+	FGameplayTag IdentificationTag = FGameplayTag();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, DisplayName = "유닛 이름")
 	FText UnitName = FText();

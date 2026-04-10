@@ -4,6 +4,7 @@
 #include "Game/NGGameState.h"
 
 #include "Core/NGUnitData.h"
+#include "Game/NGUnitDataManager.h"
 
 ANGGameState::ANGGameState()
 {
@@ -81,13 +82,17 @@ FName ANGGameState::GetRandomUnitByTier(EUnitTier Tier)
 
 void ANGGameState::InitializeUnitPool()
 {
-	if (!IsValid(UnitDataTable.Get())) return;
+	UNGUnitDataManager* UDM = GetGameInstance()->GetSubsystem<UNGUnitDataManager>();
+	
+	const UDataTable* UnitDataTable = UDM->GetUnitDataTable();
+	
+	if (!UnitDataTable) return;
 
-	TArray<FName> RowNames = UnitDataTable.Get()->GetRowNames();
+	TArray<FName> RowNames = UnitDataTable->GetRowNames();
 	for (const FName& RowName : RowNames)
 	{
 		FString ContextString;
-		FUnitData* Row = UnitDataTable.Get()->FindRow<FUnitData>(RowName, ContextString);
+		FUnitData* Row = UnitDataTable->FindRow<FUnitData>(RowName, ContextString);
 		if (Row && Row->UnitClass)
 		{
 			// 총 개수 추가
