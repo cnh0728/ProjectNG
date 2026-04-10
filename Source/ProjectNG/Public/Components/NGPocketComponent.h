@@ -45,10 +45,31 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Game|Shop")
 	int32 ShopSlotCount = 3;
 
+	UPROPERTY(BlueprintReadWrite, Category = "Cache")
+	TObjectPtr<UNGPocketComponent> CachedPocket;
 private:
 	UPROPERTY(VisibleAnywhere, Category = "Game|Shop")
 	TArray<FName> RollPocket; // 플레이어의 상점에 표시된 유닛 목록
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Game|Shop")
 	TObjectPtr<UDataTable> ProbabilityTable;
+	
+public:
+	UFUNCTION(BlueprintCallable, Category = "Debug")
+	FString GetDebugNetMode() const
+	{
+		ENetMode NetMode = GetNetMode();
+		switch (NetMode)
+		{
+		case NM_Client: return TEXT("Client");
+		case NM_ListenServer: return TEXT("ListenServer");
+		case NM_DedicatedServer: return TEXT("DedicatedServer");
+		default: return TEXT("Standalone");
+		}
+	}
+	
+	UFUNCTION(BlueprintCallable, Category = "Debug")
+	void Debug_CheckBinding(UObject* WidgetRef) {
+		UE_LOG(LogTemp, Warning, TEXT("[Bind] Pocket Addr: %p, Widget Addr: %p"), this, WidgetRef);
+	}
 };

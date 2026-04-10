@@ -32,8 +32,10 @@ void UNGPocketComponent::AddUnitToBuyingPocket(FName UnitName)
 
 void UNGPocketComponent::OnRep_RollChange()
 {
-	UE_LOG(LogTemp, Warning, TEXT("OnRep_RollChange: Entered"));
-
+	UE_LOG(LogTemp, Error, TEXT("[C++] OnRep Instance: %s"), *this->GetPathName());
+	
+	UE_LOG(LogTemp, Error, TEXT("[OnRep] Pocket Addr: %p, Owner Addr: %p"), this, GetOwner());
+	
 	// 2. 델리게이트 바인딩 상태 확인 (중요)
 	if (OnUnitsUpdated.IsBound())
 	{
