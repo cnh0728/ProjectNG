@@ -70,6 +70,6 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "Debug")
 	void Debug_CheckBinding(UObject* WidgetRef) {
-		UE_LOG(LogTemp, Warning, TEXT("[Bind] Pocket Addr: %p, Widget Addr: %p"), this, WidgetRef);
+		UE_LOG(LogTemp, Warning, TEXT("[Bind] Pocket Addr: %p, Owner Addr: %p"), this, WidgetRef);
 	}
 };

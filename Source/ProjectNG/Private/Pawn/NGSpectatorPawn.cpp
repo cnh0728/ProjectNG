@@ -49,6 +49,14 @@ void ANGSpectatorPawn::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
+void ANGSpectatorPawn::OnRep_Controller()
+{
+	Super::OnRep_Controller();
+	
+	//클라이언트에서도 초기화
+	InitAbilityActorInfo();
+}
+
 // Called to bind functionality to input
 void ANGSpectatorPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
@@ -58,14 +66,16 @@ void ANGSpectatorPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 void ANGSpectatorPawn::InitAbilityActorInfo()
 {
 	ANGPlayerState* PS = GetPlayerState<ANGPlayerState>();
-	check(PS);
-
+	ANGPlayerController* PC = Cast<ANGPlayerController>(GetController());
+	
+	if (!PS || !PC)	return;
+	
 	// ASC 복사 및 아바타 설정
 	AbilitySystemComponent = PS->GetNGAbilitySystemComponent();
 	AbilitySystemComponent->InitAbilityActorInfo(PS, this);
 
 	// HUD 추가
-	if (ANGPlayerController* PC = Cast<ANGPlayerController>(GetController()))
+	if (PC->IsLocalController())
 	{
 		if (ANGHUD* MainHUD = Cast<ANGHUD>(PC->GetHUD()))
 		{

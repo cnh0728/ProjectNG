@@ -11,7 +11,7 @@
 
 UNGPocketComponent::UNGPocketComponent()
 {
-	//SetIsReplicatedByDefault(true);
+	SetIsReplicatedByDefault(true);
 }
 
 void UNGPocketComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
@@ -22,6 +22,21 @@ void UNGPocketComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProper
 
 void UNGPocketComponent::RequestRoll()
 {
+	AActor* MyOwner = GetOwner();
+	FString RoleStr = MyOwner->HasAuthority() ? TEXT("[SERVER]") : TEXT("[CLIENT]");
+    
+	// 1. 내 주인(PC)이 서버와 연결된 소켓(NetConnection)을 가지고 있는지 확인!
+	bool bHasConnection = (MyOwner->GetNetConnection() != nullptr);
+    
+	UE_LOG(LogTemp, Warning, TEXT("%s [RequestRoll] Addr: %p | Has NetConnection: %s"), 
+		*RoleStr, this, bHasConnection ? TEXT("TRUE") : TEXT("FALSE"));
+
+	if (!bHasConnection && !MyOwner->HasAuthority())
+	{
+		UE_LOG(LogTemp, Error, TEXT("!!! ERROR !!! 당신은 지금 네트워크 연결이 없는 가짜 객체에서 RPC를 시도했습니다. 패킷이 증발합니다!"));
+		return;
+	}
+
 	Server_RequestRoll();
 }
 
@@ -32,9 +47,10 @@ void UNGPocketComponent::AddUnitToBuyingPocket(FName UnitName)
 
 void UNGPocketComponent::OnRep_RollChange()
 {
-	UE_LOG(LogTemp, Error, TEXT("[C++] OnRep Instance: %s"), *this->GetPathName());
+	FString RoleStr = GetOwner()->HasAuthority() ? TEXT("[SERVER]") : TEXT("[CLIENT]");
+	auto Owner = GetOwner();
 	
-	UE_LOG(LogTemp, Error, TEXT("[OnRep] Pocket Addr: %p, Owner Addr: %p"), this, GetOwner());
+	UE_LOG(LogTemp, Warning, TEXT("[OnRep] Pocket Addr: %p, Owner Addr: %p"), this, Owner);
 	
 	// 2. 델리게이트 바인딩 상태 확인 (중요)
 	if (OnUnitsUpdated.IsBound())
@@ -110,5 +126,7 @@ void UNGPocketComponent::Server_RequestRoll_Implementation()
 	}
 	
 	RollChangeVersion++;
-	OnRep_RollChange(); //서버 본인도 호출해야하기 때문에
+
+	//이거는 끝나고 다시 확인
+	// OnRep_RollChange(); //서버 본인도 호출해야하기 때문에
 }

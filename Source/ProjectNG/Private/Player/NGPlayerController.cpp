@@ -21,6 +21,9 @@ class UNGInputComponent;
 
 ANGPlayerController::ANGPlayerController() : bIsDragging(false)
 {
+	UE_LOG(LogTemp, Warning, TEXT("---------------PC Created!---------------"));
+	UE_LOG(LogTemp, Warning, TEXT("PC Addr: %p"), this);
+	
 	//커서 보이게 하는 변수
 	bShowMouseCursor = true;
 	bEnableClickEvents = true; 
