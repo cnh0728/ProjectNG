@@ -7,6 +7,7 @@
 #include "Core/NGUnitData.h"
 #include "Game/NGGameState.h"
 #include "Net/UnrealNetwork.h"
+#include "Player/NGPlayerController.h"
 
 
 UNGPocketComponent::UNGPocketComponent()
@@ -17,7 +18,7 @@ UNGPocketComponent::UNGPocketComponent()
 void UNGPocketComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(UNGPocketComponent, RollChangeVersion);
+	DOREPLIFETIME_CONDITION(UNGPocketComponent, RollPocket, COND_OwnerOnly); //요청보낸 주인한테만 동기화
 }
 
 void UNGPocketComponent::RequestRoll()
@@ -45,24 +46,27 @@ void UNGPocketComponent::AddUnitToBuyingPocket(FName UnitName)
 	RollPocket.Remove(UnitName);
 }
 
-void UNGPocketComponent::OnRep_RollChange()
+void UNGPocketComponent::OnRep_RollPocket()
 {
-	FString RoleStr = GetOwner()->HasAuthority() ? TEXT("[SERVER]") : TEXT("[CLIENT]");
-	auto Owner = GetOwner();
-	
-	UE_LOG(LogTemp, Warning, TEXT("[OnRep] Pocket Addr: %p, Owner Addr: %p"), this, Owner);
-	
-	// 2. 델리게이트 바인딩 상태 확인 (중요)
-	if (OnUnitsUpdated.IsBound())
+	if (ANGPlayerController* PC = Cast<ANGPlayerController>(GetOwner()))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("OnRep_RollChange: Delegate is Bound. Broadcaster Addr: %p"), &OnUnitsUpdated);
+		FString RoleStr = GetOwner()->HasAuthority() ? TEXT("[SERVER]") : TEXT("[CLIENT]");
+		auto Owner = GetOwner();
+		
+		UE_LOG(LogTemp, Warning, TEXT("[OnRep] Pocket Addr: %p, Owner Addr: %p"), this, Owner);
+		
+		// 2. 델리게이트 바인딩 상태 확인 (중요)
+		if (PC->OnUnitsUpdated.IsBound())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("OnRep_RollChange: Delegate is Bound. Broadcaster Addr: %p"), &(PC->OnUnitsUpdated));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("OnRep_RollChange: NO ONE is listening to this delegate!"));
+		}
+		PC->OnUnitsUpdated.Broadcast();
+		
 	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("OnRep_RollChange: NO ONE is listening to this delegate!"));
-	}
-	
-	OnUnitsUpdated.Broadcast();
 }
 
 void UNGPocketComponent::Server_RequestRoll_Implementation()
@@ -125,8 +129,5 @@ void UNGPocketComponent::Server_RequestRoll_Implementation()
 		}
 	}
 	
-	RollChangeVersion++;
-
-	//이거는 끝나고 다시 확인
-	// OnRep_RollChange(); //서버 본인도 호출해야하기 때문에
+	OnRep_RollPocket();
 }

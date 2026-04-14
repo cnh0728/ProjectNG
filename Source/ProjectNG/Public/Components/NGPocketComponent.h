@@ -6,7 +6,6 @@
 #include "Components/ActorComponent.h"
 #include "NGPocketComponent.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnUnitsUpdatedSignature);
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class PROJECTNG_API UNGPocketComponent : public UActorComponent
@@ -21,9 +20,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Game|Shop")
 	void RequestRoll();
 
-	UPROPERTY(BlueprintAssignable, Category = "Game|Shop")
-	FOnUnitsUpdatedSignature OnUnitsUpdated;
-
 	UFUNCTION(BlueprintPure, Category = "Game|Shop")
 	const TArray<FName>& GetRollPocket() const { return RollPocket; }
 
@@ -35,12 +31,9 @@ public:
 protected:
 	UFUNCTION(Server, Reliable)
 	void Server_RequestRoll();
-
-	UPROPERTY(ReplicatedUsing = OnRep_RollChange)
-	int32 RollChangeVersion;
 	
 	UFUNCTION()
-	void OnRep_RollChange();
+	void OnRep_RollPocket();
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Game|Shop")
 	int32 ShopSlotCount = 3;
@@ -48,7 +41,7 @@ protected:
 	UPROPERTY(BlueprintReadWrite, Category = "Cache")
 	TObjectPtr<UNGPocketComponent> CachedPocket;
 private:
-	UPROPERTY(VisibleAnywhere, Category = "Game|Shop")
+	UPROPERTY(VisibleAnywhere, ReplicatedUsing = OnRep_RollPocket, Category = "Game|Shop")
 	TArray<FName> RollPocket; // 플레이어의 상점에 표시된 유닛 목록
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Game|Shop")

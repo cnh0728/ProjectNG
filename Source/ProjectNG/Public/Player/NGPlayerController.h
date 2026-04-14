@@ -17,6 +17,8 @@ class UNGPocketComponent;
  * 플레이어의 입력을 처리하는 Class
  */
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnUnitsUpdatedSignature);
+
 UCLASS()
 class PROJECTNG_API ANGPlayerController : public APlayerController
 {
@@ -37,6 +39,9 @@ protected:
 public:
 	FVector2D GetStartMousePosition() const {return ClickStartLocation;}
 	FVector2D GetCurrentMousePosition() const {return CurrentMouseLocation;}
+	
+	UPROPERTY(BlueprintAssignable, Category = "Game|Shop")
+	FOnUnitsUpdatedSignature OnUnitsUpdated;
 
 protected:
 	virtual void ProgressDragActor();
