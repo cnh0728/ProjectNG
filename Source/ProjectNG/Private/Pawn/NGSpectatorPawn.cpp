@@ -53,8 +53,6 @@ void ANGSpectatorPawn::OnRep_Controller()
 {
 	Super::OnRep_Controller();
 	
-	//클라이언트에서도 초기화
-	InitAbilityActorInfo();
 }
 
 // Called to bind functionality to input
@@ -79,6 +77,7 @@ void ANGSpectatorPawn::InitAbilityActorInfo()
 	{
 		if (ANGHUD* MainHUD = Cast<ANGHUD>(PC->GetHUD()))
 		{
+			UE_LOG(LogTemp, Log, TEXT("AddToView - PC: %p, this: %p"), PC, this);
 			// TODO: AttributeSet 데이터 추가
 			MainHUD->InitializeHUD(PC, PS, AbilitySystemComponent, nullptr);
 		}
