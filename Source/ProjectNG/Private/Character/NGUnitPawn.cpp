@@ -47,7 +47,7 @@ ANGUnitPawn::ANGUnitPawn() : AcceptanceRadius(1.0f), bIsGrabbed(false), bIsSelec
 	RangeDecal = CreateDefaultSubobject<UDecalComponent>(TEXT("RangeDecalNew"));
 	RangeDecal->SetupAttachment(RootComponent);
 	RangeDecal->SetRelativeRotation(FRotator(-90.f, 0.f, 0.f));
-
+	
 	ShowRangeIndicator(false);
 }
 

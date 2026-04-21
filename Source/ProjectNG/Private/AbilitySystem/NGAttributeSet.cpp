@@ -1,9 +1,9 @@
 // Copyright (c) 2025 TeamNG. All Rights Reserved.
 #include "AbilitySystem/NGAttributeSet.h"
 
-#include "Character/NGCharacterBase.h"
 #include "Net/UnrealNetwork.h"
 #include "GameplayEffectExtension.h"
+#include "Pawn/NGPawnBase.h"
 
 #define DEFAULT_REPLICATION_IMPLEMENTATION(ClassName, Name) \
 	void ClassName::OnRep_##Name(const FGameplayAttributeData& OldValue) \
@@ -50,7 +50,7 @@ void UNGAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallback
 	
 	if (Data.EvaluatedData.Attribute == GetHealthAttribute() && GetHealth() <= 0.f)
 	{
-		if (ANGCharacterBase* TargetCharacter = Cast<ANGCharacterBase>(Data.Target.GetAvatarActor()))
+		if (ANGPawnBase* TargetCharacter = Cast<ANGPawnBase>(Data.Target.GetAvatarActor()))
 		{
 			TargetCharacter->Die();
 		}

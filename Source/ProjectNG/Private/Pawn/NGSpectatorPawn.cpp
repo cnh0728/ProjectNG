@@ -25,6 +25,7 @@ void ANGSpectatorPawn::PossessedBy(AController* NewController)
 	Super::PossessedBy(NewController);
 	
 	// 서버에서 GAS있으면 초기화 
+	InitHUD();
 }
 
 void ANGSpectatorPawn::OnRep_PlayerState()

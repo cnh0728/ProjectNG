@@ -29,8 +29,9 @@ ANGPawnBase::ANGPawnBase()
 	UnitMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("UnitMesh"));
 	UnitMesh->SetupAttachment(RootComponent);
     
-	UnitMesh->SetRelativeLocation(FVector(0.f, 0.f, -40.f));
+	UnitMesh->SetRelativeLocation(FVector(0.f, 0.f, -80.f));
 	UnitMesh->SetRelativeRotation(FRotator(0.f, -90.f, 0.f));
+	UnitMesh->SetReceivesDecals(false);
 	
 	if (!AbilitySystemComponent)
 	{

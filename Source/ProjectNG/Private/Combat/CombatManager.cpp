@@ -98,22 +98,26 @@ void ACombatManager::SpawnEnemy()
 	}
 	/////////////////////////
 	
-	if (TSoftClassPtr<ANGPawnBase> ClassPtr = GetDefault<UNGDeveloperSettings>()->PawnClass[ANGEnemyPawn::StaticClass()])
+	if (const UNGDeveloperSettings* DS = GetDefault<UNGDeveloperSettings>())
 	{
-		UClass* CC = ClassPtr.LoadSynchronous();
-		
-		if (ANGEnemyPawn* NewEnemy = Cast<ANGEnemyPawn>(Pool->AcquirePawn(CC, FTransform(SpawnRotation, SpawnLocation))))
+		if (TSoftClassPtr<ANGPawnBase> ClassPtr = DS->PawnClass[ANGEnemyPawn::StaticClass()])
 		{
-			NewEnemy->InitPatrolPath(GridMapManager->EnemyPathSpline, CapsuleHalfHeight);
-		}
+			UClass* CC = ClassPtr.LoadSynchronous();
 		
-		EnemiesSpawnedSoFar++;
+			if (ANGEnemyPawn* NewEnemy = Cast<ANGEnemyPawn>(Pool->AcquirePawn(CC, FTransform(SpawnRotation, SpawnLocation))))
+			{
+				NewEnemy->InitPatrolPath(GridMapManager->EnemyPathSpline, CapsuleHalfHeight);
+			}
+		
+			EnemiesSpawnedSoFar++;
+		}else
+		{
+			UE_LOG(LogTemp, Error, TEXT("Cannot Find EnemyClass"));
+		}
 	}else
 	{
-		UE_LOG(LogTemp, Error, TEXT("Cannot Find EnemyClass"));
+		UE_LOG(LogTemp, Error, TEXT("Cannot Find DeveloperSettings"));
 	}
-
-	
 }
 
 
