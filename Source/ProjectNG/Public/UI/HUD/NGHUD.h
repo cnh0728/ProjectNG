@@ -23,7 +23,7 @@ class PROJECTNG_API ANGHUD : public AHUD
 public:
 	URollShopWidgetController* GetRollShopWidgetController(const FWidgetParams& WidgetControllerParams);
 
-	void InitializeHUD(APlayerController* PC, APlayerState* PS, UAbilitySystemComponent* ASC, UAttributeSet* AS);
+	void InitializeHUD(APlayerController* PC, APlayerState* PS, /*UAbilitySystemComponent* ASC,*/ UAttributeSet* AS);
 
 private:
 

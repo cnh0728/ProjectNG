@@ -6,7 +6,7 @@
 #include "Combat/Weapon/NGProjectile.h"
 
 ANGProjectile* UNGPoolSubSystem::AcquireProjectile(TSubclassOf<ANGProjectile> ProjectileClass,
-                                                   const FTransform& SpawnTransform, ANGCharacterBase* Target)
+                                                   const FTransform& SpawnTransform, ANGPawnBase* Target)
 {
 	if (!ProjectileClass)	return nullptr;
 	
@@ -45,26 +45,26 @@ ANGProjectile* UNGPoolSubSystem::AcquireProjectile(TSubclassOf<ANGProjectile> Pr
 }
 
 
-ANGCharacterBase* UNGPoolSubSystem::AcquireCharacter(TSubclassOf<ANGCharacterBase> CharacterClass,
+ANGPawnBase* UNGPoolSubSystem::AcquirePawn(TSubclassOf<ANGPawnBase> PawnClass,
 	const FTransform& SpawnTransform)
 {
-	if (!CharacterClass)	return nullptr;
+	if (!PawnClass)	return nullptr;
 	
-	FNGCharacterList& Pool = CharacterPools.FindOrAdd(CharacterClass);
+	FNGPawnList& Pool = PawnPools.FindOrAdd(PawnClass);
 	
-	ANGCharacterBase* Character;
+	ANGPawnBase* Pawn;
 	
 	//여유분이 있으면 반환
-	if (Pool.FreeCharacterList.Num() > 0)
+	if (Pool.FreePawnList.Num() > 0)
 	{
-		Character = Pool.FreeCharacterList.Pop();
+		Pawn = Pool.FreePawnList.Pop();
 	}
 	else
 	{
-		Character = GetWorld()->SpawnActor<ANGCharacterBase>(CharacterClass, SpawnTransform);
+		Pawn = GetWorld()->SpawnActor<ANGPawnBase>(PawnClass, SpawnTransform);
 	}
 	
-	return Character;
+	return Pawn;
 }
 
 void UNGPoolSubSystem::ReleaseDefault(AActor* InActor)
@@ -76,15 +76,15 @@ void UNGPoolSubSystem::ReleaseDefault(AActor* InActor)
 	InActor->SetActorTickEnabled(false);
 }
 
-void UNGPoolSubSystem::ReleaseSegment(ANGCharacterBase* Character)
+void UNGPoolSubSystem::ReleaseSegment(ANGPawnBase* Pawn)
 {
 	//TODO: release는 굉장히 유사해서 Template으로 하고 싶었는데 Pool을 통일해버리면 드롭리스트가 전부나와서 지저분해져서 걍 분리 
-	if (!Character)	return;
+	if (!Pawn)	return;
 	
-	ReleaseDefault(Character);
+	ReleaseDefault(Pawn);
 	
-	FNGCharacterList& Pool = CharacterPools.FindOrAdd(Character->GetClass());
-	Pool.FreeCharacterList.Push(Character);
+	FNGPawnList& Pool = PawnPools.FindOrAdd(Pawn->GetClass());
+	Pool.FreePawnList.Push(Pawn);
 }
 
 void UNGPoolSubSystem::ReleaseSegment(ANGProjectile* Projectile)

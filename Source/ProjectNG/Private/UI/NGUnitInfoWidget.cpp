@@ -5,9 +5,9 @@
 
 #include "AbilitySystem/NGAbilitySystemComponent.h"
 #include "AbilitySystem/NGAttributeSet.h"
-#include "Character/NGUnitCharacter.h"
+#include "Character/NGUnitPawn.h"
 
-void UNGUnitInfoWidget::SetTargetUnit(ANGUnitCharacter* NewUnit)
+void UNGUnitInfoWidget::SetTargetUnit(ANGUnitPawn* NewUnit)
 {
 	//기존 바인딩 해제
 	ClearTargetUnit();

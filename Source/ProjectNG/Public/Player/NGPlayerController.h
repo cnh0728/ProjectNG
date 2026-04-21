@@ -7,7 +7,7 @@
 #include "NGPlayerController.generated.h"
 
 class UNGUnitInfoWidget;
-class ANGUnitCharacter;
+class ANGUnitPawn;
 struct FInputActionValue;
 class UInputMappingContext;
 class UInputAction;
@@ -25,6 +25,7 @@ class PROJECTNG_API ANGPlayerController : public APlayerController
 	GENERATED_BODY()
 
 	ANGPlayerController();
+	~ANGPlayerController();
 	
 protected:
 	virtual void BeginPlay() override;
@@ -49,9 +50,9 @@ protected:
 	void HandleClickPressed(const FInputActionValue& Value);
 	void HandleClickReleased(const FInputActionValue& Value);
 	
-	void UpdateUnitWidget(ANGUnitCharacter* NewUnit);
+	void UpdateUnitWidget(ANGUnitPawn* NewUnit);
 
-	void SetSelectedUnit(ANGUnitCharacter* InSelectedUnit);
+	void SetSelectedUnit(ANGUnitPawn* InSelectedUnit);
 	void ResetSelectUnit();
 	
 	void PerformDrag();
@@ -79,10 +80,10 @@ protected:
 	FVector2D CurrentMouseLocation;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Selection")
-	TWeakObjectPtr<ANGUnitCharacter> DraggingUnit;
+	TWeakObjectPtr<ANGUnitPawn> DraggingUnit;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Selection")
-	TObjectPtr<ANGUnitCharacter> SelectedUnit;
+	TObjectPtr<ANGUnitPawn> SelectedUnit;
 /*************************************/
 /*				리롤 관련			 */
 /*************************************/

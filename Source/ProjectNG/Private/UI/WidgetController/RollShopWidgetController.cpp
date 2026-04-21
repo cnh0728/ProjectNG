@@ -68,7 +68,7 @@ void URollShopWidgetController::BuyUnitFromPocket(FName UnitName)
 			{
 				if (AGridMapManager* GridManager = GM->GetGridMapManager())
 				{
-					if (GridManager->SpawnUnitCharacter(UnitName))
+					if (GridManager->SpawnUnitPawn(UnitName))
 					{
 						Pocket->AddUnitToBuyingPocket(UnitName);
 						UE_LOG(LogTemp, Display, TEXT("BuyUnitFromPocket Success"));

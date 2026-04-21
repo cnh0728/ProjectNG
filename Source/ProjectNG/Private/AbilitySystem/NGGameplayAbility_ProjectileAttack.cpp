@@ -4,7 +4,7 @@
 #include "AbilitySystem/NGGameplayAbility_ProjectileAttack.h"
 
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
-#include "Character/NGCharacterBase.h"
+#include "Pawn/NGPawnBase.h"
 #include "Combat/Weapon/NGProjectile.h"
 #include "Core/NGDeveloperSettings.h"
 #include "Core/NGPoolSubSystem.h"
@@ -38,15 +38,15 @@ void UNGGameplayAbility_ProjectileAttack::OnReleaseProjectile(FGameplayEventData
 	TWeakObjectPtr<AActor> TargetActor = Payload.TargetData.Get(0)->GetActors()[0];
 	if (Payload.TargetData.Num() > 0 && TargetActor != nullptr)
 	{
-		if (ANGCharacterBase* NewTarget = Cast<ANGCharacterBase>(TargetActor.Get()))
+		if (ANGPawnBase* NewTarget = Cast<ANGPawnBase>(TargetActor.Get()))
 		{
 			UNGPoolSubSystem* Pool = GetWorld()->GetSubsystem<UNGPoolSubSystem>();
 			
 			if (Pool)
 			{
-				FVector SpawnLocation = GetUnitCharacterFromActorInfo()->GetActorLocation() + GetUnitCharacterFromActorInfo()->GetActorForwardVector() * 100.f;
+				FVector SpawnLocation = GetUnitPawnFromActorInfo()->GetActorLocation() + GetUnitPawnFromActorInfo()->GetActorForwardVector() * 100.f;
 	
-				FTransform SpawnTransform = GetUnitCharacterFromActorInfo()->GetActorTransform();
+				FTransform SpawnTransform = GetUnitPawnFromActorInfo()->GetActorTransform();
 				SpawnTransform.SetLocation(SpawnLocation);
 				
 				//TODO: LoadSynchronous는 로딩시 멈춤유발가능성, 대용량로드시 멈춰도될때 전부 로드해놓기

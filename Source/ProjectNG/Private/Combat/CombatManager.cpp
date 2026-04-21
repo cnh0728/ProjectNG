@@ -3,8 +3,8 @@
 
 #include "Combat/CombatManager.h"
 
-#include "Character/NGEnemyCharacter.h"
-#include "Character/NGUnitCharacter.h"
+#include "Character/NGEnemyPawn.h"
+#include "Character/NGUnitPawn.h"
 #include "Combat/GridMapManager.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SplineComponent.h"
@@ -83,14 +83,14 @@ void ACombatManager::SpawnEnemy()
 	
 	FRotator SpawnRotation = GridMapManager->EnemyPathSpline->GetRotationAtSplinePoint(0, ESplineCoordinateSpace::World);
 	
-	TSubclassOf<ANGEnemyCharacter> EnemyClass = WaveList[CurrentWaveIndex].EnemyClass;
+	TSubclassOf<ANGEnemyPawn> EnemyClass = WaveList[CurrentWaveIndex].EnemyClass;
 	
 	/////////////////////////
 	/// 캐릭터 스폰 오프셋이 발끝기준으로 소환되게 조정
 	FVector CapsuleHalfHeight = FVector::ZeroVector;
 	if (IsValid(EnemyClass))
 	{
-		if (ACharacter* DefaultChar = Cast<ACharacter>(EnemyClass->GetDefaultObject()))
+		if (ANGPawnBase* DefaultChar = Cast<ANGPawnBase>(EnemyClass->GetDefaultObject()))
 		{
 			CapsuleHalfHeight.Z = DefaultChar->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 			SpawnLocation += CapsuleHalfHeight;
@@ -98,11 +98,11 @@ void ACombatManager::SpawnEnemy()
 	}
 	/////////////////////////
 	
-	if (TSoftClassPtr<ANGCharacterBase> ClassPtr = GetDefault<UNGDeveloperSettings>()->CharacterClass[ANGEnemyCharacter::StaticClass()])
+	if (TSoftClassPtr<ANGPawnBase> ClassPtr = GetDefault<UNGDeveloperSettings>()->PawnClass[ANGEnemyPawn::StaticClass()])
 	{
 		UClass* CC = ClassPtr.LoadSynchronous();
 		
-		if (ANGEnemyCharacter* NewEnemy = Cast<ANGEnemyCharacter>(Pool->AcquireCharacter(CC, FTransform(SpawnRotation, SpawnLocation))))
+		if (ANGEnemyPawn* NewEnemy = Cast<ANGEnemyPawn>(Pool->AcquirePawn(CC, FTransform(SpawnRotation, SpawnLocation))))
 		{
 			NewEnemy->InitPatrolPath(GridMapManager->EnemyPathSpline, CapsuleHalfHeight);
 		}
@@ -142,17 +142,17 @@ void ACombatManager::FinishCombat()
 	}
 }
 
-void ACombatManager::CharacterDied(ANGCharacterBase* DeadCharacter)
+void ACombatManager::PawnDied(ANGPawnBase* DeadPawn)
 {
-	if (!DeadCharacter)	return;
+	if (!DeadPawn)	return;
 	
-	if (DeadCharacter->IsA(ANGEnemyCharacter::StaticClass()))
+	if (DeadPawn->IsA(ANGEnemyPawn::StaticClass()))
 	{
 		UE_LOG(LogTemp, Log, TEXT("적 사망"));
 		++CurrentEnemyCount;
 		//적 사망 이벤트
 		//적 사망 델리게이트 만들어서 구독시키게 하고 델리게이트 호출도 나쁘지 않을듯
-	}else if (DeadCharacter->IsA(ANGUnitCharacter::StaticClass()))
+	}else if (DeadPawn->IsA(ANGUnitPawn::StaticClass()))
 	{
 		UE_LOG(LogTemp, Log, TEXT("유닛 사망"));
 		//유닛 죽었을때 이벤트

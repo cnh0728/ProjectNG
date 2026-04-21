@@ -3,21 +3,20 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameplayEffectTypes.h"
-#include "NGCharacterBase.h"
-#include "NGEnemyCharacter.generated.h"
+#include "Pawn/NGPawnBase.h"
+#include "NGEnemyPawn.generated.h"
 
 class UWidgetComponent;
 class USplineComponent;
 
 UCLASS()
-class PROJECTNG_API ANGEnemyCharacter : public ANGCharacterBase
+class PROJECTNG_API ANGEnemyPawn : public ANGPawnBase
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this character's properties
-	ANGEnemyCharacter();
+	ANGEnemyPawn();
 
 protected:
 	// Called when the game starts or when spawned

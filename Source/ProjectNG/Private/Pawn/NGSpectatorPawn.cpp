@@ -9,7 +9,6 @@
 #include "Player/NGPlayerState.h"
 #include "UI/HUD/NGHUD.h"
 
-
 class ANGPlayerState;
 // Sets default values
 ANGSpectatorPawn::ANGSpectatorPawn()
@@ -18,23 +17,21 @@ ANGSpectatorPawn::ANGSpectatorPawn()
 	PrimaryActorTick.bCanEverTick = true;
 	
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
-	
+	CameraComponent->SetupAttachment(RootComponent);
 }
 
 void ANGSpectatorPawn::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 	
-	// 서버에서 GAS 초기화
-	InitAbilityActorInfo();
+	// 서버에서 GAS있으면 초기화 
 }
 
 void ANGSpectatorPawn::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
 	
-	// 클라이언트에서 GAS 초기화
-	InitAbilityActorInfo();
+	InitHUD();
 }
 
 // Called when the game starts or when spawned
@@ -61,16 +58,12 @@ void ANGSpectatorPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
 
-void ANGSpectatorPawn::InitAbilityActorInfo()
+void ANGSpectatorPawn::InitHUD()
 {
 	ANGPlayerState* PS = GetPlayerState<ANGPlayerState>();
 	ANGPlayerController* PC = Cast<ANGPlayerController>(GetController());
 	
 	if (!PS || !PC)	return;
-	
-	// ASC 복사 및 아바타 설정
-	AbilitySystemComponent = PS->GetNGAbilitySystemComponent();
-	AbilitySystemComponent->InitAbilityActorInfo(PS, this);
 
 	// HUD 추가
 	if (PC->IsLocalController())
@@ -79,7 +72,8 @@ void ANGSpectatorPawn::InitAbilityActorInfo()
 		{
 			UE_LOG(LogTemp, Log, TEXT("AddToView - PC: %p, this: %p"), PC, this);
 			// TODO: AttributeSet 데이터 추가
-			MainHUD->InitializeHUD(PC, PS, AbilitySystemComponent, nullptr);
+			//원래 SpectatorPawn이 GAS있었는데 지금은 필요없다고 생각돼서 뺐음. 필요하면 다시 멤버변수 선언 후 넣기
+			MainHUD->InitializeHUD(PC, PS, /*AbilitySystemComponent,*/ nullptr);
 		}
 	}
 }

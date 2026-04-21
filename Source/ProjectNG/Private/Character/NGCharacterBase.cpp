@@ -58,6 +58,20 @@ void ANGCharacterBase::HandleGameplayCue(UObject* Self, FGameplayTag GameplayCue
 	}
 }
 
+void ANGCharacterBase::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+	
+	InitAbilityActorInfo();
+}
+
+void ANGCharacterBase::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	
+	InitAbilityActorInfo();
+}
+
 void ANGCharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
@@ -149,7 +163,7 @@ void ANGCharacterBase::Die()
 	
 	if (ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>())
 	{
-		GM->ReportCharacterDeath(this);
+		// GM->ReportCharacterDeath(this);
 	}
 	
 	SetLifeSpan(1.0f);
@@ -171,7 +185,8 @@ bool ANGCharacterBase::IsDead()
 
 ANGCharacterBase* ANGCharacterBase::GetCurrentTarget()
 {
-	return CurrentTarget;
+	return nullptr;
+	// return CurrentTarget;
 }
 
 void ANGCharacterBase::UpdateHPBar()

@@ -1,13 +1,13 @@
 // Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 
-#include "Character/NGUnitCharacter.h"
+#include "Character/NGUnitPawn.h"
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystem/NGAbilitySystemComponent.h"
 #include "AbilitySystem/NGAttributeSet.h"
 #include "AbilitySystem/NGGameplayAbility.h"
-#include "Character/NGEnemyCharacter.h"
+#include "Character/NGEnemyPawn.h"
 #include "Combat/GridMapManager.h"
 #include "Combat/Weapon/NGWeaponData.h"
 #include "Components/DecalComponent.h"
@@ -18,7 +18,7 @@
 #include "ProjectNG/ProjectNG.h"
 
 // Sets default values
-ANGUnitCharacter::ANGUnitCharacter() : AcceptanceRadius(1.0f), bIsGrabbed(false), bIsSelected(false), bIsDragMoving(false)
+ANGUnitPawn::ANGUnitPawn() : AcceptanceRadius(1.0f), bIsGrabbed(false), bIsSelected(false), bIsDragMoving(false)
 {
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -41,8 +41,8 @@ ANGUnitCharacter::ANGUnitCharacter() : AcceptanceRadius(1.0f), bIsGrabbed(false)
 	//ECC_Pawn에서 원하는 채널만 오버랩되도록 변경
 	DetectionSphere->SetCollisionResponseToChannel(ECC_Enemy, ECR_Overlap);
 	
-	DetectionSphere->OnComponentBeginOverlap.AddDynamic(this, &ANGUnitCharacter::OnDetectionBeginOverlap);
-	DetectionSphere->OnComponentEndOverlap.AddDynamic(this, &ANGUnitCharacter::OnDetectionEndOverlap);
+	DetectionSphere->OnComponentBeginOverlap.AddDynamic(this, &ANGUnitPawn::OnDetectionBeginOverlap);
+	DetectionSphere->OnComponentEndOverlap.AddDynamic(this, &ANGUnitPawn::OnDetectionEndOverlap);
 	
 	RangeDecal = CreateDefaultSubobject<UDecalComponent>(TEXT("RangeDecalNew"));
 	RangeDecal->SetupAttachment(RootComponent);
@@ -51,7 +51,7 @@ ANGUnitCharacter::ANGUnitCharacter() : AcceptanceRadius(1.0f), bIsGrabbed(false)
 	ShowRangeIndicator(false);
 }
 
-void ANGUnitCharacter::OnSelected_Implementation()
+void ANGUnitPawn::OnSelected_Implementation()
 {
 	ISelectableInterface::OnSelected_Implementation();
 	UE_LOG(LogTemp, Log, TEXT("OnSelected"));
@@ -61,7 +61,7 @@ void ANGUnitCharacter::OnSelected_Implementation()
 	bIsSelected = true;
 }
 
-void ANGUnitCharacter::OnDeselected_Implementation()
+void ANGUnitPawn::OnDeselected_Implementation()
 {
 	ISelectableInterface::OnDeselected_Implementation();
 	UE_LOG(LogTemp, Log, TEXT("OnDeselected"));
@@ -71,7 +71,7 @@ void ANGUnitCharacter::OnDeselected_Implementation()
 	bIsSelected = false;
 }
 
-void ANGUnitCharacter::ShowRangeIndicator(bool bVisible) const
+void ANGUnitPawn::ShowRangeIndicator(bool bVisible) const
 {
 	UE_LOG(LogTemp, Warning, TEXT("Decal bVisible %s"), bVisible ? TEXT("On") : TEXT("Off"));
 	if (RangeDecal)
@@ -80,7 +80,7 @@ void ANGUnitCharacter::ShowRangeIndicator(bool bVisible) const
 	}
 }
 
-void ANGUnitCharacter::OnDrag_Implementation()
+void ANGUnitPawn::OnDrag_Implementation()
 {
 	ISelectableInterface::OnDrag_Implementation();
 
@@ -89,7 +89,7 @@ void ANGUnitCharacter::OnDrag_Implementation()
 	bIsGrabbed = true;
 }
 
-void ANGUnitCharacter::OnUndrag_Implementation()
+void ANGUnitPawn::OnUndrag_Implementation()
 {
 	ISelectableInterface::OnUndrag_Implementation();
 
@@ -99,7 +99,7 @@ void ANGUnitCharacter::OnUndrag_Implementation()
 }
 
 // Called when the game starts or when spawned
-void ANGUnitCharacter::BeginPlay()
+void ANGUnitPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
@@ -116,7 +116,7 @@ void ANGUnitCharacter::BeginPlay()
 	if (AbilitySystemComponent)
 	{	        
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
-			AttributeSet->GetAttackRangeAttribute()).AddUObject(this, &ANGUnitCharacter::OnAttackRangeChanged);
+			AttributeSet->GetAttackRangeAttribute()).AddUObject(this, &ANGUnitPawn::OnAttackRangeChanged);
 		
 		AttackAbilitySpecHandle = AbilitySystemComponent->GiveAbility(
 			FGameplayAbilitySpec(AttackAbilityClass, 1, INDEX_NONE, this)
@@ -137,10 +137,10 @@ void ANGUnitCharacter::BeginPlay()
 		DetectionSphere->SetSphereRadius(CurrentRange);
 	}
 	
-	GetWorld()->GetTimerManager().SetTimer(AttackCheckTimerHandle, this, &ANGUnitCharacter::CheckAttackCondition, 0.2f, true);
+	GetWorld()->GetTimerManager().SetTimer(AttackCheckTimerHandle, this, &ANGUnitPawn::CheckAttackCondition, 0.2f, true);
 }
 
-void ANGUnitCharacter::InitAbilityActorInfo()
+void ANGUnitPawn::InitAbilityActorInfo()
 {
 	// ASC 복사 및 아바타 설정
 	if (AbilitySystemComponent)
@@ -150,7 +150,7 @@ void ANGUnitCharacter::InitAbilityActorInfo()
 }
 
 // Called every frame
-void ANGUnitCharacter::Tick(float DeltaTime)
+void ANGUnitPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
@@ -193,7 +193,7 @@ void ANGUnitCharacter::Tick(float DeltaTime)
 	}
 }
 
-void ANGUnitCharacter::ExecuteAttack()
+void ANGUnitPawn::ExecuteAttack()
 {
 	// if (CurrentTarget && AttackAbilitySpecHandle.IsValid())
 	// {
@@ -211,12 +211,12 @@ void ANGUnitCharacter::ExecuteAttack()
 }
 
 // Called to bind functionality to input
-void ANGUnitCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+void ANGUnitPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
 
-void ANGUnitCharacter::SetDragTargetGridIndex(const TOptional<FIntVector2>& NewIndex)
+void ANGUnitPawn::SetDragTargetGridIndex(const TOptional<FIntVector2>& NewIndex)
 {
 	if (!MapManagerCache)	RefreshCache();
 	
@@ -229,7 +229,7 @@ void ANGUnitCharacter::SetDragTargetGridIndex(const TOptional<FIntVector2>& NewI
 	bIsDragMoving = true;
 }
 
-void ANGUnitCharacter::SetPlacedGridIndex(const FIntVector2& NewIndex)
+void ANGUnitPawn::SetPlacedGridIndex(const FIntVector2& NewIndex)
 {
 	if (PlacedGridIndex.IsSet())
 	{
@@ -239,17 +239,17 @@ void ANGUnitCharacter::SetPlacedGridIndex(const FIntVector2& NewIndex)
 	PlacedGridIndex = NewIndex;
 	
 	FGridData GridData;
-	GridData.PlacedCharacter = this;
+	GridData.PlacedPawn = this;
 	
 	MapManagerCache->GridMap.SetGridData(NewIndex, GridData);
 }
 
-TOptional<FIntVector2> ANGUnitCharacter::GetPlacedGridIndex()
+TOptional<FIntVector2> ANGUnitPawn::GetPlacedGridIndex()
 {
 	return PlacedGridIndex;
 }
 
-void ANGUnitCharacter::RefreshCache()
+void ANGUnitPawn::RefreshCache()
 {
 	if (!MapManagerCache)
 	{
@@ -266,7 +266,7 @@ void ANGUnitCharacter::RefreshCache()
 	}
 }
 
-void ANGUnitCharacter::UpdateDecalRange()
+void ANGUnitPawn::UpdateDecalRange()
 {
 	float CurrentRange = AttributeSet->GetAttackRange();
 	
@@ -276,36 +276,36 @@ void ANGUnitCharacter::UpdateDecalRange()
 	}
 }
 
-void ANGUnitCharacter::OnAttackRangeChanged(const FOnAttributeChangeData& Data)
+void ANGUnitPawn::OnAttackRangeChanged(const FOnAttributeChangeData& Data)
 {
 	Super::OnAttackRangeChanged(Data);
 	
 	DetectionSphere->SetSphereRadius(Data.NewValue);
 }
 
-void ANGUnitCharacter::OnDetectionBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+void ANGUnitPawn::OnDetectionBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	// TODO: 이거 IsA말고 인터페이스로 하게 변경하는게 좋을듯
-	if (OtherActor && OtherActor != this && OtherActor->IsA(ANGEnemyCharacter::StaticClass()))
+	if (OtherActor && OtherActor != this && OtherActor->IsA(ANGEnemyPawn::StaticClass()))
 	{
-		DetectedTarget.AddUnique(Cast<ANGEnemyCharacter>(OtherActor));
+		DetectedTarget.AddUnique(Cast<ANGEnemyPawn>(OtherActor));
 		
 		UE_LOG(LogTemp, Log, TEXT("적 감지: %s"), *OtherActor->GetName());
 	}
 }
 
-void ANGUnitCharacter::OnDetectionEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+void ANGUnitPawn::OnDetectionEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	if (OtherActor)
 	{
-		DetectedTarget.Remove(Cast<ANGEnemyCharacter>(OtherActor));
+		DetectedTarget.Remove(Cast<ANGEnemyPawn>(OtherActor));
 		UE_LOG(LogTemp, Log, TEXT("적 사거리 이탈: %s"), *OtherActor->GetName());
 	}
 }
 
-void ANGUnitCharacter::CheckAttackCondition()
+void ANGUnitPawn::CheckAttackCondition()
 {
 	if (AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(TEXT("Ability.Attack"))))
 	{
@@ -315,7 +315,7 @@ void ANGUnitCharacter::CheckAttackCondition()
 	ExecuteAttack();
 }
 
-void ANGUnitCharacter::EquipWeapon(UNGWeaponData* NewWeaponData)
+void ANGUnitPawn::EquipWeapon(UNGWeaponData* NewWeaponData)
 {
 	if (!NewWeaponData || !GetAbilitySystemComponent()) return;
 	
@@ -334,7 +334,7 @@ void ANGUnitCharacter::EquipWeapon(UNGWeaponData* NewWeaponData)
 	UE_LOG(LogTemp, Log, TEXT("Weapon Swapped: Ability Replaced!"));
 }
 
-void ANGUnitCharacter::InitializeAttributes()
+void ANGUnitPawn::InitializeAttributes()
 {
 	Super::InitializeAttributes();
 	

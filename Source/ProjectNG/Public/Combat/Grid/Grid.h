@@ -11,7 +11,7 @@
 
 #define OFFSET (CellSize / 2)
 
-class ANGUnitCharacter;
+class ANGUnitPawn;
 
 USTRUCT(BlueprintType)
 struct FGridData
@@ -19,11 +19,11 @@ struct FGridData
 	GENERATED_BODY()
 
 	UPROPERTY()
-	TObjectPtr<ANGUnitCharacter> PlacedCharacter;
+	TObjectPtr<ANGUnitPawn> PlacedPawn;
 	
 	void Reset()
 	{
-		PlacedCharacter = nullptr;
+		PlacedPawn = nullptr;
 	}
 };
 

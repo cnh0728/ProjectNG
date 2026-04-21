@@ -11,8 +11,9 @@
  * 
  */
 
+class ANGPawnBase;
 class AGridMapManager;
-class ANGCharacterBase;
+class ANGPawnBase;
 class ACombatManager;
 
 UENUM(BlueprintType)
@@ -33,7 +34,7 @@ class PROJECTNG_API ANGInGameGameMode : public ANGGameModeBase
 public:
 	void RequestStartCombat();
 	void OnCombatFinished(const FCombatResultData& ResultData);
-	void ReportCharacterDeath(ANGCharacterBase* DeadCharacter);
+	void ReportPawnDeath(ANGPawnBase* DeadPawn);
 
 	void InitializeGridMapManager(AGridMapManager* InitGridMap){ GridMapManager = InitGridMap; }
 	

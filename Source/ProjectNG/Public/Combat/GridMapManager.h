@@ -7,7 +7,7 @@
 #include "GridMapManager.generated.h"
 
 class USplineComponent;
-class ANGUnitCharacter;
+class ANGUnitPawn;
 /**
  * 
  */
@@ -18,9 +18,9 @@ class PROJECTNG_API AGridMapManager : public AActor
 
 public:
 	AGridMapManager();
-	bool IsPossibleSpawnCharacter(AGridMapManager* MapManager) const;
+	bool IsPossibleSpawnPawn(AGridMapManager* MapManager) const;
 
-	bool SpawnUnitCharacter(FName UnitName) const;
+	bool SpawnUnitPawn(FName UnitName) const;
 	
 protected:
 	virtual void BeginPlay() override;

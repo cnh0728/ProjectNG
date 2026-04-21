@@ -5,24 +5,25 @@
 #include "CoreMinimal.h"
 #include "GameplayAbilitySpecHandle.h"
 #include "Character/NGCharacterBase.h"
-#include "NGUnitCharacter.generated.h"
+#include "Pawn/NGPawnBase.h"
+#include "NGUnitPawn.generated.h"
 
 class UNGWeaponData;
 class UGameplayAbility;
-class ANGEnemyCharacter;
+class ANGEnemyPawn;
 struct FOnAttributeChangeData;
 class USphereComponent;
 class AGridMapManager;
 class UGameplayEffect;
 
 UCLASS()
-class PROJECTNG_API ANGUnitCharacter : public ANGCharacterBase, public ISelectableInterface
+class PROJECTNG_API ANGUnitPawn : public ANGPawnBase, public ISelectableInterface
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this character's properties
-	ANGUnitCharacter();
+	ANGUnitPawn();
 	
 	virtual void OnSelected_Implementation() override;
 	virtual void OnDeselected_Implementation() override;

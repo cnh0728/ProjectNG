@@ -10,9 +10,10 @@
 #include "GameFramework/Character.h"
 #include "NGCharacterBase.generated.h"
 
+class ANGPawnBase;
 class UNGPoolableComponent;
 class USphereComponent;
-class ANGEnemyCharacter;
+class ANGEnemyPawn;
 struct FOnAttributeChangeData;
 class UWidgetComponent;
 class UAttributeSet;
@@ -33,6 +34,9 @@ public:
 	//~End IAbilitySystemInterface
 
 	virtual void HandleGameplayCue(UObject* Self, FGameplayTag GameplayCueTag, EGameplayCueEvent::Type EventType, const FGameplayCueParameters& Parameters) override;
+	
+	virtual void OnRep_PlayerState() override;
+	virtual void PossessedBy(AController* NewController) override;
 	
 protected:
 	/** 파생 클래스에서 GAS 초기화를 위한 로직을 작성 */
@@ -63,10 +67,10 @@ protected:
 	
 	//Queue로 하고싶은데
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
-	TArray<ANGEnemyCharacter*> DetectedTarget;
+	TArray<ANGEnemyPawn*> DetectedTarget;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
-	TObjectPtr<ANGCharacterBase> CurrentTarget;
+	TObjectPtr<ANGPawnBase> CurrentTarget;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Combat")
 	float RotationInterpSpeed = 10.0f;

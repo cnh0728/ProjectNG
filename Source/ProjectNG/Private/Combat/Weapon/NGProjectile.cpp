@@ -4,7 +4,7 @@
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
-#include "Character/NGCharacterBase.h"
+#include "Pawn/NGPawnBase.h"
 #include "Components/SphereComponent.h"
 #include "Core/NGPoolableComponent.h"
 #include "Core/NGPoolSubSystem.h"
@@ -71,7 +71,7 @@ void ANGProjectile::ReleaseProjectile()
 	}
 }
 
-void ANGProjectile::SetTarget(ANGCharacterBase* NewTarget)
+void ANGProjectile::SetTarget(ANGPawnBase* NewTarget)
 {
 	Target = NewTarget;
 	// ProjectileMovementComponent->HomingTargetComponent = NewTarget->GetRootComponent();

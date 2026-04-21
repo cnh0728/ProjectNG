@@ -43,11 +43,11 @@ void ANGInGameGameMode::OnCombatFinished(const FCombatResultData& ResultData)
 
 }
 
-void ANGInGameGameMode::ReportCharacterDeath(ANGCharacterBase* DeadCharacter)
+void ANGInGameGameMode::ReportPawnDeath(ANGPawnBase* DeadPawn)
 {
 	if (ActiveCombatManager)
 	{
-		ActiveCombatManager->CharacterDied(DeadCharacter);
+		ActiveCombatManager->PawnDied(DeadPawn);
 	}
 }
 

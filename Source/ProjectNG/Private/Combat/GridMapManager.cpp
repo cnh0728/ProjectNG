@@ -31,7 +31,7 @@ AGridMapManager::AGridMapManager()
 	MakeEnemySpline();
 }
 
-bool AGridMapManager::IsPossibleSpawnCharacter(AGridMapManager* MapManager) const
+bool AGridMapManager::IsPossibleSpawnPawn(AGridMapManager* MapManager) const
 {
 	TOptional<FIntVector2> EmptyGridIndex = MapManager->GridMap.GetEmptyGridIndex();
 	
@@ -44,7 +44,7 @@ bool AGridMapManager::IsPossibleSpawnCharacter(AGridMapManager* MapManager) cons
 	return true;
 }
 
-bool AGridMapManager::SpawnUnitCharacter(FName UnitName) const
+bool AGridMapManager::SpawnUnitPawn(FName UnitName) const
 {
 	if (!HasAuthority())	return false;
 	
@@ -63,7 +63,7 @@ bool AGridMapManager::SpawnUnitCharacter(FName UnitName) const
 	
 	TOptional<FIntVector2> EmptyGridIndex = MapManager->GridMap.GetEmptyGridIndex();
 		
-	if (!IsPossibleSpawnCharacter(MapManager))
+	if (!IsPossibleSpawnPawn(MapManager))
 	{
 		return false;
 	}
@@ -78,7 +78,7 @@ bool AGridMapManager::SpawnUnitCharacter(FName UnitName) const
 		{
 			FVector SpawnLocation = MapManager->GridMap.GetWorldLocation(EmptyGridIndex.GetValue());
 						
-			ANGUnitCharacter* DefaultUnit = FoundRow->UnitClass->GetDefaultObject<ANGUnitCharacter>();
+			ANGUnitPawn* DefaultUnit = FoundRow->UnitClass->GetDefaultObject<ANGUnitPawn>();
 					
 			if (DefaultUnit)
 			{
@@ -88,18 +88,18 @@ bool AGridMapManager::SpawnUnitCharacter(FName UnitName) const
 			}
 						
 			FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLocation);
-			// UClass* CC = GetDefault<UNGDeveloperSettings>()->CharacterClass[FoundRow->UnitClass].LoadSynchronous();
+			// UClass* CC = GetDefault<UNGDeveloperSettings>()->PawnClass[FoundRow->UnitClass].LoadSynchronous();
 			
-			// ANGUnitCharacter* NewCharacter = Cast<ANGUnitCharacter>(Pool->AcquireCharacter(CC, SpawnTransform));
-			ANGUnitCharacter* NewCharacter = Cast<ANGUnitCharacter>(Pool->AcquireCharacter(FoundRow->UnitClass, SpawnTransform));
+			// ANGUnitPawn* NewPawn = Cast<ANGUnitPawn>(Pool->AcquirePawn(CC, SpawnTransform));
+			ANGUnitPawn* NewPawn = Cast<ANGUnitPawn>(Pool->AcquirePawn(FoundRow->UnitClass, SpawnTransform));
 						
-			if (!NewCharacter)
+			if (!NewPawn)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("NewCharacter is nullptr"));
+				UE_LOG(LogTemp, Warning, TEXT("NewPawn is nullptr"));
 				return false;
 			}
 						
-			UCapsuleComponent* Capsule = NewCharacter->GetCapsuleComponent();
+			UCapsuleComponent* Capsule = NewPawn->GetCapsuleComponent();
 			if (Capsule)
 			{
 				Capsule->SetCollisionResponseToChannel(ECC_SelectableUnit, ECR_Block);
@@ -108,9 +108,9 @@ bool AGridMapManager::SpawnUnitCharacter(FName UnitName) const
 						
 			//여기서 찾은 그리드에 값 기입
 			FGridData GridData;
-			GridData.PlacedCharacter = NewCharacter;
+			GridData.PlacedPawn = NewPawn;
 			
-			NewCharacter->SetPlacedGridIndex(EmptyGridIndex.GetValue());
+			NewPawn->SetPlacedGridIndex(EmptyGridIndex.GetValue());
 			MapManager->GridMap.SetGridData(EmptyGridIndex.GetValue(), GridData);
 						
 			return true;

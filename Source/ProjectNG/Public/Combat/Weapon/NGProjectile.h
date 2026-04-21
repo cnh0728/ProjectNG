@@ -8,7 +8,7 @@
 #include "NGProjectile.generated.h"
 
 class UNGPoolableComponent;
-class ANGCharacterBase;
+class ANGPawnBase;
 class UProjectileMovementComponent;
 class USphereComponent;
 
@@ -40,7 +40,7 @@ protected:
 	FGameplayEffectSpecHandle SpecHandle;	
 	
 	UPROPERTY(VisibleAnywhere)
-	ANGCharacterBase* Target;
+	ANGPawnBase* Target;
 	
 	UPROPERTY(BlueprintReadWrite, Category = "Setting | Projectile")
 	float MoveSpeed = 2000.f;
@@ -54,5 +54,5 @@ protected:
 public:
 	void SetSpecHandle(const FGameplayEffectSpecHandle InSpecHandle) { SpecHandle = InSpecHandle; }
 	
-	void SetTarget(ANGCharacterBase* NewTarget);
+	void SetTarget(ANGPawnBase* NewTarget);
 };

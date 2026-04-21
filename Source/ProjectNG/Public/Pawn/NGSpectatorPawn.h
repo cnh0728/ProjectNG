@@ -3,13 +3,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "NGPawnBase.h"
+#include "GameFramework/SpectatorPawn.h"
 #include "NGSpectatorPawn.generated.h"
 
 class UCameraComponent;
 
 UCLASS()
-class PROJECTNG_API ANGSpectatorPawn : public ANGPawnBase
+class PROJECTNG_API ANGSpectatorPawn : public ASpectatorPawn
 {
 	GENERATED_BODY()
 
@@ -29,10 +29,8 @@ protected:
 	
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
-
-private:
-	/** PlayerPawn에서 GAS Component를 초기화 합니다. */
-	virtual void InitAbilityActorInfo() override;
+	
+	void InitHUD();
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))

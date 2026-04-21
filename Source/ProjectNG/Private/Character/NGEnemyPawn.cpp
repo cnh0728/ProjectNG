@@ -1,7 +1,7 @@
 // Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 
-#include "Character/NGEnemyCharacter.h"
+#include "Character/NGEnemyPawn.h"
 
 #include "AbilitySystem/NGAbilitySystemComponent.h"
 #include "AbilitySystem/NGAttributeSet.h"
@@ -12,7 +12,7 @@
 
 
 // Sets default values
-ANGEnemyCharacter::ANGEnemyCharacter() : MoveSpeed(300.f), CurrentDistance(0.f), bCanMoving(false)
+ANGEnemyPawn::ANGEnemyPawn() : MoveSpeed(300.f), CurrentDistance(0.f), bCanMoving(false)
 {
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -22,25 +22,25 @@ ANGEnemyCharacter::ANGEnemyCharacter() : MoveSpeed(300.f), CurrentDistance(0.f),
 }
 
 // Called when the game starts or when spawned
-void ANGEnemyCharacter::BeginPlay()
+void ANGEnemyPawn::BeginPlay()
 {
 	Super::BeginPlay();
 	
 	InitAbilityActorInfo();
 	
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UNGAttributeSet::GetHealthAttribute())
-	.AddUObject(this, &ANGEnemyCharacter::OnHealthChanged);
+	.AddUObject(this, &ANGEnemyPawn::OnHealthChanged);
 }
 
 // Called every frame
-void ANGEnemyCharacter::Tick(float DeltaTime)
+void ANGEnemyPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
 	MoveOnSpline(DeltaTime);
 }
 
-void ANGEnemyCharacter::MoveOnSpline(float DeltaTime)
+void ANGEnemyPawn::MoveOnSpline(float DeltaTime)
 {
 	if (!IsValid(PathSplineComponent))	return;
 	
@@ -64,12 +64,12 @@ void ANGEnemyCharacter::MoveOnSpline(float DeltaTime)
 }
 
 // Called to bind functionality to input
-void ANGEnemyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+void ANGEnemyPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
 
-void ANGEnemyCharacter::InitPatrolPath(USplineComponent* SplineComponent, const FVector InLocationOffset)
+void ANGEnemyPawn::InitPatrolPath(USplineComponent* SplineComponent, const FVector InLocationOffset)
 {
 	if (!IsValid(SplineComponent))	return;
 
@@ -78,7 +78,7 @@ void ANGEnemyCharacter::InitPatrolPath(USplineComponent* SplineComponent, const 
 	bCanMoving = true;
 }
 
-void ANGEnemyCharacter::InitAbilityActorInfo()
+void ANGEnemyPawn::InitAbilityActorInfo()
 {
 	if (AbilitySystemComponent)
 	{

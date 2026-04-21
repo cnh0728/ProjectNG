@@ -6,7 +6,8 @@
 
 #include "AbilitySystemComponent.h"
 #include "AbilitySystem/NGAttributeSet.h"
-#include "Character/NGUnitCharacter.h"
+#include "Pawn/NGPawnBase.h"
+#include "Character/NGUnitPawn.h"
 
 UNGGameplayAbility::UNGGameplayAbility()
 {
@@ -23,7 +24,7 @@ void UNGGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 	
-	ANGCharacterBase* Unit = GetUnitCharacterFromActorInfo();
+	ANGPawnBase* Unit = GetUnitPawnFromActorInfo();
 	if (!Unit)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("UNGGameplayAbility::ActivateAbility - No Unit"));
@@ -31,7 +32,7 @@ void UNGGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 		return;
 	}
 	
-	ANGCharacterBase* Target = Unit->GetCurrentTarget();
+	ANGPawnBase* Target = Unit->GetCurrentTarget();
 	if (!Target)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Target is null"));
@@ -59,7 +60,7 @@ void UNGGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 	}
 }
 
-ANGCharacterBase* UNGGameplayAbility::GetUnitCharacterFromActorInfo() const
+ANGPawnBase* UNGGameplayAbility::GetUnitPawnFromActorInfo() const
 {
-	return Cast<ANGCharacterBase>(GetAvatarActorFromActorInfo());
+	return Cast<ANGPawnBase>(GetAvatarActorFromActorInfo());
 }

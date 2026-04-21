@@ -6,7 +6,7 @@
 #include "Engine/DeveloperSettings.h"
 #include "NGDeveloperSettings.generated.h"
 
-class ANGCharacterBase;
+class ANGPawnBase;
 class ANGProjectile;
 /**
  * 
@@ -25,6 +25,6 @@ public:
 	TMap<TSubclassOf<ANGProjectile>, TSoftClassPtr<ANGProjectile>> ProjectileClass;
 	
 	UPROPERTY(Config, EditAnywhere, Category = "NG Pool Settings")
-	TMap<TSubclassOf<ANGCharacterBase>, TSoftClassPtr<ANGCharacterBase>> CharacterClass;
+	TMap<TSubclassOf<ANGPawnBase>, TSoftClassPtr<ANGPawnBase>> PawnClass;
 	
 };

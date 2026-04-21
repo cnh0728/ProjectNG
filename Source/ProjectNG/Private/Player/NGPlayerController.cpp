@@ -6,7 +6,7 @@
 #include "Components/NGPocketComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Blueprint/UserWidget.h"
-#include "Character/NGUnitCharacter.h"
+#include "Character/NGUnitPawn.h"
 #include "Character/SelectableInterface.h"
 #include "Combat/CombatManager.h"
 #include "Combat/GridMapManager.h"
@@ -32,6 +32,11 @@ ANGPlayerController::ANGPlayerController() : bIsDragging(false)
 
 	PlayerPocket = CreateDefaultSubobject<UNGPocketComponent>("PocketComponent");
 
+}
+
+ANGPlayerController::~ANGPlayerController()
+{
+	UE_LOG(LogTemp, Warning, TEXT("---------------PC Destroyed!---------------"));
 }
 
 void ANGPlayerController::BeginPlay()
@@ -130,7 +135,7 @@ void ANGPlayerController::HandleClickReleased(const FInputActionValue& Value)
 	ResetDragUnit();
 }
 
-void ANGPlayerController::UpdateUnitWidget(ANGUnitCharacter* NewUnit)
+void ANGPlayerController::UpdateUnitWidget(ANGUnitPawn* NewUnit)
 {
 	//위젯이 없는 상태면 생성
 	if (!UnitInfoWidgetInstance && UnitInfoWidgetClass)
@@ -151,7 +156,7 @@ void ANGPlayerController::UpdateUnitWidget(ANGUnitCharacter* NewUnit)
 	}
 }
 
-void ANGPlayerController::SetSelectedUnit(ANGUnitCharacter* InSelectedUnit)
+void ANGPlayerController::SetSelectedUnit(ANGUnitPawn* InSelectedUnit)
 {
 	ResetSelectUnit();
 	
@@ -205,7 +210,7 @@ void ANGPlayerController::PerformDrag()
 		
 		if (HitActor && HitActor->Implements<USelectableInterface>())
 		{
-			DraggingUnit = Cast<ANGUnitCharacter>(HitActor);
+			DraggingUnit = Cast<ANGUnitPawn>(HitActor);
 			ISelectableInterface::Execute_OnDrag(HitActor);
 			
 			SetSelectedUnit(DraggingUnit.Get());

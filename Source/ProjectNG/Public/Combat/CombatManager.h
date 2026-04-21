@@ -4,11 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "NGCombatData.h"
+#include "Pawn/NGPawnBase.h"
 #include "CombatManager.generated.h"
 
 class ANGCharacterBase;
 class AGridMapManager;
-class ANGEnemyCharacter;
+class ANGEnemyPawn;
 
 UCLASS()
 class PROJECTNG_API ACombatManager : public AActor
@@ -40,7 +41,7 @@ public:
 	
 	void StartCombat(FCombatSettingData SettingData);
 	
-	void CharacterDied(ANGCharacterBase* DeadCharacter);
+	void PawnDied(ANGPawnBase* DeadPawn);
 	
 protected:
 	

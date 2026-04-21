@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "NGCombatData.generated.h"
 
-class ANGEnemyCharacter;
+class ANGEnemyPawn;
 
 USTRUCT(BlueprintType)
 struct FWaveData
@@ -11,7 +11,7 @@ struct FWaveData
 	GENERATED_BODY()
 	
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<ANGEnemyCharacter> EnemyClass;
+	TSubclassOf<ANGEnemyPawn> EnemyClass;
 	
 	UPROPERTY(EditAnywhere)
 	int32 EnemyCount = 10;
