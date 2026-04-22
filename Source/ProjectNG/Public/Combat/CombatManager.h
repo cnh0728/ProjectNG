@@ -7,6 +7,7 @@
 #include "Pawn/NGPawnBase.h"
 #include "CombatManager.generated.h"
 
+class ANGPlayerController;
 class ANGCharacterBase;
 class AGridMapManager;
 class ANGEnemyPawn;
@@ -30,7 +31,7 @@ public:
 	
 public:
 	UFUNCTION(BlueprintCallable)
-	void StartWave();
+	void StartWave(APlayerController* PC);
 	
 protected:
 	void SpawnEnemyTimerElapsed();
@@ -39,7 +40,7 @@ protected:
 
 public:
 	
-	void StartCombat(FCombatSettingData SettingData);
+	void StartCombat(FCombatSettingData SettingData, APlayerController* PC);
 	
 	void PawnDied(ANGPawnBase* DeadPawn);
 	
@@ -51,6 +52,8 @@ protected:
 
 	int32 CurrentEnemyCount = 0;
 	int32 TargetKillCount = 10;
+	
+	APlayerController* RequestingPlayerControllerCache;
 	
 public:
 	UPROPERTY(EditAnywhere, Category = "Combat")

@@ -6,7 +6,7 @@
 #include "Combat/CombatManager.h"
 
 
-void ANGInGameGameMode::RequestStartCombat()
+void ANGInGameGameMode::RequestStartCombat(APlayerController* PC)
 {
 	if (CurrentState == EGameState::Combat)	return;
 	
@@ -26,7 +26,7 @@ void ANGInGameGameMode::RequestStartCombat()
 		FCombatSettingData SettingData;
 		SettingData.EnemyCount = 3;
 		
-		ActiveCombatManager->StartCombat(SettingData);	
+		ActiveCombatManager->StartCombat(SettingData, PC);
 	}
 }
 

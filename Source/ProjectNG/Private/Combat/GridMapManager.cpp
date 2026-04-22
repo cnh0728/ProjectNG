@@ -44,7 +44,7 @@ bool AGridMapManager::IsPossibleSpawnPawn(AGridMapManager* MapManager) const
 	return true;
 }
 
-bool AGridMapManager::SpawnUnitPawn(FName UnitName) const
+bool AGridMapManager::SpawnUnitPawn(FName UnitName, APlayerController* RequestingPlayer) const
 {
 	if (!HasAuthority())	return false;
 	
@@ -90,8 +90,11 @@ bool AGridMapManager::SpawnUnitPawn(FName UnitName) const
 			FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLocation);
 			// UClass* CC = GetDefault<UNGDeveloperSettings>()->PawnClass[FoundRow->UnitClass].LoadSynchronous();
 			
-			// ANGUnitPawn* NewPawn = Cast<ANGUnitPawn>(Pool->AcquirePawn(CC, SpawnTransform));
-			ANGUnitPawn* NewPawn = Cast<ANGUnitPawn>(Pool->AcquirePawn(FoundRow->UnitClass, SpawnTransform));
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.Owner = RequestingPlayer;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			
+			ANGUnitPawn* NewPawn = Cast<ANGUnitPawn>(Pool->AcquirePawn(FoundRow->UnitClass, SpawnTransform, SpawnParams));
 						
 			if (!NewPawn)
 			{

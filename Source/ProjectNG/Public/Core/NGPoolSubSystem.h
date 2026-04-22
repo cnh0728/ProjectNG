@@ -40,7 +40,7 @@ public:
 	ANGProjectile* AcquireProjectile(TSubclassOf<ANGProjectile> ProjectileClass, const FTransform& SpawnTransform, ANGPawnBase* Target);
 	void ReleaseSegment(ANGProjectile* Projectile);
 	
-	ANGPawnBase* AcquirePawn(TSubclassOf<ANGPawnBase> PawnClass, const FTransform& SpawnTransform);
+	ANGPawnBase* AcquirePawn(TSubclassOf<ANGPawnBase> PawnClass, const FTransform& SpawnTransform, const FActorSpawnParameters& SpawnParams);
 	void ReleaseSegment(ANGPawnBase* Pawn);
 	
 	void ReleaseDefault(AActor* InActor);

@@ -89,7 +89,7 @@ protected:
 /*************************************/
 public:
 	UNGPocketComponent* GetPlayerPocket() { return PlayerPocket; }
-
+	
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Game|Pocket")
 	TObjectPtr<UNGPocketComponent> PlayerPocket;
@@ -103,6 +103,17 @@ protected:
 	
 	UPROPERTY()
 	TObjectPtr<UNGUnitInfoWidget> UnitInfoWidgetInstance;
+	
+	
+/*************************************/
+/*			서버리퀘스트				 */
+/*************************************/
+public:
+	UFUNCTION(Server, Reliable)
+	void Server_RequestBuyUnit(FName UnitName);
+	
+	UFUNCTION(Server, Reliable)
+	void Server_RequestStartWave();
 	
 /*************************************/
 /*				Debug				 */

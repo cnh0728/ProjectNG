@@ -23,6 +23,10 @@ ANGUnitPawn::ANGUnitPawn() : AcceptanceRadius(1.0f), bIsGrabbed(false), bIsSelec
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	
+	bReplicates = true;
+	AActor::SetReplicateMovement(true);
+	NetUpdateFrequency =66.f;
+	
 	if (!DetectionSphere)
 	{
 		DetectionSphere = CreateDefaultSubobject<USphereComponent>(FName("DetectionSphere"));

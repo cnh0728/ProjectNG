@@ -32,6 +32,7 @@ ANGPlayerController::ANGPlayerController() : bIsDragging(false)
 
 	PlayerPocket = CreateDefaultSubobject<UNGPocketComponent>("PocketComponent");
 
+	
 }
 
 ANGPlayerController::~ANGPlayerController()
@@ -231,12 +232,28 @@ void ANGPlayerController::ResetDragUnit()
 	}
 }
 
-void ANGPlayerController::Cmd_StartWave()
+void ANGPlayerController::Server_RequestBuyUnit_Implementation(FName UnitName)
+{
+	//여기서 그리드에 칸이 비어있는지 체크 후 사야함
+	if (ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>())
+	{
+		if (AGridMapManager* GridManager = GM->GetGridMapManager())
+		{
+			if (GridManager->SpawnUnitPawn(UnitName, this))
+			{
+				PlayerPocket->AddUnitToBuyingPocket(UnitName);
+				UE_LOG(LogTemp, Display, TEXT("BuyUnitFromPocket Success"));
+			}
+		}
+	}
+}
+
+void ANGPlayerController::Server_RequestStartWave_Implementation()
 {
 	if (HasAuthority())
 	{
 		if (ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>()){
-			GM->RequestStartCombat();
+			GM->RequestStartCombat(this);
             
 			// 확인용 로그
 			UE_LOG(LogTemp, Warning, TEXT("Cmd: Wave Started!"));
@@ -249,4 +266,9 @@ void ANGPlayerController::Cmd_StartWave()
 			UE_LOG(LogTemp, Error, TEXT("CombatManager가 GameState에 없습니다!"));
 		}
 	}
+}
+
+void ANGPlayerController::Cmd_StartWave()
+{
+	Server_RequestStartWave();
 }

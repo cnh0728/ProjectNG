@@ -34,9 +34,11 @@ void ACombatManager::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-void ACombatManager::StartWave()
+void ACombatManager::StartWave(APlayerController* PC)
 {
 	if (!HasAuthority())	return;
+	
+	RequestingPlayerControllerCache = PC;
 	
 	if (WaveList.IsValidIndex(CurrentWaveIndex))
 	{
@@ -51,6 +53,7 @@ void ACombatManager::StartWave()
 
 void ACombatManager::SpawnEnemyTimerElapsed()
 {
+	//PC가져와서 넘겨줘야할듯?
 	SpawnEnemy();
 	
 	// 목표 다 채웠으면 정지
@@ -104,7 +107,11 @@ void ACombatManager::SpawnEnemy()
 		{
 			UClass* CC = ClassPtr.LoadSynchronous();
 		
-			if (ANGEnemyPawn* NewEnemy = Cast<ANGEnemyPawn>(Pool->AcquirePawn(CC, FTransform(SpawnRotation, SpawnLocation))))
+			FActorSpawnParameters SpawnParameters;
+			SpawnParameters.Owner = RequestingPlayerControllerCache; //TODO: PC 캐싱해서 줘야함
+			SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			
+			if (ANGEnemyPawn* NewEnemy = Cast<ANGEnemyPawn>(Pool->AcquirePawn(CC, FTransform(SpawnRotation, SpawnLocation), SpawnParameters)))
 			{
 				NewEnemy->InitPatrolPath(GridMapManager->EnemyPathSpline, CapsuleHalfHeight);
 			}
@@ -121,11 +128,11 @@ void ACombatManager::SpawnEnemy()
 }
 
 
-void ACombatManager::StartCombat(FCombatSettingData SettingData)
+void ACombatManager::StartCombat(FCombatSettingData SettingData, APlayerController* PC)
 {
 	SetupCombat(SettingData);
 	
-	StartWave();
+	StartWave(PC);
 	//화면띄우고 이것저것
 	
 }

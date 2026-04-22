@@ -46,7 +46,7 @@ ANGProjectile* UNGPoolSubSystem::AcquireProjectile(TSubclassOf<ANGProjectile> Pr
 
 
 ANGPawnBase* UNGPoolSubSystem::AcquirePawn(TSubclassOf<ANGPawnBase> PawnClass,
-	const FTransform& SpawnTransform)
+                                           const FTransform& SpawnTransform, const FActorSpawnParameters& SpawnParams)
 {
 	if (!PawnClass)	return nullptr;
 	
@@ -61,7 +61,7 @@ ANGPawnBase* UNGPoolSubSystem::AcquirePawn(TSubclassOf<ANGPawnBase> PawnClass,
 	}
 	else
 	{
-		Pawn = GetWorld()->SpawnActor<ANGPawnBase>(PawnClass, SpawnTransform);
+		Pawn = GetWorld()->SpawnActor<ANGPawnBase>(PawnClass, SpawnTransform, SpawnParams);
 	}
 	
 	return Pawn;

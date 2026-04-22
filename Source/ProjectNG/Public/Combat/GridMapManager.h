@@ -20,7 +20,7 @@ public:
 	AGridMapManager();
 	bool IsPossibleSpawnPawn(AGridMapManager* MapManager) const;
 
-	bool SpawnUnitPawn(FName UnitName) const;
+	bool SpawnUnitPawn(FName UnitName, APlayerController* RequestingPlayer) const;
 	
 protected:
 	virtual void BeginPlay() override;

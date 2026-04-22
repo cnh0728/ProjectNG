@@ -32,7 +32,7 @@ class PROJECTNG_API ANGInGameGameMode : public ANGGameModeBase
 	
 	
 public:
-	void RequestStartCombat();
+	void RequestStartCombat(APlayerController* PC);
 	void OnCombatFinished(const FCombatResultData& ResultData);
 	void ReportPawnDeath(ANGPawnBase* DeadPawn);
 
