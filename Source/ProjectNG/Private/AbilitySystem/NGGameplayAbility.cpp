@@ -7,7 +7,6 @@
 #include "AbilitySystemComponent.h"
 #include "AbilitySystem/NGAttributeSet.h"
 #include "Pawn/NGPawnBase.h"
-#include "Character/NGUnitPawn.h"
 
 UNGGameplayAbility::UNGGameplayAbility()
 {

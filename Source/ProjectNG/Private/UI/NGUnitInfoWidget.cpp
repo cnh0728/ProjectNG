@@ -5,7 +5,7 @@
 
 #include "AbilitySystem/NGAbilitySystemComponent.h"
 #include "AbilitySystem/NGAttributeSet.h"
-#include "Character/NGUnitPawn.h"
+#include "Pawn/NGUnitPawn.h"
 
 void UNGUnitInfoWidget::SetTargetUnit(ANGUnitPawn* NewUnit)
 {

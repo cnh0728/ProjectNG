@@ -52,10 +52,7 @@ bool AGridMapManager::SpawnUnitPawn(FName UnitName, APlayerController* Requestin
 	ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>();
 	if (!GS)	return false;
 	
-	ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>();
-	if (!GM)	return false;
-	
-	AGridMapManager* MapManager = GM->GetGridMapManager();
+	AGridMapManager* MapManager = GS->GetGridMapManager();
 	if (!MapManager)	return false;
 	
 	UNGPoolSubSystem* Pool = GetWorld()->GetSubsystem<UNGPoolSubSystem>();
@@ -126,9 +123,9 @@ void AGridMapManager::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>())
+	if (ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>())
 	{
-		GM->InitializeGridMapManager(this);
+		GS->InitializeGridMapManager(this);
 	}
 	
 	GridMap.ResetEmptyGridIndex();

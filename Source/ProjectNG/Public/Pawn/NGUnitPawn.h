@@ -3,8 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameplayAbilitySpecHandle.h"
-#include "Character/NGCharacterBase.h"
+#include "SelectableInterface.h"
 #include "Pawn/NGPawnBase.h"
 #include "NGUnitPawn.generated.h"
 
@@ -32,6 +31,8 @@ public:
 	virtual void OnDrag_Implementation() override;
 	virtual void OnUndrag_Implementation() override;
 	
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -49,9 +50,11 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
-	void SetDragTargetGridIndex(const TOptional<FIntVector2>& NewIndex);
+	UFUNCTION(Server, Reliable)
+	void SetDragTargetGridIndex(const FIntVector2& NewIndex);
 	
 	void SetPlacedGridIndex(const FIntVector2& NewIndex);
+	
 	TOptional<FIntVector2> GetPlacedGridIndex();
 	
 	void RefreshCache();
@@ -81,12 +84,15 @@ private:
 	float AcceptanceRadius;
 
 	uint8 bIsGrabbed : 1;
-	uint8 bIsDragMoving : 1;
 	uint8 bIsSelected : 1;
 	
-	UPROPERTY(EditDefaultsOnly, Category = "GridIndex")
-	TOptional<FIntVector2> PlacedGridIndex;
+	UPROPERTY(Replicated)
+	uint8 bIsDragMoving : 1;
+
 	
-	UPROPERTY()
+	UPROPERTY(Replicated, EditDefaultsOnly, Category = "GridIndex")
+	FIntVector2 PlacedGridIndex;
+	
+	UPROPERTY(Transient)
 	AGridMapManager* MapManagerCache;
 };

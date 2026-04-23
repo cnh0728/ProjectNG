@@ -29,16 +29,11 @@ UCLASS()
 class PROJECTNG_API ANGInGameGameMode : public ANGGameModeBase
 {
 	GENERATED_BODY()
-	
-	
+
 public:
 	void RequestStartCombat(APlayerController* PC);
 	void OnCombatFinished(const FCombatResultData& ResultData);
 	void ReportPawnDeath(ANGPawnBase* DeadPawn);
-
-	void InitializeGridMapManager(AGridMapManager* InitGridMap){ GridMapManager = InitGridMap; }
-	
-	AGridMapManager* GetGridMapManager(){ return GridMapManager; }
 	
 	ACombatManager* GetCombatManager(){ return ActiveCombatManager; }
 	
@@ -55,6 +50,5 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Managers")
 	TObjectPtr<ACombatManager> ActiveCombatManager;
 	
-	UPROPERTY(Transient, BlueprintReadOnly, Category = "Managers")
-	TObjectPtr<AGridMapManager> GridMapManager;
+
 };

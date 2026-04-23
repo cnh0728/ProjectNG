@@ -38,6 +38,12 @@ public:
 
 	UDataTable* GetUnitDataTable(){ return UnitDataTable; }
 	
+	void InitializeGridMapManager(AGridMapManager* InitGridMap){ GridMapManager = InitGridMap; }
+	
+	AGridMapManager* GetGridMapManager(){ return GridMapManager; }
+	
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	
 protected:
 	// Key: DataTable RowName, Value: remain count
 	TMap<FName, int32> UnitPool;
@@ -48,7 +54,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Game|DataTable")
 	TObjectPtr<UDataTable> UnitDataTable;
 
-
+	UPROPERTY(Replicated, Transient, BlueprintReadOnly, Category = "Managers")
+	TObjectPtr<AGridMapManager> GridMapManager;
+	
 private:
 	void InitializeUnitPool();
 };

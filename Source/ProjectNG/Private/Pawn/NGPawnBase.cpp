@@ -5,7 +5,6 @@
 #include "AbilitySystem/NGAbilitySystemComponent.h"
 #include "AbilitySystem/NGAttributeSet.h"
 #include "Components/CapsuleComponent.h"
-#include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Core/NGPoolableComponent.h"
 #include "GameModes/NGInGameGameMode.h"
@@ -56,12 +55,23 @@ UAbilitySystemComponent* ANGPawnBase::GetAbilitySystemComponent() const
 	return AbilitySystemComponent;
 }
 
+void ANGPawnBase::Multi_PlayMontage_Implementation(UAnimMontage* MontageToPlay)
+{
+	UE_LOG(LogTemp, Log, TEXT("Multi PlayMontage"));
+	PlayAnimMontage(MontageToPlay);
+}
+
 float ANGPawnBase::PlayAnimMontage(UAnimMontage* AnimMontage, float InPlayRate, FName StartSectionName)
 {
 	UAnimInstance* AnimInstance = (UnitMesh) ? UnitMesh->GetAnimInstance() : nullptr;
     
 	if (AnimMontage && AnimInstance)
 	{
+		if (AnimInstance->IsAnyMontagePlaying())
+		{
+			AnimInstance->Montage_Stop(0.2f);
+		}
+		
 		float const Duration = AnimInstance->Montage_Play(AnimMontage, InPlayRate);
 
 		if (Duration > 0.f)
@@ -80,7 +90,21 @@ float ANGPawnBase::PlayAnimMontage(UAnimMontage* AnimMontage, float InPlayRate, 
 
 void ANGPawnBase::StopAnimMontage(UAnimMontage* AnimMontage)
 {
-	
+	UAnimInstance* AnimInstance = (UnitMesh) ? UnitMesh->GetAnimInstance() : nullptr;
+
+	if (AnimInstance && AnimInstance->IsAnyMontagePlaying())
+	{
+		if (AnimMontage)
+		{
+			// 몽타주 설정에 저장된 기본 블렌드 아웃 시간을 사용하여 부드럽게 중지
+			AnimInstance->Montage_Stop(AnimMontage->GetDefaultBlendOutTime(), AnimMontage);
+		}
+		else
+		{
+			// 현재 재생 중인 모든 몽타주를 0.25초 동안 서서히 멈춤
+			AnimInstance->Montage_Stop(0.25f);
+		}
+	}
 }
 
 void ANGPawnBase::HandleGameplayCue(UObject* Self, FGameplayTag GameplayCueTag, EGameplayCueEvent::Type EventType,
@@ -92,7 +116,7 @@ void ANGPawnBase::HandleGameplayCue(UObject* Self, FGameplayTag GameplayCueTag, 
 	{
 		if (EventType == EGameplayCueEvent::Executed)
 		{
-			PlayHitReaction();
+			PlayAnimMontage(DamagedMontage);
 		}
 	}
 }
@@ -141,23 +165,6 @@ void ANGPawnBase::OnHealthChanged(const FOnAttributeChangeData& Data)
 void ANGPawnBase::OnAttackRangeChanged(const FOnAttributeChangeData& Data)
 {
 	
-}
-
-void ANGPawnBase::PlayHitReaction()
-{
-	UE_LOG(LogTemp, Warning, TEXT("Hit Reaction Executed"));
-	if (DamagedMontage)
-	{
-		if (const USkeletalMeshComponent* TempMesh = GetMesh())
-		{
-			if (UAnimInstance* AnimInstance = TempMesh->GetAnimInstance())
-			{
-				AnimInstance->Montage_Stop(.2f);
-			}
-		}
-		
-		PlayAnimMontage(DamagedMontage);
-	}
 }
 
 void ANGPawnBase::InitializeAttributes()

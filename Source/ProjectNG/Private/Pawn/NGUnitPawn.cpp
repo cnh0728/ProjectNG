@@ -1,20 +1,20 @@
 // Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 
-#include "Character/NGUnitPawn.h"
+#include "Pawn/NGUnitPawn.h"
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystem/NGAbilitySystemComponent.h"
 #include "AbilitySystem/NGAttributeSet.h"
 #include "AbilitySystem/NGGameplayAbility.h"
-#include "Character/NGEnemyPawn.h"
+#include "Pawn/NGEnemyPawn.h"
 #include "Combat/GridMapManager.h"
 #include "Combat/Weapon/NGWeaponData.h"
 #include "Components/DecalComponent.h"
 #include "Components/SphereComponent.h"
-#include "Core/NGGameplayTags.h"
 #include "Game/NGGameState.h"
 #include "GameModes/NGInGameGameMode.h"
+#include "Net/UnrealNetwork.h"
 #include "ProjectNG/ProjectNG.h"
 
 // Sets default values
@@ -102,6 +102,14 @@ void ANGUnitPawn::OnUndrag_Implementation()
 	bIsGrabbed = false;
 }
 
+void ANGUnitPawn::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	
+	DOREPLIFETIME(ANGUnitPawn, bIsDragMoving);
+	DOREPLIFETIME(ANGUnitPawn, PlacedGridIndex);
+}
+
 // Called when the game starts or when spawned
 void ANGUnitPawn::BeginPlay()
 {
@@ -158,12 +166,12 @@ void ANGUnitPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
-	if (bIsDragMoving && PlacedGridIndex.IsSet())
+	if (bIsDragMoving)
 	{
 		// MapManager Cache Late Allocation
 		RefreshCache();
 		
-		FVector TargetLocation = MapManagerCache->GridMap.GetWorldLocation(PlacedGridIndex.GetValue()) + LocationOffset;
+		FVector TargetLocation = MapManagerCache->GridMap.GetWorldLocation(PlacedGridIndex) + LocationOffset;
 		
 		FVector CurrentLocation = GetActorLocation();
 		
@@ -220,25 +228,24 @@ void ANGUnitPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
 
-void ANGUnitPawn::SetDragTargetGridIndex(const TOptional<FIntVector2>& NewIndex)
+void ANGUnitPawn::SetDragTargetGridIndex_Implementation(const FIntVector2& NewIndex)
 {
 	if (!MapManagerCache)	RefreshCache();
 	
-	if (!MapManagerCache->GridMap.IsGridIndexEmpty(NewIndex.GetValue()))
+	if (!MapManagerCache->GridMap.IsGridIndexEmpty(NewIndex))
 	{
 		return;
 	}
 	
-	SetPlacedGridIndex(NewIndex.GetValue());
+	SetPlacedGridIndex(NewIndex);
 	bIsDragMoving = true;
 }
 
 void ANGUnitPawn::SetPlacedGridIndex(const FIntVector2& NewIndex)
 {
-	if (PlacedGridIndex.IsSet())
-	{
-		MapManagerCache->GridMap.EmptyGridMap(PlacedGridIndex.GetValue());
-	}
+	if (!HasAuthority())	return;
+	
+	MapManagerCache->GridMap.EmptyGridMap(PlacedGridIndex);
 
 	PlacedGridIndex = NewIndex;
 	
@@ -257,9 +264,9 @@ void ANGUnitPawn::RefreshCache()
 {
 	if (!MapManagerCache)
 	{
-		if (ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>())
+		if (ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>())
 		{
-			if (AGridMapManager* MapManager = GM->GetGridMapManager())
+			if (AGridMapManager* MapManager = GS->GetGridMapManager())
 			{
 				MapManagerCache = MapManager;
 			}else

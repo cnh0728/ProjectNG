@@ -3,13 +3,14 @@
 
 #include "Combat/CombatManager.h"
 
-#include "Character/NGEnemyPawn.h"
-#include "Character/NGUnitPawn.h"
+#include "Pawn/NGEnemyPawn.h"
+#include "Pawn/NGUnitPawn.h"
 #include "Combat/GridMapManager.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SplineComponent.h"
 #include "Core/NGDeveloperSettings.h"
 #include "Core/NGPoolSubSystem.h"
+#include "Game/NGGameState.h"
 #include "GameModes/NGInGameGameMode.h"
 #include "Net/UnrealNetwork.h"
 
@@ -67,9 +68,9 @@ void ACombatManager::SpawnEnemy()
 {
 	AGridMapManager* GridMapManager = nullptr;
 	
-	if (ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>())
+	if (ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>())
 	{
-		GridMapManager = GM->GetGridMapManager();
+		GridMapManager = GS->GetGridMapManager();
 	}
 
 	if (!IsValid(GridMapManager))	return;

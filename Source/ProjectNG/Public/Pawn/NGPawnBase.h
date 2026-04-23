@@ -34,6 +34,9 @@ public:
 	FORCEINLINE USkeletalMeshComponent* GetMesh() const { return UnitMesh; }
 	FORCEINLINE UCapsuleComponent* GetCapsuleComponent() const { return CapsuleComponent; }
 	
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multi_PlayMontage(UAnimMontage* MontageToPlay);
+	
 	float PlayAnimMontage(UAnimMontage* AnimMontage, float InPlayRate = 1.f, FName StartSectionName = NAME_None);
     
 	void StopAnimMontage(UAnimMontage* AnimMontage);
@@ -73,8 +76,6 @@ protected:
 	virtual void OnHealthChanged(const FOnAttributeChangeData& Data);
 	
 	virtual void OnAttackRangeChanged(const FOnAttributeChangeData& Data);
-	
-	virtual void PlayHitReaction();
 	
 protected:
 	UPROPERTY(VisibleAnywhere, Category = "Collision")

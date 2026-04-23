@@ -4,6 +4,7 @@
 #include "Game/NGGameState.h"
 
 #include "Core/NGUnitData.h"
+#include "Net/UnrealNetwork.h"
 
 ANGGameState::ANGGameState()
 {
@@ -77,6 +78,13 @@ FName ANGGameState::GetRandomUnitByTier(EUnitTier Tier)
 		}
 	}
 	return NAME_None;
+}
+
+void ANGGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	
+	DOREPLIFETIME(ANGGameState, GridMapManager);
 }
 
 void ANGGameState::InitializeUnitPool()

@@ -1,7 +1,7 @@
 // Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 
-#include "Character/NGEnemyPawn.h"
+#include "Pawn/NGEnemyPawn.h"
 
 #include "AbilitySystem/NGAbilitySystemComponent.h"
 #include "AbilitySystem/NGAttributeSet.h"

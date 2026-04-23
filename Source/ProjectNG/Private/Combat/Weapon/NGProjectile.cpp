@@ -2,6 +2,8 @@
 
 #include "Combat/Weapon/NGProjectile.h"
 
+#include <MaterialExpressionTruncate.generated.h>
+
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Pawn/NGPawnBase.h"
@@ -42,6 +44,9 @@ void ANGProjectile::BeginPlay()
 void ANGProjectile::OnProjectileOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	// 서버에서만 로직 처리
+	if (!HasAuthority())	return;
+	
 	if (OtherActor && !OtherActor->IsA<ANGProjectile>())
 	{
 		check(Target);

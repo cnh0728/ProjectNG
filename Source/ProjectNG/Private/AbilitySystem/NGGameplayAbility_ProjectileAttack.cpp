@@ -8,7 +8,6 @@
 #include "Combat/Weapon/NGProjectile.h"
 #include "Core/NGDeveloperSettings.h"
 #include "Core/NGPoolSubSystem.h"
-#include "GameFramework/ProjectileMovementComponent.h"
 
 UNGGameplayAbility_ProjectileAttack::UNGGameplayAbility_ProjectileAttack()
 {

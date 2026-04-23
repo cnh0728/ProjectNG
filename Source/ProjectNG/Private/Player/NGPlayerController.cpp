@@ -6,9 +6,8 @@
 #include "Components/NGPocketComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Blueprint/UserWidget.h"
-#include "Character/NGUnitPawn.h"
-#include "Character/SelectableInterface.h"
-#include "Combat/CombatManager.h"
+#include "Pawn/NGUnitPawn.h"
+#include "Pawn/SelectableInterface.h"
 #include "Combat/GridMapManager.h"
 #include "Game/NGGameState.h"
 #include "GameModes/NGInGameGameMode.h"
@@ -84,7 +83,7 @@ void ANGPlayerController::Tick(float DeltaTime)
 	GetMousePosition(CurrentMouseLocation.X, CurrentMouseLocation.Y);
 	
 	//TODO: UI랑 인게임 분기쳐서 인게임에서만 동작하도록 하면 좋을듯
-	ProgressDragActor();
+	// ProgressDragActor();
 }
 
 void ANGPlayerController::ProgressDragActor()
@@ -96,9 +95,9 @@ void ANGPlayerController::ProgressDragActor()
 		{
 			FVector TargetLocation = HitResult.Location;
 
-			if (ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>())
+			if (ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>())
 			{
-				if (AGridMapManager* MapManager = GM->GetGridMapManager())
+				if (AGridMapManager* MapManager = GS->GetGridMapManager())
 				{
 					const FGridMap& GridMapCache = MapManager->GridMap;
 					const FIntVector2 GridIndex = GridMapCache.GetCellIndex(TargetLocation);
@@ -235,9 +234,9 @@ void ANGPlayerController::ResetDragUnit()
 void ANGPlayerController::Server_RequestBuyUnit_Implementation(FName UnitName)
 {
 	//여기서 그리드에 칸이 비어있는지 체크 후 사야함
-	if (ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>())
+	if (ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>())
 	{
-		if (AGridMapManager* GridManager = GM->GetGridMapManager())
+		if (AGridMapManager* GridManager = GS->GetGridMapManager())
 		{
 			if (GridManager->SpawnUnitPawn(UnitName, this))
 			{
