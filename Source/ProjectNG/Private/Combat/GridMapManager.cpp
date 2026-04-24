@@ -145,70 +145,81 @@ void AGridMapManager::OnConstruction(const FTransform& Transform)
 
 void AGridMapManager::MakeEnemySpline()
 {
-	if (GridMap.CellSize <= 0.f) return;
-	
-	if (!IsValid(EnemyPathSpline)) return;
-	
+	if (GridMap.CellSize <= 0.f || !IsValid(EnemyPathSpline)) return;
+    
 	EnemyPathSpline->ClearSplinePoints(true);
-	
 	float PushDistance = GridMap.CellSize + SplineMarginFromEdge;
-	
-	//그리드 기준 각 모서리에서 0이면 -PushDistance, 최대치면 +PushDistance 해서 거기 스플라인 포인트 찍기
-	
-	for (int i=0;i<4;i++)
+
+	// 1. 모든 타일의 월드 좌표를 뒤져서 최소/최대 경계를 찾습니다.
+	float MinX = FLT_MAX, MaxX = -FLT_MAX, MinY = FLT_MAX, MaxY = -FLT_MAX;
+
+	for (const auto& Pair : GridMap.GetGridInfo()) // GridInfo나 EmptyGridIndex 순회
 	{
-		int32 UseTopX = i / 2;
-		int32 UseTopY = ((i + 1) / 2) % 2;
-		
-		FVector CornerLocation = GridMap.GetRelativeLocation(FIntVector2((GridMap.CountX - 1) * UseTopX, (GridMap.CountY - 1) * UseTopY));
-		FVector SplinePosition = CornerLocation + FVector(UseTopX ? PushDistance : -PushDistance, UseTopY? PushDistance : -PushDistance, 0.f);
-		EnemyPathSpline->AddSplinePoint(SplinePosition, ESplineCoordinateSpace::Local, false);
+		FVector Loc = GridMap.GetWorldLocation(Pair.Key);
+		MinX = FMath::Min(MinX, Loc.X);
+		MaxX = FMath::Max(MaxX, Loc.X);
+		MinY = FMath::Min(MinY, Loc.Y);
+		MaxY = FMath::Max(MaxY, Loc.Y);
+	}
+
+	// 2. 여유 공간(PushDistance)을 둔 4개의 직사각형 모서리 좌표 설정
+	TArray<FVector> Points;
+	Points.Add(FVector(MinX - PushDistance, MinY - PushDistance, 0.f)); // 좌하
+	Points.Add(FVector(MaxX + PushDistance, MinY - PushDistance, 0.f)); // 우하
+	Points.Add(FVector(MaxX + PushDistance, MaxY + PushDistance, 0.f)); // 우상
+	Points.Add(FVector(MinX - PushDistance, MaxY + PushDistance, 0.f)); // 좌상
+
+	for (int32 i = 0; i < Points.Num(); ++i)
+	{
+		EnemyPathSpline->AddSplinePoint(Points[i], ESplineCoordinateSpace::Local, false);
 		EnemyPathSpline->SetSplinePointType(i, ESplinePointType::Linear, false);
 	}
-	
+    
 	EnemyPathSpline->UpdateSpline();
 	EnemyPathSpline->SetClosedLoop(true);
+}
+
+FVector AGridMapManager::GetHexCorner(float Size, int32 Index) const
+{
+	// Flat-top은 0도부터 60도씩 증가
+	float AngleDeg = 60.0f * Index;
+	float AngleRad = FMath::DegreesToRadians(AngleDeg);
+    
+	return FVector(Size * FMath::Cos(AngleRad), Size * FMath::Sin(AngleRad), 0.0f);
 }
 
 void AGridMapManager::DrawGridLine()
 {
 	UWorld* World = GetWorld();
 	if (!World) return;
-	
-	// 2. GridMap 데이터 가져오기 (UGridMap::GetSizeX(), UGridMap::GetCellSize() 같은 함수를 가정)
-	// 실제 GridMap에 접근하는 코드는 FGridMap의 구조에 따라 다릅니다.
-    
-	const int32 SizeX = GridMap.CountX;
-	const int32 SizeY = GridMap.CountY;
-	const float TileSize = GridMap.CellSize;
-	
-	// 이전 디버그 라인 제거 (에디터 갱신 시 잔상 방지)
+
 	FlushPersistentDebugLines(World);
-
 	GridMap.Pivot = GetActorLocation();
-	// 3. 디버그 라인 그리기 (OnConstruction에서 그릴 때는 'Persistent' 옵션을 사용해야 합니다)
-	// (선 그리기 로직은 이전 답변과 동일)
-    
-	// 세로선 (X축 따라 이동하며 Y축 방향으로 긋기)
-	for (int32 x = 0; x <= SizeX; ++x)
+
+	const int32 SizeQ = GridMap.CountQ;
+	const int32 SizeR = GridMap.CountR;
+	const float Size = GridMap.CellSize; // 육각형 중심에서 꼭짓점까지 거리
+
+	// 모든 타일을 순회하며 육각형 그리기
+	for (int32 q = 0; q < SizeQ; ++q)
 	{
-		FVector LineStart = FVector(x * TileSize + GridMap.Pivot.X,  GridMap.Pivot.Y, 0);
-		FVector LineEnd   = FVector(x * TileSize + GridMap.Pivot.X, SizeY * TileSize + GridMap.Pivot.Y, 0);
-        
-		// 5초 지속 (false), 두께 2.0f
-		DrawDebugLine(World, LineStart, LineEnd, GridLineColor, true, -1.0f, 0, LineThickness);
+		for (int32 r = 0; r < SizeR; ++r)
+		{
+			FIntVector2 CurrentIndex(q, r);
+			FVector Center = GridMap.GetWorldLocation(CurrentIndex);
+
+			// 육각형의 6개 꼭짓점을 계산해서 선으로 연결
+			for (int32 i = 0; i < 6; ++i)
+			{
+				FVector StartCorner = Center + GetHexCorner(Size, i);
+				FVector EndCorner = Center + GetHexCorner(Size, i + 1);
+
+				DrawDebugLine(World, StartCorner, EndCorner, GridLineColor, true, -1.0f, 0, LineThickness);
+			}
+		}
 	}
 
-	// 가로선 (Y축 따라 이동하며 X축 방향으로 긋기)
-	for (int32 y = 0; y <= SizeY; ++y)
-	{
-		FVector LineStart = FVector(GridMap.Pivot.X, y * TileSize + GridMap.Pivot.Y, 0);
-		FVector LineEnd   = FVector(SizeX * TileSize + GridMap.Pivot.X, y * TileSize + GridMap.Pivot.Y, 0);
-        
-		DrawDebugLine(World, LineStart, LineEnd, GridLineColor, true, -1.0f, 0, LineThickness);
-	}
-
-	UE_LOG(LogTemp, Warning, TEXT("GridMap is Visualized."));
+	UE_LOG(LogTemp, Warning, TEXT("Hex GridMap is Visualized."));
 }
 
 void AGridMapManager::InitGridMap(const int32 InitSizeX, const int32 InitSizeY, const double CellSize)

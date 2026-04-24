@@ -9,8 +9,6 @@
  * 
  */
 
-#define OFFSET (CellSize / 2)
-
 class ANGUnitPawn;
 
 USTRUCT(BlueprintType)
@@ -28,44 +26,48 @@ struct FGridData
 };
 
 USTRUCT(BlueprintType)
-struct PROJECTNG_API FGridMap
+struct PROJECTNG_API FHexGridMap
 {
 	GENERATED_BODY()
-	
+    
 public:
-	FGridMap();
-	void InitializeMap(int32 InSizeX, int32 InSizeY, float InCellSize, const FVector& InPivot = FVector::ZeroVector);
+	FHexGridMap();
+
+	void InitializeMap(int32 InSizeQ, int32 InSizeR, float InCellSize, const FVector& InPivot = FVector::ZeroVector);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 CountX;
+	int32 CountQ; 
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 CountY;
+	int32 CountR; 
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float CellSize;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FVector Pivot;
-	
-	// 특정 그리드 인덱스(GridX, GridY)를 로컬 벡터로 변환
-	FVector GetRelativeLocation(const FIntVector2 GridIndex) const;
+
+	// 핵심 좌표 변환
 	FVector GetWorldLocation(const FIntVector2 GridIndex) const;
+	FIntVector2 RectToAxial(int32 Col, int32 Row) const;
+	FIntVector2 AxialToRect(FIntVector2 Axial) const;
 	FIntVector2 GetCellIndex(const FVector& Location) const;
-	FIntVector2 GetCellIndex(const FVector2D& Location) const;
-	
-	// 인덱스가 유효한지 검사
-	bool IsValidIndex(const FIntVector2 GridIndex) const;	
+    
+	// Axial -> Cube 변환 (거리 계산용)
+	static FIntVector GetCubeIndex(const FIntVector2 AxialIndex) { return FIntVector(AxialIndex.X, AxialIndex.Y, -AxialIndex.X - AxialIndex.Y); }
+	static int32 GetDistance(FIntVector2 A, FIntVector2 B);
+
+	bool IsValidIndex(const FIntVector2 GridIndex) const;  
 	void SetGridData(FIntVector2 GridIndex, const FGridData& GridData);
 	void EmptyGridMap(const FIntVector2& GridIndex);
 	void ResetGridInfo();
-
-	void RemoveEmptyGridIndex(const FIntVector2& GridIndex);
 	void ResetEmptyGridIndex();
 	FGridData GetGridData(const FIntVector2 GridIndex);
 	TOptional<FIntVector2> GetEmptyGridIndex();
 	bool IsGridIndexEmpty(const FIntVector2& GridIndex) const;
 
+	const TMap<FIntVector2, FGridData>& GetGridInfo() const;
+	
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	TArray<FIntVector2> EmptyGridIndex;

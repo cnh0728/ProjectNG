@@ -100,7 +100,7 @@ void ANGPlayerController::ProgressDragActor()
 			{
 				if (AGridMapManager* MapManager = GS->GetGridMapManager())
 				{
-					const FGridMap& GridMapCache = MapManager->GridMap;
+					const FHexGridMap& GridMapCache = MapManager->GridMap;
 					const FIntVector2 GridIndex = GridMapCache.GetCellIndex(TargetLocation);
 					if (GridMapCache.IsValidIndex(GridIndex))
 					{
