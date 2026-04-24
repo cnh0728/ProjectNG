@@ -28,6 +28,11 @@ ANGProjectile::ANGProjectile()
 	RootComponent = SphereComponent;
 	SphereComponent->SetCollisionProfileName(TEXT("Projectile"));
 	
+	ProjectileMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ProjectileMesh"));
+	ProjectileMesh->SetupAttachment(RootComponent);
+	
+	ProjectileMesh->SetCollisionProfileName(TEXT("NoCollision"));
+	
 }
 
 // Called when the game starts or when spawned

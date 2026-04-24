@@ -52,6 +52,13 @@ ANGUnitPawn::ANGUnitPawn() : AcceptanceRadius(1.0f), bIsGrabbed(false), bIsSelec
 	RangeDecal->SetupAttachment(RootComponent);
 	RangeDecal->SetRelativeRotation(FRotator(-90.f, 0.f, 0.f));
 	
+	
+	if (UnitMesh)
+	{
+		UnitMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+		UnitMesh->SetCollisionResponseToChannel(ECC_SelectableUnit, ECR_Block);
+	}
+	
 	ShowRangeIndicator(false);
 }
 

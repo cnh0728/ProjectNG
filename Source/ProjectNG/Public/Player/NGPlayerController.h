@@ -48,6 +48,7 @@ protected:
 	virtual void ProgressDragActor();
 
 	void HandleClickPressed(const FInputActionValue& Value);
+	void HandleClickTriggered(const FInputActionValue& Value);
 	void HandleClickReleased(const FInputActionValue& Value);
 	
 	void UpdateUnitWidget(ANGUnitPawn* NewUnit);

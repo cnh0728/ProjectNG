@@ -55,4 +55,9 @@ public:
 	void SetSpecHandle(const FGameplayEffectSpecHandle InSpecHandle) { SpecHandle = InSpecHandle; }
 	
 	void SetTarget(ANGPawnBase* NewTarget);
+	
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UStaticMeshComponent> ProjectileMesh;
+	
 };

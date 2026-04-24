@@ -71,6 +71,7 @@ void ANGPlayerController::SetupInputComponent()
 		if (ClickInputAction)
 		{
 			EnhancedInputComponent->BindAction(ClickInputAction, ETriggerEvent::Started, this, &ThisClass::HandleClickPressed);
+			EnhancedInputComponent->BindAction(ClickInputAction, ETriggerEvent::Triggered, this, &ThisClass::HandleClickTriggered);
 			EnhancedInputComponent->BindAction(ClickInputAction, ETriggerEvent::Completed, this, &ThisClass::HandleClickReleased);
 		}
 	}
@@ -120,17 +121,24 @@ void ANGPlayerController::HandleClickPressed(const FInputActionValue& Value)
 	PerformDrag();
 }
 
+void ANGPlayerController::HandleClickTriggered(const FInputActionValue& Value)
+{
+	UE_LOG(LogTemp, Log, TEXT("Triggered"));
+	if (DraggingUnit.IsValid())
+	{
+		ProgressDragActor();
+	}
+}
+
 void ANGPlayerController::HandleClickReleased(const FInputActionValue& Value)
 {
 	double MouseDelta = (ClickStartLocation - CurrentMouseLocation).Size();
-		
+	
 	if (MouseDelta > DragThreshold)
 	{
 		// 클릭일땐 선택 유지, 드래그일땐 선택 취소
 		ResetSelectUnit();
 	}
-	
-	ProgressDragActor();
 	
 	ResetDragUnit();
 }
@@ -194,6 +202,8 @@ void ANGPlayerController::ResetSelectUnit()
 
 void ANGPlayerController::PerformDrag()
 {
+	if (!IsLocalController())	return;
+	
 	ResetDragUnit();
 	ResetSelectUnit();
 	
