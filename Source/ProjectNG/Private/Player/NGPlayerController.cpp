@@ -102,7 +102,10 @@ void ANGPlayerController::ProgressDragActor()
 				{
 					const FHexGridMap& GridMapCache = MapManager->GridMap;
 					const FIntVector2 GridIndex = GridMapCache.GetCellIndex(TargetLocation);
-					if (GridMapCache.IsValidIndex(GridIndex))
+					
+					bool bValidGrid = GridMapCache.IsValidIndex(GridIndex);
+					
+					if (bValidGrid)
 					{
 						// TargetLocation = GridMapCache.GetWorldLocation(GridIndex);
 						DraggingUnit->SetDragTargetGridIndex(GridIndex);
@@ -123,7 +126,6 @@ void ANGPlayerController::HandleClickPressed(const FInputActionValue& Value)
 
 void ANGPlayerController::HandleClickTriggered(const FInputActionValue& Value)
 {
-	UE_LOG(LogTemp, Log, TEXT("Triggered"));
 	if (DraggingUnit.IsValid())
 	{
 		ProgressDragActor();

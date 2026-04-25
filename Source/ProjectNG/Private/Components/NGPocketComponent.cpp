@@ -43,10 +43,26 @@ void UNGPocketComponent::RequestRoll()
 
 void UNGPocketComponent::AddUnitToBuyingPocket(FName UnitName)
 {
+	LastShopAction = EShopActionType::Buy;
 	RollPocket.Remove(UnitName);
 }
 
 void UNGPocketComponent::OnRep_RollPocket()
+{
+	switch (LastShopAction)
+	{
+		case EShopActionType::Buy:
+		
+			break;
+		case EShopActionType::Roll:
+			UpdateRollUnit();
+			break;
+		default:
+			break;
+	}
+}
+
+void UNGPocketComponent::UpdateRollUnit()
 {
 	if (ANGPlayerController* PC = Cast<ANGPlayerController>(GetOwner()))
 	{
@@ -128,6 +144,9 @@ void UNGPocketComponent::Server_RequestRoll_Implementation()
 			i--; // 다시 시도
 		}
 	}
+
+	LastShopAction = EShopActionType::Roll;
 	
-	OnRep_RollPocket();
+	// 서버에서는 롤포켓할필요 없지않나
+	// OnRep_RollPocket();
 }

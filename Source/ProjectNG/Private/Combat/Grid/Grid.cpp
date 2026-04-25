@@ -46,11 +46,11 @@ FIntVector2 FHexGridMap::GetCellIndex(const FVector& Location) const
 {    
     FVector RelativePos = Location - Pivot;
 
-    // Flat-top 역행렬 계산
+    // 1. Flat-top 역행렬 계산 (World -> Axial)
     float q = (2.0f / 3.0f * RelativePos.X) / CellSize;
     float r = (-1.0f / 3.0f * RelativePos.X + FMath::Sqrt(3.0f) / 3.0f * RelativePos.Y) / CellSize;
 
-    // Hex Rounding
+    // 2. Hex Rounding (가장 가까운 육각형 중심 찾기)
     float x = q;
     float y = r;
     float z = -q - r;
@@ -66,7 +66,8 @@ FIntVector2 FHexGridMap::GetCellIndex(const FVector& Location) const
     if (x_diff > y_diff && x_diff > z_diff) rx = -ry - rz;
     else if (y_diff > z_diff) ry = -rx - rz;
 
-    // Axial(rx, ry) -> Rect(Col, Row) 변환
+    // 3. 핵심: Axial(rx, ry)를 직사각형 인덱스(Col, Row)로 변환
+    // rx(q)는 가로 번호(Col)가 되고, ry(r)은 x 오프셋만큼 더해줘야 세로 번호(Row)가 직사각형처럼 나옵니다.
     int32 Col = rx;
     int32 Row = ry + FMath::FloorToInt(rx / 2.0f);
 
@@ -92,15 +93,17 @@ void FHexGridMap::ResetGridInfo() { GridInfo.Reset(); }
 void FHexGridMap::ResetEmptyGridIndex()
 {
     EmptyGridIndex.Reset();
-    for (int32 r = 0; r < CountR; ++r)
+    for (int32 q = 0; q < CountQ; ++q)
     {
-        // r이 증가할 때마다 q값이 밀리는 걸 방지하기 위해 오프셋 계산
-        int32 r_offset = FMath::FloorToInt(r / 2.0f); 
-        
-        for (int32 q = -r_offset; q < CountQ - r_offset; ++q)
+        for (int32 r = 0; r < CountR; ++r)
         {
-            EmptyGridIndex.AddUnique(FIntVector2(q, r));
+            EmptyGridIndex.Add(FIntVector2(q, r));
         }
+    }
+    
+    for (auto a : EmptyGridIndex)
+    {
+        UE_LOG(LogTemp, Log, TEXT("EmptyIndex: %d %d"), a.X, a.Y);
     }
 }
 

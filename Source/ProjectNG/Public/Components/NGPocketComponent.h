@@ -7,6 +7,14 @@
 #include "NGPocketComponent.generated.h"
 
 
+UENUM(BlueprintType)
+enum class EShopActionType : uint8
+{
+	None,
+	Roll,
+	Buy,
+};
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class PROJECTNG_API UNGPocketComponent : public UActorComponent
 {
@@ -34,7 +42,8 @@ protected:
 	
 	UFUNCTION()
 	void OnRep_RollPocket();
-	
+	void UpdateRollUnit();
+
 	UPROPERTY(EditDefaultsOnly, Category = "Game|Shop")
 	int32 ShopSlotCount = 3;
 
@@ -43,6 +52,9 @@ protected:
 private:
 	UPROPERTY(VisibleAnywhere, ReplicatedUsing = OnRep_RollPocket, Category = "Game|Shop")
 	TArray<FName> RollPocket; // 플레이어의 상점에 표시된 유닛 목록
+	
+	UPROPERTY(Replicated)
+	EShopActionType LastShopAction;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Game|Shop")
 	TObjectPtr<UDataTable> ProbabilityTable;

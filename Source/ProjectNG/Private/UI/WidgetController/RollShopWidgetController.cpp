@@ -61,6 +61,9 @@ void URollShopWidgetController::BuyUnitFromPocket(FName UnitName)
 {
 	if (ANGPlayerController* NGP = Cast<ANGPlayerController>(PlayerController))
 	{
-		NGP->Server_RequestBuyUnit(UnitName);
+		if (NGP->IsLocalController())
+		{
+			NGP->Server_RequestBuyUnit(UnitName);
+		}
 	}
 }
