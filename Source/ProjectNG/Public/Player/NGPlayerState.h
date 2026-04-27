@@ -8,6 +8,7 @@
 #include "GameFramework/PlayerState.h"
 #include "NGPlayerState.generated.h"
 
+class UNGPocketComponent;
 /**
  * In-Game에서의 플레이어의 상태 정보를 저장하는 클래스
  *
@@ -32,5 +33,17 @@ public:
 protected:
 	UPROPERTY()
 	TObjectPtr<UNGAbilitySystemComponent> AbilitySystemComponent;
+
+		
+/*************************************/
+/*				Pocket 관련			 */
+/*************************************/
+	
+public:
+	UNGPocketComponent* GetPlayerPocket() { return PlayerPocket; }
+
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Game|Pocket")
+	TObjectPtr<UNGPocketComponent> PlayerPocket;
 	
 };

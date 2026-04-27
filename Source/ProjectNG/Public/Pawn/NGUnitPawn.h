@@ -55,7 +55,7 @@ public:
 	
 	void SetPlacedGridIndex(const FIntVector2& NewIndex);
 	
-	TOptional<FIntVector2> GetPlacedGridIndex();
+	FIntVector2 GetPlacedGridIndex();
 	
 	void RefreshCache();
 	

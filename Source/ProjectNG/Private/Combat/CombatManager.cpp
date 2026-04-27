@@ -13,6 +13,7 @@
 #include "Game/NGGameState.h"
 #include "GameModes/NGInGameGameMode.h"
 #include "Net/UnrealNetwork.h"
+#include "Player/NGPlayerState.h"
 
 
 class UNGDeveloperSettings;
@@ -178,8 +179,28 @@ void ACombatManager::PawnDied(ANGPawnBase* DeadPawn)
 
 void ACombatManager::SetupCombat(FCombatSettingData SettingData)
 {
+	ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>();
+	if (!GS)	return;
+	
+	AGridMapManager* MapManager = GS->GetGridMapManager();
+	if (!MapManager)	return;
+	
 	CurrentEnemyCount = 0;
 	TargetKillCount = SettingData.EnemyCount;
+	
+	UNGPocketComponent* PocketComponent= SettingData.PlayerA->GetPlayerPocket();
+	//TODO: 유닛 배치
+	
+	// for (ANGUnitPawn* Unit : )
+	// {
+	// 	FVector TargetLoc = MapManager->GridMap.GetWorldLocation(Unit->GetPlacedGridIndex());
+	// 	Unit->SetActorLocation(TargetLoc);
+	// }
+	//
+	// for (ANGUnitPawn* Unit : SettingData.PlayerB)
+	// {
+	// 	
+	// }
 }
 
 void ACombatManager::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

@@ -12,6 +12,7 @@
 #include "Game/NGGameState.h"
 #include "GameModes/NGInGameGameMode.h"
 #include "Input/NGInputComponent.h"
+#include "Player/NGPlayerState.h"
 
 #include "ProjectNG/ProjectNG.h"
 #include "UI/NGUnitInfoWidget.h"
@@ -28,9 +29,6 @@ ANGPlayerController::ANGPlayerController() : bIsDragging(false)
 	bEnableClickEvents = true; 
 	bEnableMouseOverEvents = true;
 	DefaultMouseCursor = EMouseCursor::Default;
-
-	PlayerPocket = CreateDefaultSubobject<UNGPocketComponent>("PocketComponent");
-
 	
 }
 
@@ -250,10 +248,14 @@ void ANGPlayerController::Server_RequestBuyUnit_Implementation(FName UnitName)
 	{
 		if (AGridMapManager* GridManager = GS->GetGridMapManager())
 		{
-			if (GridManager->SpawnUnitPawn(UnitName, this))
+			if (ANGPlayerState* PS = GetPlayerState<ANGPlayerState>())
 			{
-				PlayerPocket->AddUnitToBuyingPocket(UnitName);
-				UE_LOG(LogTemp, Display, TEXT("BuyUnitFromPocket Success"));
+				if (GridManager->SpawnUnitPawn(UnitName, this))
+				{
+					UNGPocketComponent* PlayerPocket = PS->GetPlayerPocket();
+					PlayerPocket->AddUnitToBuyingPocket(UnitName);
+					UE_LOG(LogTemp, Display, TEXT("BuyUnitFromPocket Success"));
+				}
 			}
 		}
 	}
@@ -277,6 +279,16 @@ void ANGPlayerController::Server_RequestStartWave_Implementation()
 			UE_LOG(LogTemp, Error, TEXT("CombatManager가 GameState에 없습니다!"));
 		}
 	}
+}
+
+UNGPocketComponent* ANGPlayerController::GetPlayerPocket()
+{
+	if (ANGPlayerState* PS = GetPlayerState<ANGPlayerState>())
+	{
+		return PS->GetPlayerPocket();
+	}
+	
+	return nullptr;
 }
 
 void ANGPlayerController::Cmd_StartWave()

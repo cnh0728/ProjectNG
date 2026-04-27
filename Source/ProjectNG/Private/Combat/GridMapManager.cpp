@@ -179,15 +179,6 @@ void AGridMapManager::MakeEnemySpline()
 	EnemyPathSpline->SetClosedLoop(true);
 }
 
-FVector AGridMapManager::GetHexCorner(float Size, int32 Index) const
-{
-	// Flat-top은 0도부터 60도씩 증가
-	float AngleDeg = 60.0f * Index;
-	float AngleRad = FMath::DegreesToRadians(AngleDeg);
-    
-	return FVector(Size * FMath::Cos(AngleRad), Size * FMath::Sin(AngleRad), 0.0f);
-}
-
 void AGridMapManager::DrawGridLine()
 {
 	UWorld* World = GetWorld();
@@ -198,7 +189,6 @@ void AGridMapManager::DrawGridLine()
 
 	const int32 SizeQ = GridMap.CountQ;
 	const int32 SizeR = GridMap.CountR;
-	const float Size = GridMap.CellSize; // 육각형 중심에서 꼭짓점까지 거리
 
 	// 모든 타일을 순회하며 육각형 그리기
 	for (int32 q = 0; q < SizeQ; ++q)
@@ -211,8 +201,8 @@ void AGridMapManager::DrawGridLine()
 			// 육각형의 6개 꼭짓점을 계산해서 선으로 연결
 			for (int32 i = 0; i < 6; ++i)
 			{
-				FVector StartCorner = Center + GetHexCorner(Size, i);
-				FVector EndCorner = Center + GetHexCorner(Size, i + 1);
+				FVector StartCorner = Center + GridMap.GetHexCorner(i);
+				FVector EndCorner = Center + GridMap.GetHexCorner(i + 1);
 
 				DrawDebugLine(World, StartCorner, EndCorner, GridLineColor, true, -1.0f, 0, LineThickness);
 			}

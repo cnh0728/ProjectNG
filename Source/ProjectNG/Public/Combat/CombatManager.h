@@ -39,11 +39,10 @@ protected:
 	void SpawnEnemy();
 
 public:
-	
 	void StartCombat(FCombatSettingData SettingData, APlayerController* PC);
 	
 	void PawnDied(ANGPawnBase* DeadPawn);
-	
+
 protected:
 	
 	void SetupCombat(FCombatSettingData SettingData);
@@ -53,7 +52,10 @@ protected:
 	int32 CurrentEnemyCount = 0;
 	int32 TargetKillCount = 10;
 	
-	APlayerController* RequestingPlayerControllerCache;
+	UPROPERTY(Transient)
+	TObjectPtr<APlayerController> RequestingPlayerControllerCache;
+	
+	
 	
 public:
 	UPROPERTY(EditAnywhere, Category = "Combat")

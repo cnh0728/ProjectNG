@@ -262,7 +262,7 @@ void ANGUnitPawn::SetPlacedGridIndex(const FIntVector2& NewIndex)
 	MapManagerCache->GridMap.SetGridData(NewIndex, GridData);
 }
 
-TOptional<FIntVector2> ANGUnitPawn::GetPlacedGridIndex()
+FIntVector2 ANGUnitPawn::GetPlacedGridIndex()
 {
 	return PlacedGridIndex;
 }

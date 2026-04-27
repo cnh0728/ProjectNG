@@ -2,6 +2,7 @@
 
 #include "Player/NGPlayerState.h"
 
+#include "Components/NGPocketComponent.h"
 
 ANGPlayerState::ANGPlayerState()
 {
@@ -11,4 +12,6 @@ ANGPlayerState::ANGPlayerState()
 	AbilitySystemComponent = CreateDefaultSubobject<UNGAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	AbilitySystemComponent->SetIsReplicated(true);
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
+	
+	PlayerPocket = CreateDefaultSubobject<UNGPocketComponent>("PocketComponent");
 }

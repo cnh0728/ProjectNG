@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "NGPlayerState.h"
 #include "GameFramework/PlayerController.h"
 #include "NGPlayerController.generated.h"
 
@@ -85,15 +86,16 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Selection")
 	TObjectPtr<ANGUnitPawn> SelectedUnit;
+	
+			
 /*************************************/
 /*				리롤 관련			 */
 /*************************************/
 public:
-	UNGPocketComponent* GetPlayerPocket() { return PlayerPocket; }
+	UFUNCTION(Server, Reliable)
+	void Server_RequestBuyUnit(FName UnitName);
 	
-protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Game|Pocket")
-	TObjectPtr<UNGPocketComponent> PlayerPocket;
+	UNGPocketComponent* GetPlayerPocket();
 	
 /*************************************/
 /*				UI					 */
@@ -105,22 +107,14 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UNGUnitInfoWidget> UnitInfoWidgetInstance;
 	
-	
-/*************************************/
-/*			서버리퀘스트				 */
-/*************************************/
-public:
-	UFUNCTION(Server, Reliable)
-	void Server_RequestBuyUnit(FName UnitName);
-	
-	UFUNCTION(Server, Reliable)
-	void Server_RequestStartWave();
-	
 /*************************************/
 /*				Debug				 */
 /*************************************/
-	
+
 public:
+	UFUNCTION(Server, Reliable)
+	void Server_RequestStartWave();
+
 	UFUNCTION(Exec)
 	void Cmd_StartWave();
 	

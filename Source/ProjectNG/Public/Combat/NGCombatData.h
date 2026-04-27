@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "NGCombatData.generated.h"
 
+class ANGPlayerState;
 class ANGEnemyPawn;
 
 USTRUCT(BlueprintType)
@@ -36,4 +37,10 @@ struct FCombatSettingData
 {
 	GENERATED_BODY()
 	int EnemyCount;
+		
+	UPROPERTY()
+	TObjectPtr<ANGPlayerState> PlayerA;
+	
+	UPROPERTY()
+	TObjectPtr<ANGPlayerState> PlayerB;
 };

@@ -29,7 +29,6 @@ protected:
 	
 	void DrawGridLine();
 	void MakeEnemySpline();
-	FVector GetHexCorner(float Size, int32 Index) const;
 
 	void InitGridMap(const int32 InitSizeX = 10, const int32 InitSizeY = 10, const double CellSize = 100.f);
 

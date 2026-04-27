@@ -47,8 +47,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Game|Shop")
 	int32 ShopSlotCount = 3;
 
-	UPROPERTY(BlueprintReadWrite, Category = "Cache")
-	TObjectPtr<UNGPocketComponent> CachedPocket;
 private:
 	UPROPERTY(VisibleAnywhere, ReplicatedUsing = OnRep_RollPocket, Category = "Game|Shop")
 	TArray<FName> RollPocket; // 플레이어의 상점에 표시된 유닛 목록
@@ -59,6 +57,9 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Game|Shop")
 	TObjectPtr<UDataTable> ProbabilityTable;
 	
+/*************************************/
+/*				Debug용				 */
+/*************************************/
 public:
 	UFUNCTION(BlueprintCallable, Category = "Debug")
 	FString GetDebugNetMode() const
