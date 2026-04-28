@@ -6,9 +6,9 @@
 #include "GameFramework/GameStateBase.h"
 #include "NGGameState.generated.h"
 
+class AGridMapManager;
 enum class EUnitTier : uint8;
 class ACombatManager;
-class AGridMapManager;
 /**
  * 
  */
@@ -38,11 +38,11 @@ public:
 
 	UDataTable* GetUnitDataTable(){ return UnitDataTable; }
 	
-	void InitializeGridMapManager(AGridMapManager* InitGridMap){ GridMapManager = InitGridMap; }
-	
-	AGridMapManager* GetGridMapManager(){ return GridMapManager; }
-	
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+		
+	uint8 InitializeGridMapManager(AGridMapManager* InitGridMap);
+	
+	AGridMapManager* GetGridMapManager(uint8 Id){ return GridMapManagers[Id]; }
 	
 protected:
 	// Key: DataTable RowName, Value: remain count
@@ -53,9 +53,9 @@ protected:
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Game|DataTable")
 	TObjectPtr<UDataTable> UnitDataTable;
-
+	
 	UPROPERTY(Replicated, Transient, BlueprintReadOnly, Category = "Managers")
-	TObjectPtr<AGridMapManager> GridMapManager;
+	TArray<AGridMapManager*> GridMapManagers;
 	
 private:
 	void InitializeUnitPool();

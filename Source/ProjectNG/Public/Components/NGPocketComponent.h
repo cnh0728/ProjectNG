@@ -7,6 +7,8 @@
 #include "NGPocketComponent.generated.h"
 
 
+class ANGUnitPawn;
+
 UENUM(BlueprintType)
 enum class EShopActionType : uint8
 {
@@ -29,7 +31,7 @@ public:
 	void RequestRoll();
 
 	UFUNCTION(BlueprintPure, Category = "Game|Shop")
-	const TArray<FName>& GetRollPocket() const { return RollPocket; }
+	const TArray<FName>& GetRollPocket() const { return RollShopPocket; }
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Game|Shop")
 	int32 PlayerLevel = 1; // TODO. 어빌리티 시스템으로 처리해야함. 현재 디버깅용으로 임시 변수
@@ -42,6 +44,8 @@ protected:
 	
 	UFUNCTION()
 	void OnRep_RollPocket();
+	
+	UFUNCTION()
 	void UpdateRollUnit();
 
 	UPROPERTY(EditDefaultsOnly, Category = "Game|Shop")
@@ -49,13 +53,32 @@ protected:
 
 private:
 	UPROPERTY(VisibleAnywhere, ReplicatedUsing = OnRep_RollPocket, Category = "Game|Shop")
-	TArray<FName> RollPocket; // 플레이어의 상점에 표시된 유닛 목록
+	TArray<FName> RollShopPocket; // 플레이어의 상점에 표시된 유닛 목록
 	
-	UPROPERTY(Replicated)
+	UPROPERTY(Replicated, VisibleAnywhere)
 	EShopActionType LastShopAction;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Game|Shop")
 	TObjectPtr<UDataTable> ProbabilityTable;
+
+
+public:
+	TArray<ANGUnitPawn*> GetOwnedUnits() { return OwnedUnitPocket; };
+
+	void ControlPocketSpawning(ANGUnitPawn* NewPawn);
+	void ControlPocketPlacing(ANGUnitPawn* NewPawn);
+	void ControlPocketUnPlacing(ANGUnitPawn* NewPawn);
+	void ControlPocketSelling(ANGUnitPawn* NewPawn);
+	
+private:
+	UPROPERTY(Replicated, VisibleAnywhere, Category = "Game|Unit")
+	TArray<ANGUnitPawn*> OwnedUnitPocket;
+	
+	UPROPERTY(VisibleAnywhere, Category = "Game|Unit")
+	TArray<TWeakObjectPtr<ANGUnitPawn>> PlacedUnitPocket;
+
+	UPROPERTY(VisibleAnywhere, Category = "Game|Unit")
+	TArray<TWeakObjectPtr<ANGUnitPawn>> WaitUnitPocket;
 	
 /*************************************/
 /*				Debug용				 */

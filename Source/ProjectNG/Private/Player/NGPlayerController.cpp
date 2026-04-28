@@ -85,6 +85,13 @@ void ANGPlayerController::Tick(float DeltaTime)
 	// ProgressDragActor();
 }
 
+void ANGPlayerController::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+	
+	
+}
+
 void ANGPlayerController::ProgressDragActor()
 {
 	if (DraggingUnit.IsValid())

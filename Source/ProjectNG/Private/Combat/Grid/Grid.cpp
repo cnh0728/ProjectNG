@@ -137,7 +137,7 @@ FGridData FHexGridMap::GetGridData(const FIntVector2 GridIndex)
     return FGridData();
 }
 
-TOptional<FIntVector2> FHexGridMap::GetEmptyGridIndex()
+TOptional<FIntVector2> FHexGridMap::GetEmptyGridIndex() const
 {
     if (EmptyGridIndex.IsEmpty()) return TOptional<FIntVector2>();
     return EmptyGridIndex.Last();

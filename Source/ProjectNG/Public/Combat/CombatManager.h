@@ -35,8 +35,8 @@ public:
 	
 protected:
 	void SpawnEnemyTimerElapsed();
-	
-	void SpawnEnemy();
+
+	bool SpawnEnemy();
 
 public:
 	void StartCombat(FCombatSettingData SettingData, APlayerController* PC);

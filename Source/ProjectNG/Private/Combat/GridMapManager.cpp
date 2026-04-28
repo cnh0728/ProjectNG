@@ -4,16 +4,13 @@
 #include "Combat/GridMapManager.h"
 
 #include "Combat/Grid/Grid.h"
-#include "Components/CapsuleComponent.h"
+#include "Components/NGPocketComponent.h"
 #include "Components/SplineComponent.h"
-#include "Core/NGDeveloperSettings.h"
-#include "Core/NGPoolSubSystem.h"
+#include "Core/NGSpawnHelper.h"
 #include "Core/NGUnitData.h"
 #include "Game/NGGameState.h"
-#include "GameModes/NGInGameGameMode.h"
-#include "ProjectNG/ProjectNG.h"
-
-class UNGDeveloperSettings;
+#include "Player/NGPlayerController.h"
+#include "Player/NGPlayerState.h"
 
 AGridMapManager::AGridMapManager()
 {
@@ -31,9 +28,9 @@ AGridMapManager::AGridMapManager()
 	MakeEnemySpline();
 }
 
-bool AGridMapManager::IsPossibleSpawnPawn(AGridMapManager* MapManager) const
+bool AGridMapManager::IsPossibleSpawnPawn() const
 {
-	TOptional<FIntVector2> EmptyGridIndex = MapManager->GridMap.GetEmptyGridIndex();
+	TOptional<FIntVector2> EmptyGridIndex = GridMap.GetEmptyGridIndex();
 	
 	if (!EmptyGridIndex.IsSet())
 	{
@@ -44,89 +41,50 @@ bool AGridMapManager::IsPossibleSpawnPawn(AGridMapManager* MapManager) const
 	return true;
 }
 
-bool AGridMapManager::SpawnUnitPawn(FName UnitName, APlayerController* RequestingPlayer) const
+bool AGridMapManager::SpawnUnitPawn(FName UnitName, APlayerController* RequestingPlayer)
 {
-	if (!HasAuthority())	return false;
+	TOptional<FIntVector2> EmptyGridIndex = GridMap.GetEmptyGridIndex();
+		
+	if (!IsPossibleSpawnPawn())		return false;
 	
-	//여기서부터 아래가 소환로직
 	ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>();
 	if (!GS)	return false;
 	
-	AGridMapManager* MapManager = GS->GetGridMapManager();
-	if (!MapManager)	return false;
-	
-	UNGPoolSubSystem* Pool = GetWorld()->GetSubsystem<UNGPoolSubSystem>();
-	if (!Pool)	return false;
-	
-	TOptional<FIntVector2> EmptyGridIndex = MapManager->GridMap.GetEmptyGridIndex();
-		
-	if (!IsPossibleSpawnPawn(MapManager))
-	{
-		return false;
-	}
-	
 	UDataTable* UnitDataTable = GS->GetUnitDataTable();
+	if (!UnitDataTable)	return false;
 	
-	if (UnitDataTable)
-	{
-		FUnitData* FoundRow = UnitDataTable->FindRow<FUnitData>(UnitName, TEXT(""));
+	FUnitData* FoundRow = UnitDataTable->FindRow<FUnitData>(UnitName, TEXT(""));
+	if (!FoundRow || !FoundRow->UnitClass)	return false;
+	
+	FVector SpawnLocation = GridMap.GetWorldLocation(EmptyGridIndex.GetValue());
+	FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLocation);
 
-		if (FoundRow && FoundRow->UnitClass)
+	ANGUnitPawn* NewPawn = UNGSpawnHelper::SpawnPawn<ANGUnitPawn>(this, FoundRow->UnitClass, SpawnTransform, RequestingPlayer);
+	if (!NewPawn)	return false;
+	
+	//여기서 찾은 그리드에 값 기입
+	FGridData GridData;
+	GridData.PlacedPawn = NewPawn;
+			
+	NewPawn->SetPlacedGridIndex(EmptyGridIndex.GetValue());
+	GridMap.SetGridData(EmptyGridIndex.GetValue(), GridData);
+
+	if (ANGPlayerState* PS = RequestingPlayer->GetPlayerState<ANGPlayerState>())
+	{
+		if (UNGPocketComponent* Pocket = PS->GetPlayerPocket())
 		{
-			FVector SpawnLocation = MapManager->GridMap.GetWorldLocation(EmptyGridIndex.GetValue());
-						
-			ANGUnitPawn* DefaultUnit = FoundRow->UnitClass->GetDefaultObject<ANGUnitPawn>();
-					
-			if (DefaultUnit)
-			{
-				FVector HalfHeight = DefaultUnit->GetHalfCapsule();
-							
-				SpawnLocation += HalfHeight;
-			}
-						
-			FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLocation);
-			// UClass* CC = GetDefault<UNGDeveloperSettings>()->PawnClass[FoundRow->UnitClass].LoadSynchronous();
-			
-			FActorSpawnParameters SpawnParams;
-			SpawnParams.Owner = RequestingPlayer;
-			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-			
-			ANGUnitPawn* NewPawn = Cast<ANGUnitPawn>(Pool->AcquirePawn(FoundRow->UnitClass, SpawnTransform, SpawnParams));
-						
-			if (!NewPawn)
-			{
-				UE_LOG(LogTemp, Warning, TEXT("NewPawn is nullptr"));
-				return false;
-			}
-						
-			UCapsuleComponent* Capsule = NewPawn->GetCapsuleComponent();
-			if (Capsule)
-			{
-				Capsule->SetCollisionResponseToChannel(ECC_SelectableUnit, ECR_Block);
-				Capsule->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-			}
-						
-			//여기서 찾은 그리드에 값 기입
-			FGridData GridData;
-			GridData.PlacedPawn = NewPawn;
-			
-			NewPawn->SetPlacedGridIndex(EmptyGridIndex.GetValue());
-			MapManager->GridMap.SetGridData(EmptyGridIndex.GetValue(), GridData);
-						
-			return true;
+			Pocket->AddUnit(NewPawn);
+			//기본적으로 Wait에 넣어야함, Wait에서 전투로 옮기는건 
+			Pocket->AddWaitUnit(NewPawn);
 		}
 	}
-	return false;
+	
+	return true;
 }
 
 void AGridMapManager::BeginPlay()
 {
 	Super::BeginPlay();
-
-	if (ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>())
-	{
-		GS->InitializeGridMapManager(this);
-	}
 	
 	GridMap.ResetEmptyGridIndex();
 }
@@ -150,24 +108,15 @@ void AGridMapManager::MakeEnemySpline()
 	EnemyPathSpline->ClearSplinePoints(true);
 	float PushDistance = GridMap.CellSize + SplineMarginFromEdge;
 
-	// 1. 모든 타일의 월드 좌표를 뒤져서 최소/최대 경계를 찾습니다.
-	float MinX = FLT_MAX, MaxX = -FLT_MAX, MinY = FLT_MAX, MaxY = -FLT_MAX;
-
-	for (const auto& Pair : GridMap.GetGridInfo()) // GridInfo나 EmptyGridIndex 순회
-	{
-		FVector Loc = GridMap.GetWorldLocation(Pair.Key);
-		MinX = FMath::Min(MinX, Loc.X);
-		MaxX = FMath::Max(MaxX, Loc.X);
-		MinY = FMath::Min(MinY, Loc.Y);
-		MaxY = FMath::Max(MaxY, Loc.Y);
-	}
+	FVector MinCoor = GridMap.GetWorldLocation(FIntVector2(0, 0));
+	FVector MaxCoor = GridMap.GetWorldLocation(FIntVector2(GridMap.CountQ - 1, GridMap.CountR - 1));
 
 	// 2. 여유 공간(PushDistance)을 둔 4개의 직사각형 모서리 좌표 설정
 	TArray<FVector> Points;
-	Points.Add(FVector(MinX - PushDistance, MinY - PushDistance, 0.f)); // 좌하
-	Points.Add(FVector(MaxX + PushDistance, MinY - PushDistance, 0.f)); // 우하
-	Points.Add(FVector(MaxX + PushDistance, MaxY + PushDistance, 0.f)); // 우상
-	Points.Add(FVector(MinX - PushDistance, MaxY + PushDistance, 0.f)); // 좌상
+	Points.Add(FVector(MinCoor.X - PushDistance, MinCoor.Y - PushDistance, 0.f)); // 좌하
+	Points.Add(FVector(MaxCoor.X + PushDistance, MinCoor.Y - PushDistance, 0.f)); // 우하
+	Points.Add(FVector(MaxCoor.X + PushDistance, MinCoor.Y + PushDistance, 0.f)); // 우상
+	Points.Add(FVector(MaxCoor.X - PushDistance, MinCoor.Y + PushDistance, 0.f)); // 좌상
 
 	for (int32 i = 0; i < Points.Num(); ++i)
 	{

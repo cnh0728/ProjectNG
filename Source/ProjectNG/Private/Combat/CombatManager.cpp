@@ -6,10 +6,9 @@
 #include "Pawn/NGEnemyPawn.h"
 #include "Pawn/NGUnitPawn.h"
 #include "Combat/GridMapManager.h"
-#include "Components/CapsuleComponent.h"
 #include "Components/SplineComponent.h"
-#include "Core/NGDeveloperSettings.h"
 #include "Core/NGPoolSubSystem.h"
+#include "Core/NGSpawnHelper.h"
 #include "Game/NGGameState.h"
 #include "GameModes/NGInGameGameMode.h"
 #include "Net/UnrealNetwork.h"
@@ -65,7 +64,7 @@ void ACombatManager::SpawnEnemyTimerElapsed()
 	}
 }
 
-void ACombatManager::SpawnEnemy()
+bool ACombatManager::SpawnEnemy()
 {
 	AGridMapManager* GridMapManager = nullptr;
 	
@@ -74,59 +73,38 @@ void ACombatManager::SpawnEnemy()
 		GridMapManager = GS->GetGridMapManager();
 	}
 
-	if (!IsValid(GridMapManager))	return;
+	if (!IsValid(GridMapManager))	return false;
 		
-	if (!IsValid(GridMapManager->EnemyPathSpline))	return;
+	if (!IsValid(GridMapManager->EnemyPathSpline))	return false;
 	
 	UNGPoolSubSystem* Pool = GetWorld()->GetSubsystem<UNGPoolSubSystem>();
 	
-	if (!Pool)	return;
+	if (!Pool)	return false;
 	
 	UE_LOG(LogTemp, Warning, TEXT("Enemy Spawned!"));
 	
 	FVector SpawnLocation = GridMapManager->EnemyPathSpline->GetLocationAtSplinePoint(0, ESplineCoordinateSpace::World);
-	
 	FRotator SpawnRotation = GridMapManager->EnemyPathSpline->GetRotationAtSplinePoint(0, ESplineCoordinateSpace::World);
 	
-	TSubclassOf<ANGEnemyPawn> EnemyClass = WaveList[CurrentWaveIndex].EnemyClass;
+	FTransform SpawnTransform(SpawnRotation, SpawnLocation);
 	
-	/////////////////////////
-	/// 캐릭터 스폰 오프셋이 발끝기준으로 소환되게 조정
-	FVector CapsuleHalfHeight = FVector::ZeroVector;
-	if (IsValid(EnemyClass))
-	{
-		if (ANGPawnBase* DefaultChar = Cast<ANGPawnBase>(EnemyClass->GetDefaultObject()))
-		{
-			CapsuleHalfHeight.Z = DefaultChar->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
-			SpawnLocation += CapsuleHalfHeight;
-		}
-	}
-	/////////////////////////
+	// TSubclassOf<ANGEnemyPawn> EnemyClass = WaveList[CurrentWaveIndex].EnemyClass;
+	TSubclassOf<ANGEnemyPawn> EnemyClass = ANGEnemyPawn::StaticClass(); //TODO: 웨이브시스템 구현하면 위에꺼로 바꾸기
 	
-	if (const UNGDeveloperSettings* DS = GetDefault<UNGDeveloperSettings>())
+	FActorSpawnParameters SpawnParameters;
+	SpawnParameters.Owner = RequestingPlayerControllerCache;
+	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	
+	ANGEnemyPawn* NewEnemy = UNGSpawnHelper::SpawnPawn<ANGEnemyPawn>(this, EnemyClass, SpawnTransform, RequestingPlayerControllerCache);
+	if (!NewEnemy)
 	{
-		if (TSoftClassPtr<ANGPawnBase> ClassPtr = DS->PawnClass[ANGEnemyPawn::StaticClass()])
-		{
-			UClass* CC = ClassPtr.LoadSynchronous();
-		
-			FActorSpawnParameters SpawnParameters;
-			SpawnParameters.Owner = RequestingPlayerControllerCache; //TODO: PC 캐싱해서 줘야함
-			SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-			
-			if (ANGEnemyPawn* NewEnemy = Cast<ANGEnemyPawn>(Pool->AcquirePawn(CC, FTransform(SpawnRotation, SpawnLocation), SpawnParameters)))
-			{
-				NewEnemy->InitPatrolPath(GridMapManager->EnemyPathSpline, CapsuleHalfHeight);
-			}
-		
-			EnemiesSpawnedSoFar++;
-		}else
-		{
-			UE_LOG(LogTemp, Error, TEXT("Cannot Find EnemyClass"));
-		}
-	}else
-	{
-		UE_LOG(LogTemp, Error, TEXT("Cannot Find DeveloperSettings"));
+		return false;
 	}
+	
+	NewEnemy->InitPatrolPath(GridMapManager->EnemyPathSpline); //TODO: 땅에 파묻히면 여기서 CapsuleHalfHeight 주기
+	EnemiesSpawnedSoFar++;
+	
+	return true;
 }
 
 
@@ -188,19 +166,26 @@ void ACombatManager::SetupCombat(FCombatSettingData SettingData)
 	CurrentEnemyCount = 0;
 	TargetKillCount = SettingData.EnemyCount;
 	
-	UNGPocketComponent* PocketComponent= SettingData.PlayerA->GetPlayerPocket();
-	//TODO: 유닛 배치
+	if (SettingData.PlayerA)
+	{
+		UNGPocketComponent* PocketComponent= SettingData.PlayerA->GetPlayerPocket();
+		
+		//TODO: 유닛 배치
+		
+		// for (ANGUnitPawn* Unit : )
+		// {
+		// 	FVector TargetLoc = MapManager->GridMap.GetWorldLocation(Unit->GetPlacedGridIndex());
+		// 	Unit->SetActorLocation(TargetLoc);
+		// }
+	}
 	
-	// for (ANGUnitPawn* Unit : )
-	// {
-	// 	FVector TargetLoc = MapManager->GridMap.GetWorldLocation(Unit->GetPlacedGridIndex());
-	// 	Unit->SetActorLocation(TargetLoc);
-	// }
-	//
-	// for (ANGUnitPawn* Unit : SettingData.PlayerB)
-	// {
-	// 	
-	// }
+	if (SettingData.PlayerB)
+	{
+		// for (ANGUnitPawn* Unit : SettingData.PlayerB)
+		// {
+		// 	
+		// }
+	}
 }
 
 void ACombatManager::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

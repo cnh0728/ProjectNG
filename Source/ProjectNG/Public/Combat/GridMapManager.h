@@ -18,9 +18,9 @@ class PROJECTNG_API AGridMapManager : public AActor
 
 public:
 	AGridMapManager();
-	bool IsPossibleSpawnPawn(AGridMapManager* MapManager) const;
+	bool IsPossibleSpawnPawn() const;
 
-	bool SpawnUnitPawn(FName UnitName, APlayerController* RequestingPlayer) const;
+	bool SpawnUnitPawn(FName UnitName, APlayerController* RequestingPlayer);
 	
 protected:
 	virtual void BeginPlay() override;
@@ -35,9 +35,6 @@ protected:
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	USplineComponent* EnemyPathSpline;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Grid")
-	FHexGridMap GridMap;
 
 private:
 	// 디버그 라인 색상 등 시각화 관련 변수

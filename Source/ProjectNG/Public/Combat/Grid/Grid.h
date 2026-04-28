@@ -17,7 +17,7 @@ struct FGridData
 	GENERATED_BODY()
 
 	UPROPERTY()
-	TObjectPtr<ANGUnitPawn> PlacedPawn;
+	TWeakObjectPtr<ANGUnitPawn> PlacedPawn;
 	
 	void Reset()
 	{
@@ -65,7 +65,7 @@ public:
 	void ResetGridInfo();
 	void ResetEmptyGridIndex();
 	FGridData GetGridData(const FIntVector2 GridIndex);
-	TOptional<FIntVector2> GetEmptyGridIndex();
+	TOptional<FIntVector2> GetEmptyGridIndex() const;
 	bool IsGridIndexEmpty(const FIntVector2& GridIndex) const;
 
 	const TMap<FIntVector2, FGridData>& GetGridInfo() const;

@@ -4,6 +4,7 @@
 #include "Core/NGPoolSubSystem.h"
 
 #include "Combat/Weapon/NGProjectile.h"
+#include "Core/NGDeveloperSettings.h"
 
 ANGProjectile* UNGPoolSubSystem::AcquireProjectile(TSubclassOf<ANGProjectile> ProjectileClass,
                                                    const FTransform& SpawnTransform, ANGPawnBase* Target)
@@ -61,13 +62,27 @@ ANGPawnBase* UNGPoolSubSystem::AcquirePawn(TSubclassOf<ANGPawnBase> PawnClass,
 	}
 	else
 	{
-		Pawn = GetWorld()->SpawnActor<ANGPawnBase>(PawnClass, SpawnTransform, SpawnParams);
+		UClass* TargetClass = PawnClass;
+		
+		TMap<TSubclassOf<ANGPawnBase>, TSoftClassPtr<ANGPawnBase>> ClassMap = GetDefault<UNGDeveloperSettings>()->PawnClass;
+		if (ClassMap.Contains(PawnClass))
+		{
+			//TODO: LoadSynchronous는 병목의 원인이 되기도 함. 비동기로드를 미리 해두고 나중에는 메모리에 있는지 체크하는 방식이 나음
+			if (UClass* LoadClass = ClassMap[PawnClass].LoadSynchronous())
+			{
+				TargetClass = LoadClass;
+				UE_LOG(LogTemp, Log, TEXT("Spawn Developer Setting Pawn Class"));
+			}
+		}
+		
+		Pawn = GetWorld()->SpawnActor<ANGPawnBase>(TargetClass, SpawnTransform, SpawnParams);
+		UE_LOG(LogTemp, Log, TEXT("Spawn Default Pawn Class"));
 	}
 	
 	return Pawn;
 }
 
-void UNGPoolSubSystem::ReleaseDefault(AActor* InActor)
+void UNGPoolSubSystem::ReleaseDefaultSetting(AActor* InActor)
 {
 	check(InActor);
 	
@@ -81,7 +96,7 @@ void UNGPoolSubSystem::ReleaseSegment(ANGPawnBase* Pawn)
 	//TODO: release는 굉장히 유사해서 Template으로 하고 싶었는데 Pool을 통일해버리면 드롭리스트가 전부나와서 지저분해져서 걍 분리 
 	if (!Pawn)	return;
 	
-	ReleaseDefault(Pawn);
+	ReleaseDefaultSetting(Pawn);
 	
 	FNGPawnList& Pool = PawnPools.FindOrAdd(Pawn->GetClass());
 	Pool.FreePawnList.Push(Pawn);
@@ -91,7 +106,7 @@ void UNGPoolSubSystem::ReleaseSegment(ANGProjectile* Projectile)
 {
 	if (!Projectile)	return;
 	
-	ReleaseDefault(Projectile);
+	ReleaseDefaultSetting(Projectile);
 	
 	FNGProjectileList& Pool = ProjectilePools.FindOrAdd(Projectile->GetClass());
 	Pool.FreeProjectileList.Push(Projectile);

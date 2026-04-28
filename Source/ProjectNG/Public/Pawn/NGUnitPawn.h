@@ -89,6 +89,8 @@ private:
 	UPROPERTY(Replicated)
 	uint8 bIsDragMoving : 1;
 
+	UPROPERTY()
+	uint8 bIsOnField : 1;
 	
 	UPROPERTY(Replicated, EditDefaultsOnly, Category = "GridIndex")
 	FIntVector2 PlacedGridIndex;

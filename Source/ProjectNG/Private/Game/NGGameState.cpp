@@ -84,7 +84,13 @@ void ANGGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
-	DOREPLIFETIME(ANGGameState, GridMapManager);
+	DOREPLIFETIME(ANGGameState, GridMapManagers);
+}
+
+uint8 ANGGameState::InitializeGridMapManager(AGridMapManager* InitGridMap)
+{
+	GridMapManagers.AddUnique(InitGridMap); 
+	return GridMapManagers.Num() - 1;
 }
 
 void ANGGameState::InitializeUnitPool()

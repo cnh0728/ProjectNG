@@ -43,7 +43,6 @@ public:
 	ANGPawnBase* AcquirePawn(TSubclassOf<ANGPawnBase> PawnClass, const FTransform& SpawnTransform, const FActorSpawnParameters& SpawnParams);
 	void ReleaseSegment(ANGPawnBase* Pawn);
 	
-	void ReleaseDefault(AActor* InActor);
 protected:
 	UPROPERTY()
 	TMap<TSubclassOf<ANGProjectile>, FNGProjectileList> ProjectilePools;
@@ -51,4 +50,5 @@ protected:
 	UPROPERTY()
 	TMap<TSubclassOf<ANGPawnBase>, FNGPawnList> PawnPools;
 	
+	void ReleaseDefaultSetting(AActor* InActor);
 };

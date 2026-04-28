@@ -5,9 +5,11 @@
 #include "CoreMinimal.h"
 #include "AbilitySystemInterface.h"
 #include "AbilitySystem/NGAbilitySystemComponent.h"
+#include "Combat/Grid/Grid.h"
 #include "GameFramework/PlayerState.h"
 #include "NGPlayerState.generated.h"
 
+class AGridMapManager;
 class UNGPocketComponent;
 /**
  * In-Game에서의 플레이어의 상태 정보를 저장하는 클래스
@@ -29,12 +31,17 @@ public:
 	//~End IAbilitySystemInterface
 
 	UNGAbilitySystemComponent* GetNGAbilitySystemComponent() const { return AbilitySystemComponent; }
+
 	
 protected:
 	UPROPERTY()
 	TObjectPtr<UNGAbilitySystemComponent> AbilitySystemComponent;
 
-		
+			
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Grid")
+	FHexGridMap GridMap;
+
+	
 /*************************************/
 /*				Pocket 관련			 */
 /*************************************/

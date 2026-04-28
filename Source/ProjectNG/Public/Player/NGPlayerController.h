@@ -45,6 +45,8 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Game|Shop")
 	FOnUnitsUpdatedSignature OnUnitsUpdated;
 
+	virtual void OnRep_PlayerState() override;
+	
 protected:
 	virtual void ProgressDragActor();
 

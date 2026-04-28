@@ -18,7 +18,7 @@ UNGPocketComponent::UNGPocketComponent()
 void UNGPocketComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME_CONDITION(UNGPocketComponent, RollPocket, COND_OwnerOnly); //요청보낸 주인한테만 동기화
+	DOREPLIFETIME_CONDITION(UNGPocketComponent, RollShopPocket, COND_OwnerOnly); //요청보낸 주인한테만 동기화
 }
 
 void UNGPocketComponent::RequestRoll()
@@ -44,7 +44,7 @@ void UNGPocketComponent::RequestRoll()
 void UNGPocketComponent::AddUnitToBuyingPocket(FName UnitName)
 {
 	LastShopAction = EShopActionType::Buy;
-	RollPocket.Remove(UnitName);
+	RollShopPocket.Remove(UnitName);
 }
 
 void UNGPocketComponent::OnRep_RollPocket()
@@ -64,25 +64,52 @@ void UNGPocketComponent::OnRep_RollPocket()
 
 void UNGPocketComponent::UpdateRollUnit()
 {
-	if (ANGPlayerController* PC = Cast<ANGPlayerController>(GetOwner()))
+	if (ANGPlayerState* PS = GetOwner<ANGPlayerState>())
 	{
-		FString RoleStr = GetOwner()->HasAuthority() ? TEXT("[SERVER]") : TEXT("[CLIENT]");
-		auto Owner = GetOwner();
-		
-		UE_LOG(LogTemp, Warning, TEXT("[OnRep] Pocket Addr: %p, Owner Addr: %p"), this, Owner);
-		
-		// 2. 델리게이트 바인딩 상태 확인 (중요)
-		if (PC->OnUnitsUpdated.IsBound())
+		if (ANGPlayerController* PC = Cast<ANGPlayerController>(PS->GetPlayerController()))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("OnRep_RollChange: Delegate is Bound. Broadcaster Addr: %p"), &(PC->OnUnitsUpdated));
+			FString RoleStr = GetOwner()->HasAuthority() ? TEXT("[SERVER]") : TEXT("[CLIENT]");
+			auto Owner = GetOwner();
+			
+			UE_LOG(LogTemp, Warning, TEXT("[OnRep] Pocket Addr: %p, Owner Addr: %p"), this, Owner);
+			
+			// 2. 델리게이트 바인딩 상태 확인 (중요)
+			if (PC->OnUnitsUpdated.IsBound())
+			{
+				UE_LOG(LogTemp, Warning, TEXT("OnRep_RollChange: Delegate is Bound. Broadcaster Addr: %p"), &(PC->OnUnitsUpdated));
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("OnRep_RollChange: NO ONE is listening to this delegate!"));
+			}
+			PC->OnUnitsUpdated.Broadcast();
 		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("OnRep_RollChange: NO ONE is listening to this delegate!"));
-		}
-		PC->OnUnitsUpdated.Broadcast();
-		
 	}
+}
+
+void UNGPocketComponent::ControlPocketSpawning(ANGUnitPawn* NewPawn)
+{
+	OwnedUnitPocket.AddUnique(NewPawn);
+	WaitUnitPocket.AddUnique(NewPawn);
+}
+
+void UNGPocketComponent::ControlPocketPlacing(ANGUnitPawn* NewPawn)
+{
+	PlacedUnitPocket.AddUnique(NewPawn);
+	WaitUnitPocket.Remove(NewPawn);
+}
+
+void UNGPocketComponent::ControlPocketUnPlacing(ANGUnitPawn* NewPawn)
+{
+	PlacedUnitPocket.Remove(NewPawn);
+	WaitUnitPocket.AddUnique(NewPawn);
+}
+
+void UNGPocketComponent::ControlPocketSelling(ANGUnitPawn* NewPawn)
+{
+	OwnedUnitPocket.Remove(NewPawn);
+	PlacedUnitPocket.Remove(NewPawn);
+	WaitUnitPocket.Remove(NewPawn);
 }
 
 void UNGPocketComponent::Server_RequestRoll_Implementation()
@@ -91,8 +118,7 @@ void UNGPocketComponent::Server_RequestRoll_Implementation()
 	
 	checkf(ProbabilityTable, TEXT("[PocketComponent] Not initialized Probability table."))
 	
-	AController* OwnerController = Cast<AController>(GetOwner());
-	if (!OwnerController || !ProbabilityTable) return;
+	if (!ProbabilityTable) return;
 
 	ANGGameState* GameState = GetWorld()->GetGameState<ANGGameState>();
 	if (!GameState) return;
@@ -108,11 +134,11 @@ void UNGPocketComponent::Server_RequestRoll_Implementation()
 	}
 	
 	// 기존 포켓 안의 유닛을 다시 반환
-	for (FName UnitToReturn : RollPocket)
+	for (FName UnitToReturn : RollShopPocket)
 	{
 		GameState->ReturnUnitToPool(UnitToReturn, 1);
 	}
-	RollPocket.Empty();
+	RollShopPocket.Empty();
 
 	for (int32 i = 0; i < ShopSlotCount; ++i)
 	{
@@ -137,7 +163,7 @@ void UNGPocketComponent::Server_RequestRoll_Implementation()
 		if (!SelectedUnitRowName.IsNone() && GameState->IsExistUnit(SelectedUnitRowName))
 		{
 			GameState->GrabUnitFromPool(SelectedUnitRowName);
-			RollPocket.Add(SelectedUnitRowName);
+			RollShopPocket.Add(SelectedUnitRowName);
 		}
 		else
 		{

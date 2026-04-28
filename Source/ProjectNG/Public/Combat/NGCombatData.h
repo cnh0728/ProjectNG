@@ -36,6 +36,16 @@ USTRUCT()
 struct FCombatSettingData
 {
 	GENERATED_BODY()
+	
+	FCombatSettingData() = default;
+	
+	FCombatSettingData(int InEnemyCount, ANGPlayerState* InPlayerA, ANGPlayerState* InPlayerB)
+	{
+		EnemyCount = InEnemyCount;
+		PlayerA = InPlayerA;
+		PlayerB = InPlayerB;
+	}
+	
 	int EnemyCount;
 		
 	UPROPERTY()
