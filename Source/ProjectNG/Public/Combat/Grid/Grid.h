@@ -68,14 +68,18 @@ public:
 	TOptional<FIntVector2> GetEmptyGridIndex() const;
 	bool IsGridIndexEmpty(const FIntVector2& GridIndex) const;
 
-	const TMap<FIntVector2, FGridData>& GetGridInfo() const;
+	bool IsPossibleSpawnPawn() const;
+
+	const TArray<FGridData>& GetGridInfo() const;
 	
 protected:
+	int ConvertPointToIndex(const FIntVector2 GridIndex) const;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	TArray<FIntVector2> EmptyGridIndex;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
-	TMap<FIntVector2, FGridData> GridInfo;
+	TArray<FGridData> GridInfo;
 };
 
 USTRUCT(BlueprintType)

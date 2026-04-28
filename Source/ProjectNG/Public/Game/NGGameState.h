@@ -6,6 +6,7 @@
 #include "GameFramework/GameStateBase.h"
 #include "NGGameState.generated.h"
 
+class ANGUnitPawn;
 class AGridMapManager;
 enum class EUnitTier : uint8;
 class ACombatManager;
@@ -36,11 +37,11 @@ public:
 	// 특정 티어의 유닛을 랜덤으로 반환합니다.
 	FName GetRandomUnitByTier(EUnitTier Tier);
 
-	UDataTable* GetUnitDataTable(){ return UnitDataTable; }
+	TSubclassOf<ANGUnitPawn> GetUnitClass(FName UnitName) const;
 	
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 		
-	uint8 InitializeGridMapManager(AGridMapManager* InitGridMap);
+	uint8 AddGridMapManager(AGridMapManager* InitGridMap);
 	
 	AGridMapManager* GetGridMapManager(uint8 Id){ return GridMapManagers[Id]; }
 	

@@ -19,6 +19,7 @@ void UNGPocketComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProper
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME_CONDITION(UNGPocketComponent, RollShopPocket, COND_OwnerOnly); //요청보낸 주인한테만 동기화
+	DOREPLIFETIME(UNGPocketComponent, OwnedUnitPocket);
 }
 
 void UNGPocketComponent::RequestRoll()

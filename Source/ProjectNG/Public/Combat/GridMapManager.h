@@ -4,10 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "Grid/Grid.h"
+#include "Player/NGPlayerController.h"
+#include "Player/NGPlayerState.h"
 #include "GridMapManager.generated.h"
 
 class USplineComponent;
-class ANGUnitPawn;
 /**
  * 
  */
@@ -18,13 +19,8 @@ class PROJECTNG_API AGridMapManager : public AActor
 
 public:
 	AGridMapManager();
-	bool IsPossibleSpawnPawn() const;
 
-	bool SpawnUnitPawn(FName UnitName, APlayerController* RequestingPlayer);
-	
 protected:
-	virtual void BeginPlay() override;
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void OnConstruction(const FTransform& Transform) override;
 	
 	void DrawGridLine();
@@ -36,7 +32,11 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	USplineComponent* EnemyPathSpline;
 
+	void Initialize(ANGPlayerController* InPC);
 private:
+	UPROPERTY(Transient)
+	TObjectPtr<ANGPlayerController> OwnerPCCache;
+	
 	// 디버그 라인 색상 등 시각화 관련 변수
 	UPROPERTY(EditAnywhere, Category = "Visualization")
 	FColor GridLineColor = FColor::Cyan;

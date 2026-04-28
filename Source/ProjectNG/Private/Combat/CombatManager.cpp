@@ -70,7 +70,8 @@ bool ACombatManager::SpawnEnemy()
 	
 	if (ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>())
 	{
-		GridMapManager = GS->GetGridMapManager();
+		//임시로 0
+		GridMapManager = GS->GetGridMapManager(0);
 	}
 
 	if (!IsValid(GridMapManager))	return false;
@@ -160,7 +161,7 @@ void ACombatManager::SetupCombat(FCombatSettingData SettingData)
 	ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>();
 	if (!GS)	return;
 	
-	AGridMapManager* MapManager = GS->GetGridMapManager();
+	AGridMapManager* MapManager = GS->GetGridMapManager(0);
 	if (!MapManager)	return;
 	
 	CurrentEnemyCount = 0;

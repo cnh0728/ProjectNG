@@ -3,6 +3,7 @@
 #include "Player/NGPlayerState.h"
 
 #include "Components/NGPocketComponent.h"
+#include "Net/UnrealNetwork.h"
 
 ANGPlayerState::ANGPlayerState()
 {
@@ -14,4 +15,12 @@ ANGPlayerState::ANGPlayerState()
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 	
 	PlayerPocket = CreateDefaultSubobject<UNGPocketComponent>("PocketComponent");
+}
+
+void ANGPlayerState::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	
+	DOREPLIFETIME(ANGPlayerState, GridMap);
+	DOREPLIFETIME(ANGPlayerState, PlayerPocket);
 }

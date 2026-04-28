@@ -4,12 +4,55 @@
 #include "Core/NGSpawnHelper.h"
 
 #include "Components/CapsuleComponent.h"
+#include "Components/NGPocketComponent.h"
 #include "Core/NGPoolSubSystem.h"
+#include "Game/NGGameState.h"
+#include "Pawn/NGUnitPawn.h"
+#include "Player/NGPlayerController.h"
 #include "ProjectNG/ProjectNG.h"
 
+bool UNGSpawnHelper::SpawnUnitPawn(ANGPlayerController* OwnerController, FName UnitName)
+{
+	ANGPlayerState* PS = Cast<ANGPlayerController>(OwnerController)->GetPlayerState<ANGPlayerState>();
+	
+	TOptional<FIntVector2> EmptyGridIndex = PS->GridMap.GetEmptyGridIndex();
+	
+	if (!PS->GridMap.IsPossibleSpawnPawn())		return false;
+
+	UNGPocketComponent* Pocket = PS->GetPlayerPocket();
+	if (!Pocket)	return false;
+	
+	UWorld* World = OwnerController->GetWorld();
+	if (!World)	return false;
+	
+	ANGGameState* GS = World->GetGameState<ANGGameState>();
+	if (!GS)	return false;
+	
+	TSubclassOf<ANGPawnBase> UnitClass = GS->GetUnitClass(UnitName);
+	
+	FVector SpawnLoc = PS->GridMap.GetWorldLocation(EmptyGridIndex.GetValue());
+	FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLoc);
+
+	ANGUnitPawn* NewPawn = UNGSpawnHelper::SpawnPawn<ANGUnitPawn>(World, UnitClass, SpawnTransform, OwnerController);
+	if (!NewPawn)	return false;
+	
+	NewPawn->Initialize(OwnerController);
+	
+	//여기서 찾은 그리드에 값 기입
+	FGridData GridData;
+	GridData.PlacedPawn = NewPawn;
+			
+	NewPawn->SetPlacedGridIndex(EmptyGridIndex.GetValue());
+	PS->GridMap.SetGridData(EmptyGridIndex.GetValue(), GridData);
+
+	Pocket->ControlPocketSpawning(NewPawn);
+	
+	return true;
+}
+
 ANGPawnBase* UNGSpawnHelper::Internal_SpawnPawn(UObject* WorldContextObject, ::TSubclassOf<ANGPawnBase> PawnClass,
-                                       FTransform SpawnTransform,
-                                       AActor* Owner)
+                                                FTransform SpawnTransform,
+                                                AActor* Owner)
 {
 	if (!Owner->HasAuthority())	return nullptr;
 	//여기서부터 아래가 소환로직

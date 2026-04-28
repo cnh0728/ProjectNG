@@ -109,32 +109,37 @@ void FHexGridMap::ResetEmptyGridIndex()
             EmptyGridIndex.Add(FIntVector2(q, r));
         }
     }
-    
-    for (auto a : EmptyGridIndex)
-    {
-        UE_LOG(LogTemp, Log, TEXT("EmptyIndex: %d %d"), a.X, a.Y);
-    }
+	
+	GridInfo.Empty();
+	FGridData EmptyData(nullptr);
+	for (int32 q = 0; q < CountQ; ++q)
+	{
+		for (int32 r = 0; r < CountR; ++r)
+		{
+			GridInfo.Add(EmptyData);
+		}
+	}
 }
 
 void FHexGridMap::SetGridData(FIntVector2 GridIndex, const FGridData& GridData)
 {
-    GridInfo.Add(GridIndex, GridData);
+    GridInfo[ConvertPointToIndex(GridIndex)] = GridData;
     EmptyGridIndex.Remove(GridIndex);
 }
 
 void FHexGridMap::EmptyGridMap(const FIntVector2& GridIndex)
 {
-    if (FGridData* FoundData = GridInfo.Find(GridIndex))
+	FGridData FoundData = GridInfo[ConvertPointToIndex(GridIndex)];
+    if (FoundData.PlacedPawn.IsValid())
     {
-        FoundData->Reset();
+        FoundData.Reset();
         EmptyGridIndex.AddUnique(GridIndex);
     }
 }
 
 FGridData FHexGridMap::GetGridData(const FIntVector2 GridIndex)
 {
-    if (FGridData* FoundData = GridInfo.Find(GridIndex)) return *FoundData;
-    return FGridData();
+    return GridInfo[ConvertPointToIndex(GridIndex)];
 }
 
 TOptional<FIntVector2> FHexGridMap::GetEmptyGridIndex() const
@@ -148,9 +153,25 @@ bool FHexGridMap::IsGridIndexEmpty(const FIntVector2& GridIndex) const
     return EmptyGridIndex.Contains(GridIndex);
 }
 
-const TMap<FIntVector2, FGridData>& FHexGridMap::GetGridInfo() const
+bool FHexGridMap::IsPossibleSpawnPawn() const
+{
+	if (EmptyGridIndex.IsEmpty())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Grid is full"));
+		return false;
+	}
+
+	return true;
+}
+
+const TArray<FGridData>& FHexGridMap::GetGridInfo() const
 { 
     return GridInfo;
+}
+
+int FHexGridMap::ConvertPointToIndex(const FIntVector2 GridIndex) const
+{
+	return GridIndex.Y * CountQ + GridIndex.X;
 }
 
 ///////////////////////////////////

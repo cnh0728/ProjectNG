@@ -9,15 +9,15 @@
 #include "Pawn/NGUnitPawn.h"
 #include "Pawn/SelectableInterface.h"
 #include "Combat/GridMapManager.h"
+#include "Core/NGSpawnHelper.h"
 #include "Game/NGGameState.h"
 #include "GameModes/NGInGameGameMode.h"
 #include "Input/NGInputComponent.h"
+#include "Net/UnrealNetwork.h"
 #include "Player/NGPlayerState.h"
 
 #include "ProjectNG/ProjectNG.h"
 #include "UI/NGUnitInfoWidget.h"
-
-class UNGInputComponent;
 
 ANGPlayerController::ANGPlayerController() : bIsDragging(false)
 {
@@ -92,6 +92,39 @@ void ANGPlayerController::OnRep_PlayerState()
 	
 }
 
+void ANGPlayerController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+	
+	SpawnGridMapManager();
+	
+}
+
+void ANGPlayerController::SpawnGridMapManager()
+{
+	//TODO: 유저별 인덱스 받고 인덱스에 맞는 위치 주입
+	FTransform SpawnTransform(FRotator::ZeroRotator, FVector::ZeroVector);
+	
+	GridManager = GetWorld()->SpawnActorDeferred<AGridMapManager>(AGridMapManager::StaticClass(), SpawnTransform, this);
+	if (GridManager)
+	{
+		GridManager->Initialize(this);
+		GridManager->FinishSpawning(SpawnTransform);
+	}
+	
+	if (ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>())
+	{
+		GridMapIndex = GS->AddGridMapManager(GridManager);
+	}
+}
+
+void ANGPlayerController::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	
+	DOREPLIFETIME(ANGPlayerController, GridManager);
+}
+
 void ANGPlayerController::ProgressDragActor()
 {
 	if (DraggingUnit.IsValid())
@@ -101,20 +134,17 @@ void ANGPlayerController::ProgressDragActor()
 		{
 			FVector TargetLocation = HitResult.Location;
 
-			if (ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>())
+			if (ANGPlayerState* PS = GetPlayerState<ANGPlayerState>())
 			{
-				if (AGridMapManager* MapManager = GS->GetGridMapManager())
+				const FHexGridMap& GridMapCache = PS->GridMap;
+				const FIntVector2 GridIndex = GridMapCache.GetCellIndex(TargetLocation);
+				
+				bool bValidGrid = GridMapCache.IsValidIndex(GridIndex);
+				
+				if (bValidGrid)
 				{
-					const FHexGridMap& GridMapCache = MapManager->GridMap;
-					const FIntVector2 GridIndex = GridMapCache.GetCellIndex(TargetLocation);
-					
-					bool bValidGrid = GridMapCache.IsValidIndex(GridIndex);
-					
-					if (bValidGrid)
-					{
-						// TargetLocation = GridMapCache.GetWorldLocation(GridIndex);
-						DraggingUnit->SetDragTargetGridIndex(GridIndex);
-					}
+					// TargetLocation = GridMapCache.GetWorldLocation(GridIndex);
+					DraggingUnit->SetDragTargetGridIndex(GridIndex);
 				}
 			}
 			
@@ -250,20 +280,13 @@ void ANGPlayerController::ResetDragUnit()
 
 void ANGPlayerController::Server_RequestBuyUnit_Implementation(FName UnitName)
 {
-	//여기서 그리드에 칸이 비어있는지 체크 후 사야함
-	if (ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>())
+	if (ANGPlayerState* PS = GetPlayerState<ANGPlayerState>())
 	{
-		if (AGridMapManager* GridManager = GS->GetGridMapManager())
+		if (UNGSpawnHelper::SpawnUnitPawn(this, UnitName))
 		{
-			if (ANGPlayerState* PS = GetPlayerState<ANGPlayerState>())
-			{
-				if (GridManager->SpawnUnitPawn(UnitName, this))
-				{
-					UNGPocketComponent* PlayerPocket = PS->GetPlayerPocket();
-					PlayerPocket->AddUnitToBuyingPocket(UnitName);
-					UE_LOG(LogTemp, Display, TEXT("BuyUnitFromPocket Success"));
-				}
-			}
+			UNGPocketComponent* PlayerPocket = PS->GetPlayerPocket();
+			PlayerPocket->AddUnitToBuyingPocket(UnitName);
+			UE_LOG(LogTemp, Display, TEXT("BuyUnitFromPocket Success"));
 		}
 	}
 }

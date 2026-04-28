@@ -7,13 +7,8 @@
 #include "Pawn/NGPawnBase.h"
 #include "NGUnitPawn.generated.h"
 
-class UNGWeaponData;
-class UGameplayAbility;
-class ANGEnemyPawn;
+class ANGPlayerController;
 struct FOnAttributeChangeData;
-class USphereComponent;
-class AGridMapManager;
-class UGameplayEffect;
 
 UCLASS()
 class PROJECTNG_API ANGUnitPawn : public ANGPawnBase, public ISelectableInterface
@@ -52,15 +47,16 @@ public:
 	
 	UFUNCTION(Server, Reliable)
 	void SetDragTargetGridIndex(const FIntVector2& NewIndex);
-	
+
 	void SetPlacedGridIndex(const FIntVector2& NewIndex);
 	
 	FIntVector2 GetPlacedGridIndex();
 	
-	void RefreshCache();
-	
 	void UpdateDecalRange();
 	
+	virtual void OnRep_PlayerState() override;
+	
+	void Initialize(ANGPlayerController* InController);
 protected:
 	virtual void OnAttackRangeChanged(const FOnAttributeChangeData& Data) override;
 	
@@ -96,5 +92,5 @@ private:
 	FIntVector2 PlacedGridIndex;
 	
 	UPROPERTY(Transient)
-	AGridMapManager* MapManagerCache;
+	TObjectPtr<ANGPlayerController> OwnerController;
 };

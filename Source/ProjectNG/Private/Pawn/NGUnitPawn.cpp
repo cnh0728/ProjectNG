@@ -8,13 +8,11 @@
 #include "AbilitySystem/NGAttributeSet.h"
 #include "AbilitySystem/NGGameplayAbility.h"
 #include "Pawn/NGEnemyPawn.h"
-#include "Combat/GridMapManager.h"
 #include "Combat/Weapon/NGWeaponData.h"
 #include "Components/DecalComponent.h"
 #include "Components/SphereComponent.h"
-#include "Game/NGGameState.h"
-#include "GameModes/NGInGameGameMode.h"
 #include "Net/UnrealNetwork.h"
+#include "Player/NGPlayerController.h"
 #include "ProjectNG/ProjectNG.h"
 
 // Sets default values
@@ -122,8 +120,6 @@ void ANGUnitPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
-	RefreshCache();
-	
 	InitAbilityActorInfo();
 	
 	if (!AttributeSet)
@@ -173,12 +169,14 @@ void ANGUnitPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
+	if (!OwnerController)	return;
+	
+	ANGPlayerState* PS = OwnerController->GetPlayerState<ANGPlayerState>();
+	if (!PS)	return;
+	
 	if (bIsDragMoving)
 	{
-		// MapManager Cache Late Allocation
-		RefreshCache();
-		
-		FVector TargetLocation = MapManagerCache->GridMap.GetWorldLocation(PlacedGridIndex) + LocationOffset;
+		FVector TargetLocation = PS->GridMap.GetWorldLocation(PlacedGridIndex) + LocationOffset;
 		
 		FVector CurrentLocation = GetActorLocation();
 		
@@ -237,9 +235,12 @@ void ANGUnitPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 void ANGUnitPawn::SetDragTargetGridIndex_Implementation(const FIntVector2& NewIndex)
 {
-	if (!MapManagerCache)	RefreshCache();
+	if (!OwnerController)	return;
 	
-	if (!MapManagerCache->GridMap.IsGridIndexEmpty(NewIndex))
+	ANGPlayerState* PS = OwnerController->GetPlayerState<ANGPlayerState>();
+	if (!PS)	return;
+	
+	if (!PS->GridMap.IsGridIndexEmpty(NewIndex))
 	{
 		return;
 	}
@@ -248,40 +249,33 @@ void ANGUnitPawn::SetDragTargetGridIndex_Implementation(const FIntVector2& NewIn
 	bIsDragMoving = true;
 }
 
+void ANGUnitPawn::Initialize(ANGPlayerController* InController)
+{
+	OwnerController = InController;
+}
+
 void ANGUnitPawn::SetPlacedGridIndex(const FIntVector2& NewIndex)
 {
 	if (!HasAuthority())	return;
 	
-	MapManagerCache->GridMap.EmptyGridMap(PlacedGridIndex);
+	if (!OwnerController)	return;
+	
+	ANGPlayerState* PS = OwnerController->GetPlayerState<ANGPlayerState>();
+	if (!PS)	return;
+	
+	PS->GridMap.EmptyGridMap(PlacedGridIndex);
 
 	PlacedGridIndex = NewIndex;
 	
 	FGridData GridData;
 	GridData.PlacedPawn = this;
 	
-	MapManagerCache->GridMap.SetGridData(NewIndex, GridData);
+	PS->GridMap.SetGridData(NewIndex, GridData);
 }
 
 FIntVector2 ANGUnitPawn::GetPlacedGridIndex()
 {
 	return PlacedGridIndex;
-}
-
-void ANGUnitPawn::RefreshCache()
-{
-	if (!MapManagerCache)
-	{
-		if (ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>())
-		{
-			if (AGridMapManager* MapManager = GS->GetGridMapManager())
-			{
-				MapManagerCache = MapManager;
-			}else
-			{
-				UE_LOG(LogTemp, Warning, TEXT("Can't Find MapManager"));
-			}
-		}
-	}
 }
 
 void ANGUnitPawn::UpdateDecalRange()
@@ -292,6 +286,13 @@ void ANGUnitPawn::UpdateDecalRange()
 	{
 		RangeDecal->DecalSize = FVector(500.f, CurrentRange, CurrentRange);
 	}
+}
+
+void ANGUnitPawn::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+	
+	OwnerController = GetOwner<ANGPlayerController>();
 }
 
 void ANGUnitPawn::OnAttackRangeChanged(const FOnAttributeChangeData& Data)

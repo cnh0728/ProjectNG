@@ -7,6 +7,7 @@
 #include "GameFramework/PlayerController.h"
 #include "NGPlayerController.generated.h"
 
+class AGridMapManager;
 class UNGUnitInfoWidget;
 class ANGUnitPawn;
 struct FInputActionValue;
@@ -47,6 +48,11 @@ public:
 
 	virtual void OnRep_PlayerState() override;
 	
+	virtual void OnPossess(APawn* InPawn) override;
+	void SpawnGridMapManager();
+
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	
 protected:
 	virtual void ProgressDragActor();
 
@@ -61,7 +67,7 @@ protected:
 	
 	void PerformDrag();
 	void ResetDragUnit();
-	
+
 	// Enhanced Input 관련
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputMappingContext> InputMappingContext;
@@ -74,6 +80,8 @@ protected:
 
 	//상태 관리 변수
 	uint8 bIsDragging : 1;
+	
+	uint8 GridMapIndex;
 	
 	const float DragThreshold = 10.f;
 	
@@ -108,6 +116,15 @@ protected:
 	
 	UPROPERTY()
 	TObjectPtr<UNGUnitInfoWidget> UnitInfoWidgetInstance;
+	
+/*************************************/
+/*				GridMap 관련			 */
+/*************************************/
+	
+protected:
+	//그리드 맵의 실체를 담당(각 유저당 하나임)
+	UPROPERTY(Replicated)
+	TObjectPtr<AGridMapManager> GridManager;
 	
 /*************************************/
 /*				Debug				 */

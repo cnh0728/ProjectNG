@@ -9,7 +9,6 @@
 #include "GameFramework/PlayerState.h"
 #include "NGPlayerState.generated.h"
 
-class AGridMapManager;
 class UNGPocketComponent;
 /**
  * In-Game에서의 플레이어의 상태 정보를 저장하는 클래스
@@ -24,24 +23,22 @@ class PROJECTNG_API ANGPlayerState : public APlayerState, public IAbilitySystemI
 
 public:
 	ANGPlayerState();
-
-public:
+	
 	//~Begin IAbilitySystemInterface
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override { return AbilitySystemComponent; }
 	//~End IAbilitySystemInterface
 
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	
 	UNGAbilitySystemComponent* GetNGAbilitySystemComponent() const { return AbilitySystemComponent; }
-
+	
+	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadWrite, Category = "Grid")
+	FHexGridMap GridMap;
 	
 protected:
 	UPROPERTY()
 	TObjectPtr<UNGAbilitySystemComponent> AbilitySystemComponent;
-
-			
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Grid")
-	FHexGridMap GridMap;
-
-	
+		
 /*************************************/
 /*				Pocket 관련			 */
 /*************************************/
@@ -50,7 +47,7 @@ public:
 	UNGPocketComponent* GetPlayerPocket() { return PlayerPocket; }
 
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Game|Pocket")
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Game|Pocket")
 	TObjectPtr<UNGPocketComponent> PlayerPocket;
 	
 };

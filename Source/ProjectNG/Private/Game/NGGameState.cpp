@@ -80,6 +80,14 @@ FName ANGGameState::GetRandomUnitByTier(EUnitTier Tier)
 	return NAME_None;
 }
 
+TSubclassOf<ANGUnitPawn> ANGGameState::GetUnitClass(FName UnitName) const
+{
+	FUnitData* FoundRow = UnitDataTable->FindRow<FUnitData>(UnitName, TEXT(""));
+	if (!FoundRow)	return nullptr;
+	
+	return FoundRow->UnitClass;
+}
+
 void ANGGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -87,7 +95,7 @@ void ANGGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	DOREPLIFETIME(ANGGameState, GridMapManagers);
 }
 
-uint8 ANGGameState::InitializeGridMapManager(AGridMapManager* InitGridMap)
+uint8 ANGGameState::AddGridMapManager(AGridMapManager* InitGridMap)
 {
 	GridMapManagers.AddUnique(InitGridMap); 
 	return GridMapManagers.Num() - 1;
