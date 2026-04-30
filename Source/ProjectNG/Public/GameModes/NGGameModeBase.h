@@ -13,4 +13,6 @@ UCLASS()
 class PROJECTNG_API ANGGameModeBase : public AGameModeBase
 {
 	GENERATED_BODY()
+	
+	virtual void PostLogin(APlayerController* NewPlayer) override;
 };

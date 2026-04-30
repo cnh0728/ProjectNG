@@ -54,6 +54,7 @@ public:
 	FIntVector2 GetCellIndex(const FVector& Location) const;
     
 	FVector GetHexCorner(int32 Index) const;
+	const FIntVector2 GetMirroredIndex(FIntVector2 OriginIndex) const;
 	
 	// Axial -> Cube 변환 (거리 계산용)
 	static FIntVector GetCubeIndex(const FIntVector2 AxialIndex) { return FIntVector(AxialIndex.X, AxialIndex.Y, -AxialIndex.X - AxialIndex.Y); }

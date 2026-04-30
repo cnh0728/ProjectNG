@@ -83,6 +83,11 @@ FVector FHexGridMap::GetHexCorner(int32 Index) const
     return FVector(CellSize * FMath::Cos(AngleRad), CellSize * FMath::Sin(AngleRad), 0.0f);
 }
 
+const FIntVector2 FHexGridMap::GetMirroredIndex(FIntVector2 OriginIndex) const
+{
+	return FIntVector2(CountQ - 1 - OriginIndex.X, CountR - 1 - OriginIndex.Y);
+}
+
 int32 FHexGridMap::GetDistance(FIntVector2 A, FIntVector2 B)
 {
     FIntVector ACube = GetCubeIndex(A);

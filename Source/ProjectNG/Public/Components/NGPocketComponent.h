@@ -70,6 +70,9 @@ public:
 	void ControlPocketUnPlacing(ANGUnitPawn* NewPawn);
 	void ControlPocketSelling(ANGUnitPawn* NewPawn);
 	
+	TArray<ANGUnitPawn*> GetOwnedUnitPocket()	{return OwnedUnitPocket; }
+	TArray<TWeakObjectPtr<ANGUnitPawn>> GetPlacedUnitPocket()	{return PlacedUnitPocket; }
+	
 private:
 	UPROPERTY(Replicated, VisibleAnywhere, Category = "Game|Unit")
 	TArray<ANGUnitPawn*> OwnedUnitPocket;

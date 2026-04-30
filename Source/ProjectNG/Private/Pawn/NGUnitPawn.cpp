@@ -278,6 +278,25 @@ FIntVector2 ANGUnitPawn::GetPlacedGridIndex()
 	return PlacedGridIndex;
 }
 
+void ANGUnitPawn::SetCurrentGridIndex(const FIntVector2& NewIndex)
+{
+	if (!HasAuthority())	return;
+	
+	if (!OwnerController)	return;
+	
+	ANGPlayerState* PS = OwnerController->GetPlayerState<ANGPlayerState>();
+	if (!PS)	return;
+	
+	PS->GridMap.EmptyGridMap(CurrentGridIndex);
+
+	CurrentGridIndex = NewIndex;
+	
+	FGridData GridData;
+	GridData.PlacedPawn = this;
+	
+	PS->GridMap.SetGridData(NewIndex, GridData);
+}
+
 void ANGUnitPawn::UpdateDecalRange()
 {
 	float CurrentRange = AttributeSet->GetAttackRange();

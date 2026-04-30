@@ -6,6 +6,7 @@
 #include "Pawn/NGEnemyPawn.h"
 #include "Pawn/NGUnitPawn.h"
 #include "Combat/GridMapManager.h"
+#include "Components/NGPocketComponent.h"
 #include "Components/SplineComponent.h"
 #include "Core/NGPoolSubSystem.h"
 #include "Core/NGSpawnHelper.h"
@@ -167,25 +168,32 @@ void ACombatManager::SetupCombat(FCombatSettingData SettingData)
 	CurrentEnemyCount = 0;
 	TargetKillCount = SettingData.EnemyCount;
 	
+	const FHexGridMap& FightGridMap = SettingData.PlayerA->GridMap;
+	
 	if (SettingData.PlayerA)
 	{
-		UNGPocketComponent* PocketComponent= SettingData.PlayerA->GetPlayerPocket();
+		UNGPocketComponent* PocketComponentA = SettingData.PlayerA->GetPlayerPocket();
 		
-		//TODO: 유닛 배치
+		for (TWeakObjectPtr<ANGUnitPawn> Unit : PocketComponentA->GetPlacedUnitPocket())
+		{
+			FVector TargetLoc = FightGridMap.GetWorldLocation(Unit->GetPlacedGridIndex());
+			Unit->SetActorLocation(TargetLoc);
+			Unit->SetActorRotation(FRotator::ZeroRotator);
+		}
 		
-		// for (ANGUnitPawn* Unit : )
-		// {
-		// 	FVector TargetLoc = MapManager->GridMap.GetWorldLocation(Unit->GetPlacedGridIndex());
-		// 	Unit->SetActorLocation(TargetLoc);
-		// }
 	}
 	
 	if (SettingData.PlayerB)
 	{
-		// for (ANGUnitPawn* Unit : SettingData.PlayerB)
-		// {
-		// 	
-		// }
+		UNGPocketComponent* PocketComponentB = SettingData.PlayerB->GetPlayerPocket();
+		for (TWeakObjectPtr<ANGUnitPawn> Unit : PocketComponentB->GetPlacedUnitPocket())
+		{
+			FIntVector2 MirroredIdx = FightGridMap.GetMirroredIndex(Unit->GetPlacedGridIndex());
+			FVector TargetLoc = FightGridMap.GetWorldLocation(MirroredIdx);
+			
+			Unit->SetActorLocation(TargetLoc);
+			Unit->SetActorRotation(FRotator(0.f, 180.f, 0.f));
+		}
 	}
 }
 

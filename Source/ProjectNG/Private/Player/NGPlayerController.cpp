@@ -96,33 +96,13 @@ void ANGPlayerController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 	
-	SpawnGridMapManager();
-	
 }
 
-void ANGPlayerController::SpawnGridMapManager()
-{
-	//TODO: 유저별 인덱스 받고 인덱스에 맞는 위치 주입
-	FTransform SpawnTransform(FRotator::ZeroRotator, FVector::ZeroVector);
-	
-	GridManager = GetWorld()->SpawnActorDeferred<AGridMapManager>(AGridMapManager::StaticClass(), SpawnTransform, this);
-	if (GridManager)
-	{
-		GridManager->Initialize(this);
-		GridManager->FinishSpawning(SpawnTransform);
-	}
-	
-	if (ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>())
-	{
-		GridMapIndex = GS->AddGridMapManager(GridManager);
-	}
-}
 
 void ANGPlayerController::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
-	DOREPLIFETIME(ANGPlayerController, GridManager);
 }
 
 void ANGPlayerController::ProgressDragActor()
@@ -248,15 +228,15 @@ void ANGPlayerController::PerformDrag()
 	if (GetHitResultUnderCursor(ECC_SelectableUnit, false, HitResult))
 	{
 		AActor* HitActor = HitResult.GetActor();
-
-		// 디버깅용 로그 (매우 중요: 실제로 무엇이 맞았는지 확인)
-		if(HitActor)
+		if (HitActor->GetOwner() != this)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Hit Actor: %s"), *HitActor->GetName());
+			return;
 		}
-		
+
 		if (HitActor && HitActor->Implements<USelectableInterface>())
 		{
+			UE_LOG(LogTemp, Warning, TEXT("Hit Actor: %s"), *HitActor->GetName());
+			
 			DraggingUnit = Cast<ANGUnitPawn>(HitActor);
 			ISelectableInterface::Execute_OnDrag(HitActor);
 			

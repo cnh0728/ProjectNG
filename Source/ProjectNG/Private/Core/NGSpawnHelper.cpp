@@ -7,6 +7,7 @@
 #include "Components/NGPocketComponent.h"
 #include "Core/NGPoolSubSystem.h"
 #include "Game/NGGameState.h"
+#include "GameModes/NGInGameGameMode.h"
 #include "Pawn/NGUnitPawn.h"
 #include "Player/NGPlayerController.h"
 #include "ProjectNG/ProjectNG.h"
@@ -25,15 +26,15 @@ bool UNGSpawnHelper::SpawnUnitPawn(ANGPlayerController* OwnerController, FName U
 	UWorld* World = OwnerController->GetWorld();
 	if (!World)	return false;
 	
-	ANGGameState* GS = World->GetGameState<ANGGameState>();
-	if (!GS)	return false;
+	ANGInGameGameMode* GM = World->GetAuthGameMode<ANGInGameGameMode>();
+	if (!GM)	return false;
 	
-	TSubclassOf<ANGPawnBase> UnitClass = GS->GetUnitClass(UnitName);
+	TSubclassOf<ANGPawnBase> UnitClass = GM->GetUnitClass(UnitName);
 	
 	FVector SpawnLoc = PS->GridMap.GetWorldLocation(EmptyGridIndex.GetValue());
 	FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLoc);
 
-	ANGUnitPawn* NewPawn = UNGSpawnHelper::SpawnPawn<ANGUnitPawn>(World, UnitClass, SpawnTransform, OwnerController);
+	ANGUnitPawn* NewPawn = SpawnPawn<ANGUnitPawn>(World, UnitClass, SpawnTransform, OwnerController);
 	if (!NewPawn)	return false;
 	
 	NewPawn->Initialize(OwnerController);

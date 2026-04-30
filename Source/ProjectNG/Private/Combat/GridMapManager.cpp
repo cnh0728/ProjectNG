@@ -25,7 +25,7 @@ void AGridMapManager::Initialize(ANGPlayerController* InPC)
 {
 	OwnerPCCache = InPC;
 	
-	InitGridMap(5, 5, 100.f);
+	InitGridMap(8, 8, 100.f);
 	
 	MakeEnemySpline();
 	
@@ -40,6 +40,13 @@ void AGridMapManager::OnConstruction(const FTransform& Transform)
 	Super::OnConstruction(Transform);
 
 	DrawGridLine();
+}
+
+void AGridMapManager::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	SetNetDormancy(DORM_Initial);
 }
 
 void AGridMapManager::MakeEnemySpline()

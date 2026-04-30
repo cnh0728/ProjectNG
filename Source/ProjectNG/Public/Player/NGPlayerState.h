@@ -9,6 +9,7 @@
 #include "GameFramework/PlayerState.h"
 #include "NGPlayerState.generated.h"
 
+class AGridMapManager;
 class UNGPocketComponent;
 /**
  * In-Game에서의 플레이어의 상태 정보를 저장하는 클래스
@@ -29,16 +30,16 @@ public:
 	//~End IAbilitySystemInterface
 
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
-	
+	void SpawnGridMapManager();
+
 	UNGAbilitySystemComponent* GetNGAbilitySystemComponent() const { return AbilitySystemComponent; }
-	
-	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadWrite, Category = "Grid")
-	FHexGridMap GridMap;
+
+	void InitializeLogin(uint32 AssignedIndex);
 	
 protected:
 	UPROPERTY()
 	TObjectPtr<UNGAbilitySystemComponent> AbilitySystemComponent;
-		
+
 /*************************************/
 /*				Pocket 관련			 */
 /*************************************/
@@ -50,4 +51,22 @@ protected:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Game|Pocket")
 	TObjectPtr<UNGPocketComponent> PlayerPocket;
 	
+		
+	/*************************************/
+	/*				GridMap 관련			 */
+	/*************************************/
+public:
+	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadWrite, Category = "Grid")
+	FHexGridMap GridMap;
+
+	UFUNCTION()
+	void SetUserIndex(uint32 Idx);
+	
+protected:
+	//그리드 맵의 실체를 담당(각 유저당 하나임)
+	UPROPERTY(Replicated)
+	TObjectPtr<AGridMapManager> GridManager;
+	
+	UPROPERTY(Replicated)
+	uint32 UserIndex;
 };

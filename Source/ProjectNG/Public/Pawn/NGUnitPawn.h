@@ -52,6 +52,8 @@ public:
 	
 	FIntVector2 GetPlacedGridIndex();
 	
+	void SetCurrentGridIndex(const FIntVector2& NewIndex);
+	
 	void UpdateDecalRange();
 	
 	virtual void OnRep_PlayerState() override;
@@ -90,6 +92,9 @@ private:
 	
 	UPROPERTY(Replicated, EditDefaultsOnly, Category = "GridIndex")
 	FIntVector2 PlacedGridIndex;
+	
+	UPROPERTY(Replicated, EditDefaultsOnly, Category = "GridIndex")
+	FIntVector2 CurrentGridIndex;
 	
 	UPROPERTY(Transient)
 	TObjectPtr<ANGPlayerController> OwnerController;

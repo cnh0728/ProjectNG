@@ -49,7 +49,6 @@ public:
 	virtual void OnRep_PlayerState() override;
 	
 	virtual void OnPossess(APawn* InPawn) override;
-	void SpawnGridMapManager();
 
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	
@@ -116,15 +115,7 @@ protected:
 	
 	UPROPERTY()
 	TObjectPtr<UNGUnitInfoWidget> UnitInfoWidgetInstance;
-	
-/*************************************/
-/*				GridMap 관련			 */
-/*************************************/
-	
-protected:
-	//그리드 맵의 실체를 담당(각 유저당 하나임)
-	UPROPERTY(Replicated)
-	TObjectPtr<AGridMapManager> GridManager;
+
 	
 /*************************************/
 /*				Debug				 */
