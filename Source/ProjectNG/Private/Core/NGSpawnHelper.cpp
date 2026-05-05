@@ -16,9 +16,11 @@ bool UNGSpawnHelper::SpawnUnitPawn(ANGPlayerController* OwnerController, FName U
 {
 	ANGPlayerState* PS = Cast<ANGPlayerController>(OwnerController)->GetPlayerState<ANGPlayerState>();
 	
-	TOptional<FIntVector2> EmptyGridIndex = PS->GridMap.GetEmptyGridIndex();
+	FHexGridMap& CombatGridMap = PS->GetCombatGridMap();
 	
-	if (!PS->GridMap.IsPossibleSpawnPawn())		return false;
+	TOptional<FIntVector2> EmptyGridIndex = CombatGridMap.GetEmptyGridIndex();
+	
+	if (!CombatGridMap.IsPossibleSpawnPawn())		return false;
 
 	UNGPocketComponent* Pocket = PS->GetPlayerPocket();
 	if (!Pocket)	return false;
@@ -31,7 +33,7 @@ bool UNGSpawnHelper::SpawnUnitPawn(ANGPlayerController* OwnerController, FName U
 	
 	TSubclassOf<ANGPawnBase> UnitClass = GM->GetUnitClass(UnitName);
 	
-	FVector SpawnLoc = PS->GridMap.GetWorldLocation(EmptyGridIndex.GetValue());
+	FVector SpawnLoc = CombatGridMap.GetWorldLocation(EmptyGridIndex.GetValue());
 	FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLoc);
 
 	ANGUnitPawn* NewPawn = SpawnPawn<ANGUnitPawn>(World, UnitClass, SpawnTransform, OwnerController);
@@ -42,16 +44,16 @@ bool UNGSpawnHelper::SpawnUnitPawn(ANGPlayerController* OwnerController, FName U
 	//여기서 찾은 그리드에 값 기입
 	FGridData GridData;
 	GridData.PlacedPawn = NewPawn;
-			
+	
 	NewPawn->SetPlacedGridIndex(EmptyGridIndex.GetValue());
-	PS->GridMap.SetGridData(EmptyGridIndex.GetValue(), GridData);
+	CombatGridMap.SetGridData(EmptyGridIndex.GetValue(), GridData);
 
 	Pocket->ControlPocketSpawning(NewPawn);
 	
 	return true;
 }
 
-ANGPawnBase* UNGSpawnHelper::Internal_SpawnPawn(UObject* WorldContextObject, ::TSubclassOf<ANGPawnBase> PawnClass,
+ANGPawnBase* UNGSpawnHelper::Internal_SpawnPawn(UObject* WorldContextObject, TSubclassOf<ANGPawnBase> PawnClass,
                                                 FTransform SpawnTransform,
                                                 AActor* Owner)
 {

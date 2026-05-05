@@ -51,22 +51,27 @@ protected:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Game|Pocket")
 	TObjectPtr<UNGPocketComponent> PlayerPocket;
 	
-		
 	/*************************************/
 	/*				GridMap 관련			 */
 	/*************************************/
 public:
+	FHexGridMap& GetCombatGridMap() { return CombatGridMap; }
+	
 	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadWrite, Category = "Grid")
-	FHexGridMap GridMap;
-
+	FQuadGridMap WaitGridMap;
+	
 	UFUNCTION()
 	void SetUserIndex(uint32 Idx);
 	
 protected:
+	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadWrite, Category = "Grid")
+	FHexGridMap CombatGridMap;
+	
 	//그리드 맵의 실체를 담당(각 유저당 하나임)
 	UPROPERTY(Replicated)
 	TObjectPtr<AGridMapManager> GridManager;
 	
 	UPROPERTY(Replicated)
 	uint32 UserIndex;
+	
 };

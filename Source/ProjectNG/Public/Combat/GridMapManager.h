@@ -8,6 +8,14 @@
 #include "Player/NGPlayerState.h"
 #include "GridMapManager.generated.h"
 
+USTRUCT()
+struct FGridBuildData{
+	GENERATED_BODY()
+	int32 SizeX;
+	int32 SizeY;
+	int32 CellSize;
+};
+
 class USplineComponent;
 /**
  * 
@@ -31,13 +39,25 @@ protected:
 
 
 public:
+	void BuildGridVisual(int32 SizeX, int32 SizeY, float Margin);
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	USplineComponent* EnemyPathSpline;
 
-	void Initialize(ANGPlayerController* InPC);
+	void Initialize(ANGPlayerController* InPC, FGridBuildData BuildData);
 private:
 	UPROPERTY(Transient)
 	TObjectPtr<ANGPlayerController> OwnerPCCache;
+	
+	UPROPERTY(VisibleAnywhere)
+	UInstancedStaticMeshComponent* HexGridVisualComponent;
+	UPROPERTY(EditAnywhere, Category = "Visual")
+	UStaticMesh* HexMeshAsset;
+
+	UPROPERTY(VisibleAnywhere)
+	UInstancedStaticMeshComponent* QuadGridVisualComponent;
+	UPROPERTY(EditAnywhere, Category = "Visual")
+	UStaticMesh* QuadMeshAsset;
 	
 	// 디버그 라인 색상 등 시각화 관련 변수
 	UPROPERTY(EditAnywhere, Category = "Visualization")

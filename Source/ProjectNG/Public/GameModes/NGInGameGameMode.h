@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "NGGameModeBase.h"
 #include "Combat/NGCombatData.h"
+#include "Core/NGUnitData.h"
 #include "NGInGameGameMode.generated.h"
 
 /**
@@ -13,7 +14,6 @@
 
 class ANGPawnBase;
 class AGridMapManager;
-class ANGPawnBase;
 class ACombatManager;
 
 UENUM(BlueprintType)
@@ -60,6 +60,8 @@ public:
 	/** true일 경우, UnitPool에 유닛이 1개 이상 존재합니다. */
 	bool IsExistUnit(FName UnitRowName);
 
+	bool IsExistUnitDataTable();
+	
 	/** UnitPool로 유닛을 UnitCount만큼 반환합니다. */
 	void ReturnUnitToPool(FName UnitRowName, int32 UnitCount = 1);
 

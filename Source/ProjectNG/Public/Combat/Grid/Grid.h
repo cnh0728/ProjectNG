@@ -48,6 +48,7 @@ public:
 	FVector Pivot;
 
 	// 핵심 좌표 변환
+	FVector GetRelativeLocation(FIntVector2 GridIndex) const;
 	FVector GetWorldLocation(const FIntVector2 GridIndex) const;
 	FIntVector2 RectToAxial(int32 Col, int32 Row) const;
 	FIntVector2 AxialToRect(FIntVector2 Axial) const;
@@ -115,12 +116,10 @@ public:
 	// 인덱스가 유효한지 검사
 	bool IsValidIndex(const FIntVector2 GridIndex) const;	
 
-
 	void SetGridData(FIntVector2 GridIndex, const FGridData& GridData);
 	void EmptyGridMap(const FIntVector2& GridIndex);
 	void ResetGridInfo();
-
-	void RemoveEmptyGridIndex(const FIntVector2& GridIndex);
+	int ConvertPointToIndex(const FIntVector2 GridIndex) const;
 	void ResetEmptyGridIndex();
 	FGridData GetGridData(const FIntVector2 GridIndex);
 	TOptional<FIntVector2> GetEmptyGridIndex();
@@ -131,7 +130,7 @@ protected:
 	TArray<FIntVector2> EmptyGridIndex;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
-	TMap<FIntVector2, FGridData> GridInfo;
+	TArray<FGridData> GridInfo;
 	
 	UPROPERTY()
 	float Offset;

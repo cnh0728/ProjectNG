@@ -3,7 +3,9 @@
 #include "Player/NGPlayerState.h"
 
 #include "Combat/GridMapManager.h"
+#include "Combat/Weapon/NGProjectile.h"
 #include "Components/NGPocketComponent.h"
+#include "Core/NGDeveloperSettings.h"
 #include "Game/NGGameState.h"
 #include "Net/UnrealNetwork.h"
 
@@ -23,7 +25,7 @@ void ANGPlayerState::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>&
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
-	DOREPLIFETIME(ANGPlayerState, GridMap);
+	DOREPLIFETIME(ANGPlayerState, CombatGridMap);
 	DOREPLIFETIME(ANGPlayerState, PlayerPocket);
 	DOREPLIFETIME(ANGPlayerState, GridManager);
 }
@@ -41,14 +43,20 @@ void ANGPlayerState::SpawnGridMapManager()
 		SpawnTransform.AddToTranslation(Margin);
 	}
 	
-	GridManager = GetWorld()->SpawnActorDeferred<AGridMapManager>(AGridMapManager::StaticClass(), SpawnTransform, PC);
-	if (GridManager)
+	if (UClass* GridMapManagerBPClass = GetDefault<UNGDeveloperSettings>()->GridmapClass[AGridMapManager::StaticClass()].LoadSynchronous())
 	{
-		GridManager->Initialize(PC);
-		GridManager->FinishSpawning(SpawnTransform);
+		GridManager = GetWorld()->SpawnActorDeferred<AGridMapManager>(GridMapManagerBPClass, SpawnTransform, PC);
+		if (GridManager)
+		{
+			FGridBuildData BuildData(8, 8, 100.f);
+			
+			GridManager->Initialize(PC, BuildData);
+			GridManager->FinishSpawning(SpawnTransform);
+		}
+		
+		CombatGridMap.Pivot = GridManager->GetActorLocation();
 	}
 	
-	GridMap.Pivot = GridManager->GetActorLocation();
 }
 
 void ANGPlayerState::InitializeLogin(uint32 AssignedIndex)

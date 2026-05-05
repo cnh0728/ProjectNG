@@ -49,9 +49,9 @@ void UNGGameplayAbility_ProjectileAttack::OnReleaseProjectile(FGameplayEventData
 				SpawnTransform.SetLocation(SpawnLocation);
 				
 				//TODO: LoadSynchronous는 로딩시 멈춤유발가능성, 대용량로드시 멈춰도될때 전부 로드해놓기
-				UClass* PC = GetDefault<UNGDeveloperSettings>()->ProjectileClass[ANGProjectile::StaticClass()].LoadSynchronous();
+				UClass* ProjectileClass = GetDefault<UNGDeveloperSettings>()->ProjectileClass[ANGProjectile::StaticClass()].LoadSynchronous();
 				
-				ANGProjectile* Projectile = Pool->AcquireProjectile(PC, SpawnTransform, NewTarget);
+				ANGProjectile* Projectile = Pool->AcquireProjectile(ProjectileClass, SpawnTransform, NewTarget);
 				UE_LOG(LogTemp, Log, TEXT("Target Detected: %s"), *TargetActor->GetName());
 				
 				if (Projectile && DamageEffectClass)

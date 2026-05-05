@@ -168,7 +168,7 @@ void ACombatManager::SetupCombat(FCombatSettingData SettingData)
 	CurrentEnemyCount = 0;
 	TargetKillCount = SettingData.EnemyCount;
 	
-	const FHexGridMap& FightGridMap = SettingData.PlayerA->GridMap;
+	const FHexGridMap& FightGridMap = SettingData.PlayerA->GetCombatGridMap();
 	
 	if (SettingData.PlayerA)
 	{

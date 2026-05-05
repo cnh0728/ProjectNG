@@ -15,17 +15,22 @@ void FHexGridMap::InitializeMap(int32 InSizeQ, int32 InSizeR, float InCellSize, 
     Pivot = InPivot;
 }
 
+FVector FHexGridMap::GetRelativeLocation(const FIntVector2 GridIndex) const
+{
+	// Rect(Col, Row) -> Axial(q, r) 역보정 (세로 지그재그용)
+	int32 q = GridIndex.X;
+	int32 r = GridIndex.Y - FMath::FloorToInt(GridIndex.X / 2.0f);
+
+	// Flat-top 공식 적용
+	float X = CellSize * (3.0f / 2.0f) * q;
+	float Y = CellSize * FMath::Sqrt(3.0f) * (r + q * 0.5f);
+
+	return FVector(X, Y, 0.0f);
+}
+
 FVector FHexGridMap::GetWorldLocation(const FIntVector2 GridIndex) const
 {
-    // Rect(Col, Row) -> Axial(q, r) 역보정 (세로 지그재그용)
-    int32 q = GridIndex.X;
-    int32 r = GridIndex.Y - FMath::FloorToInt(GridIndex.X / 2.0f);
-
-    // Flat-top 공식 적용
-    float X = CellSize * (3.0f / 2.0f) * q;
-    float Y = CellSize * FMath::Sqrt(3.0f) * (r + q * 0.5f);
-
-    return FVector(X, Y, 0.0f) + Pivot;
+    return GetRelativeLocation(GridIndex) + Pivot;
 }
 
 FIntVector2 FHexGridMap::RectToAxial(int32 Col, int32 Row) const
@@ -228,65 +233,57 @@ bool FQuadGridMap::IsValidIndex(const FIntVector2 GridIndex) const
 	return (GridIndex.X >= 0 && GridIndex.X < CountX) && (GridIndex.Y >= 0 && GridIndex.Y < CountY);
 }
 
+void FQuadGridMap::SetGridData(FIntVector2 GridIndex, const FGridData& GridData)
+{
+	GridInfo[ConvertPointToIndex(GridIndex)] = GridData;
+	EmptyGridIndex.Remove(GridIndex);
+}
+
 void FQuadGridMap::ResetGridInfo()
 {
 	GridInfo.Reset();
 }
 
+int FQuadGridMap::ConvertPointToIndex(const FIntVector2 GridIndex) const
+{
+	return GridIndex.Y * CountY + GridIndex.X;
+}
+
 void FQuadGridMap::ResetEmptyGridIndex()
 {	
 	EmptyGridIndex.Reset();
-	
-	for (int32 X=0;X<CountX;++X)
+	for (int32 y = 0; y < CountY; ++y)
 	{
-		for (int32 Y=0;Y<CountY;++Y)
+		for (int32 x = 0; x < CountX; ++x)
 		{
-			FIntVector2 Index = FIntVector2(X,Y);
-			EmptyGridIndex.AddUnique(Index);
+			EmptyGridIndex.Add(FIntVector2(x, y));
+		}
+	}
+	
+	GridInfo.Empty();
+	FGridData EmptyData(nullptr);
+	for (int32 y = 0; y < CountY; ++y)
+	{
+		for (int32 x = 0; x < CountX; ++x)
+		{
+			GridInfo.Add(EmptyData);
 		}
 	}
 }
 
-void FQuadGridMap::RemoveEmptyGridIndex(const FIntVector2& GridIndex)
-{
-	EmptyGridIndex.Remove(GridIndex);
-}
-
-void FQuadGridMap::SetGridData(FIntVector2 GridIndex, const FGridData& GridData)
-{
-	GridInfo.Add(GridIndex, GridData);
-
-	RemoveEmptyGridIndex(GridIndex);
-}
-
 void FQuadGridMap::EmptyGridMap(const FIntVector2& GridIndex)
 {
-	FGridData* FoundData = GridInfo.Find(GridIndex);
-
-	if (FoundData)
+	FGridData FoundData = GridInfo[ConvertPointToIndex(GridIndex)];
+	if (FoundData.PlacedPawn.IsValid())
 	{
-		FoundData->Reset();
+		FoundData.Reset();
 		EmptyGridIndex.AddUnique(GridIndex);
 	}
 }
 
 FGridData FQuadGridMap::GetGridData(const FIntVector2 GridIndex)
 {
-	FGridData* FoundData = GridInfo.Find(GridIndex);
-    
-	if (FoundData)
-	{
-		FGridData Result = *FoundData;
-        
-		// 아래 두개는 Pop아닌가?
-		// FoundData->Reset();
-		// EmptyGridIndex.AddUnique(GridIndex);
-
-		return Result;
-	}
-
-	UE_LOG(LogTemp, Warning, TEXT("GridIndex %s 에 데이터가 없습니다!"), *GridIndex.ToString());
-	return FGridData();
+	return GridInfo[ConvertPointToIndex(GridIndex)];
 }
 
 TOptional<FIntVector2> FQuadGridMap::GetEmptyGridIndex()
@@ -303,5 +300,5 @@ TOptional<FIntVector2> FQuadGridMap::GetEmptyGridIndex()
 
 bool FQuadGridMap::IsGridIndexEmpty(const FIntVector2& GridIndex) const
 {
-	return EmptyGridIndex.Find(GridIndex) != INDEX_NONE;
+	return EmptyGridIndex.Contains(GridIndex);
 }

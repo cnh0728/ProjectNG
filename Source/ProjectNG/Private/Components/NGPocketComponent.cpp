@@ -6,6 +6,7 @@
 #include "Core/NGShopProbability.h"
 #include "Core/NGUnitData.h"
 #include "Game/NGGameState.h"
+#include "GameModes/NGInGameGameMode.h"
 #include "Net/UnrealNetwork.h"
 #include "Player/NGPlayerController.h"
 
@@ -121,8 +122,8 @@ void UNGPocketComponent::Server_RequestRoll_Implementation()
 	
 	if (!ProbabilityTable) return;
 
-	ANGGameState* GameState = GetWorld()->GetGameState<ANGGameState>();
-	if (!GameState) return;
+	ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>();
+	if (!GM) return;
 	
 	// 레벨에 맞는 확률 데이터 가져오기
 	FString RowName = FString::FromInt(PlayerLevel);
@@ -137,10 +138,10 @@ void UNGPocketComponent::Server_RequestRoll_Implementation()
 	// 기존 포켓 안의 유닛을 다시 반환
 	for (FName UnitToReturn : RollShopPocket)
 	{
-		GameState->ReturnUnitToPool(UnitToReturn, 1);
+		GM->ReturnUnitToPool(UnitToReturn, 1);
 	}
 	RollShopPocket.Empty();
-
+	
 	for (int32 i = 0; i < ShopSlotCount; ++i)
 	{
 		float RollValue = FMath::FRand(); // 0.0 - 1.0 사이의 랜덤 값
@@ -159,16 +160,23 @@ void UNGPocketComponent::Server_RequestRoll_Implementation()
 			SelectedTier = EUnitTier::Tier3;
 		}
 
-		FName SelectedUnitRowName = GameState->GetRandomUnitByTier(SelectedTier);
+		FName SelectedUnitRowName = GM->GetRandomUnitByTier(SelectedTier);
 
-		if (!SelectedUnitRowName.IsNone() && GameState->IsExistUnit(SelectedUnitRowName))
+		if (GM->IsExistUnitDataTable())
 		{
-			GameState->GrabUnitFromPool(SelectedUnitRowName);
-			RollShopPocket.Add(SelectedUnitRowName);
-		}
-		else
+			if (!SelectedUnitRowName.IsNone() && GM->IsExistUnit(SelectedUnitRowName))
+			{
+				GM->GrabUnitFromPool(SelectedUnitRowName);
+				RollShopPocket.Add(SelectedUnitRowName);
+			}
+			else
+			{
+				
+				i--; // 다시 시도
+			}
+		}else
 		{
-			i--; // 다시 시도
+			UE_LOG(LogTemp, Error, TEXT("DataTabel isn't Exist!"));
 		}
 	}
 

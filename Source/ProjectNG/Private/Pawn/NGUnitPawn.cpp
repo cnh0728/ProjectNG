@@ -176,7 +176,8 @@ void ANGUnitPawn::Tick(float DeltaTime)
 	
 	if (bIsDragMoving)
 	{
-		FVector TargetLocation = PS->GridMap.GetWorldLocation(PlacedGridIndex) + LocationOffset;
+		FHexGridMap& CombatGridMap = PS->GetCombatGridMap();
+		FVector TargetLocation = CombatGridMap.GetWorldLocation(PlacedGridIndex) + LocationOffset;
 		
 		FVector CurrentLocation = GetActorLocation();
 		
@@ -240,7 +241,8 @@ void ANGUnitPawn::SetDragTargetGridIndex_Implementation(const FIntVector2& NewIn
 	ANGPlayerState* PS = OwnerController->GetPlayerState<ANGPlayerState>();
 	if (!PS)	return;
 	
-	if (!PS->GridMap.IsGridIndexEmpty(NewIndex))
+	FHexGridMap& CombatGridMap = PS->GetCombatGridMap();
+	if (!CombatGridMap.IsGridIndexEmpty(NewIndex))
 	{
 		return;
 	}
@@ -263,14 +265,15 @@ void ANGUnitPawn::SetPlacedGridIndex(const FIntVector2& NewIndex)
 	ANGPlayerState* PS = OwnerController->GetPlayerState<ANGPlayerState>();
 	if (!PS)	return;
 	
-	PS->GridMap.EmptyGridMap(PlacedGridIndex);
+	FHexGridMap& CombatGridMap = PS->GetCombatGridMap();
+	CombatGridMap.EmptyGridMap(PlacedGridIndex);
 
 	PlacedGridIndex = NewIndex;
 	
 	FGridData GridData;
 	GridData.PlacedPawn = this;
 	
-	PS->GridMap.SetGridData(NewIndex, GridData);
+	CombatGridMap.SetGridData(NewIndex, GridData);
 }
 
 FIntVector2 ANGUnitPawn::GetPlacedGridIndex()
@@ -287,14 +290,15 @@ void ANGUnitPawn::SetCurrentGridIndex(const FIntVector2& NewIndex)
 	ANGPlayerState* PS = OwnerController->GetPlayerState<ANGPlayerState>();
 	if (!PS)	return;
 	
-	PS->GridMap.EmptyGridMap(CurrentGridIndex);
+	FHexGridMap& CombatGridMap = PS->GetCombatGridMap();
+	CombatGridMap.EmptyGridMap(CurrentGridIndex);
 
 	CurrentGridIndex = NewIndex;
 	
 	FGridData GridData;
 	GridData.PlacedPawn = this;
 	
-	PS->GridMap.SetGridData(NewIndex, GridData);
+	CombatGridMap.SetGridData(NewIndex, GridData);
 }
 
 void ANGUnitPawn::UpdateDecalRange()

@@ -86,6 +86,11 @@ bool ANGInGameGameMode::IsExistUnit(FName UnitRowName)
 	return *UnitPool.Find(UnitRowName) > 0;
 }
 
+bool ANGInGameGameMode::IsExistUnitDataTable()
+{
+	return UnitDataTable != nullptr;
+}
+
 void ANGInGameGameMode::ReturnUnitToPool(FName UnitRowName, int32 UnitCount)
 {
 	if (int32* Count = UnitPool.Find(UnitRowName))

@@ -116,7 +116,7 @@ void ANGPlayerController::ProgressDragActor()
 
 			if (ANGPlayerState* PS = GetPlayerState<ANGPlayerState>())
 			{
-				const FHexGridMap& GridMapCache = PS->GridMap;
+				const FHexGridMap& GridMapCache = PS->GetCombatGridMap();
 				const FIntVector2 GridIndex = GridMapCache.GetCellIndex(TargetLocation);
 				
 				bool bValidGrid = GridMapCache.IsValidIndex(GridIndex);
