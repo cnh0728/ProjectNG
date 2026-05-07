@@ -3,17 +3,26 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Grid/Grid.h"
-#include "Player/NGPlayerController.h"
-#include "Player/NGPlayerState.h"
 #include "GridMapManager.generated.h"
 
 USTRUCT()
 struct FGridBuildData{
 	GENERATED_BODY()
+	
+	UPROPERTY(VisibleAnywhere)
 	int32 SizeX;
+	UPROPERTY(VisibleAnywhere)
 	int32 SizeY;
+	UPROPERTY(VisibleAnywhere)
 	int32 CellSize;
+	
+	bool operator==(const FGridBuildData& Other) const {
+		return SizeX == Other.SizeX && SizeY == Other.SizeY && CellSize == Other.CellSize;
+	}
+	bool operator!=(const FGridBuildData& Other) const {
+		return !(*this == Other);
+	}
+	
 };
 
 class USplineComponent;
@@ -27,28 +36,20 @@ class PROJECTNG_API AGridMapManager : public AActor
 
 public:
 	AGridMapManager();
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
-	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void BeginPlay() override;
-	
-	void DrawGridLine();
-	void MakeEnemySpline();
 
 	void InitGridMap(const int32 InitSizeX = 10, const int32 InitSizeY = 10, const double CellSize = 100.f);
 
-
 public:
-	void BuildGridVisual(int32 SizeX, int32 SizeY, float Margin);
+	UFUNCTION()
+	void OnRep_BuildGridVisual();
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	USplineComponent* EnemyPathSpline;
-
-	void Initialize(ANGPlayerController* InPC, FGridBuildData BuildData);
+	void Initialize(FGridBuildData BuildData);
+	
 private:
-	UPROPERTY(Transient)
-	TObjectPtr<ANGPlayerController> OwnerPCCache;
-	
 	UPROPERTY(VisibleAnywhere)
 	UInstancedStaticMeshComponent* HexGridVisualComponent;
 	UPROPERTY(EditAnywhere, Category = "Visual")
@@ -69,4 +70,6 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Spline")
 	float SplineMarginFromEdge = 30.f;
 	
+	UPROPERTY(Replicated, VisibleAnywhere, ReplicatedUsing=OnRep_BuildGridVisual)
+	FGridBuildData GridBuildData;
 };

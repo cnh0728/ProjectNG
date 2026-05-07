@@ -110,8 +110,11 @@ void ANGPlayerController::ProgressDragActor()
 	if (DraggingUnit.IsValid())
 	{
 		FHitResult HitResult;
+		
 		if (GetHitResultUnderCursor(ECC_Map, false, HitResult))
-		{
+		// if (GetHitResultUnderCursor(ECC_Visibility, false, HitResult))
+		{			
+			UE_LOG(LogTemp, Warning, TEXT("Success! Hit: %s"), *HitResult.GetActor()->GetName());
 			FVector TargetLocation = HitResult.Location;
 
 			if (ANGPlayerState* PS = GetPlayerState<ANGPlayerState>())

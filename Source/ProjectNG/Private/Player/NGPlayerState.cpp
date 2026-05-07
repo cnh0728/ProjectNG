@@ -3,11 +3,11 @@
 #include "Player/NGPlayerState.h"
 
 #include "Combat/GridMapManager.h"
-#include "Combat/Weapon/NGProjectile.h"
 #include "Components/NGPocketComponent.h"
 #include "Core/NGDeveloperSettings.h"
 #include "Game/NGGameState.h"
 #include "Net/UnrealNetwork.h"
+#include "Player/NGPlayerController.h"
 
 ANGPlayerState::ANGPlayerState()
 {
@@ -43,18 +43,21 @@ void ANGPlayerState::SpawnGridMapManager()
 		SpawnTransform.AddToTranslation(Margin);
 	}
 	
-	if (UClass* GridMapManagerBPClass = GetDefault<UNGDeveloperSettings>()->GridmapClass[AGridMapManager::StaticClass()].LoadSynchronous())
+	TSoftClassPtr<AGridMapManager> GridMapClass = GetDefault<UNGDeveloperSettings>()->GridMapClass;
+	if (GridMapClass.IsValid())
 	{
-		GridManager = GetWorld()->SpawnActorDeferred<AGridMapManager>(GridMapManagerBPClass, SpawnTransform, PC);
-		if (GridManager)
+		if (UClass* GridMapManagerBPClass = GridMapClass.LoadSynchronous())
 		{
 			FGridBuildData BuildData(8, 8, 100.f);
-			
-			GridManager->Initialize(PC, BuildData);
-			GridManager->FinishSpawning(SpawnTransform);
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.Owner = PC;
+			GridManager = GetWorld()->SpawnActor<AGridMapManager>(GridMapManagerBPClass, SpawnTransform, SpawnParams);
+			if (GridManager)
+			{
+				GridManager->Initialize(BuildData);
+				CombatGridMap.Pivot = GridManager->GetActorLocation();
+			}
 		}
-		
-		CombatGridMap.Pivot = GridManager->GetActorLocation();
 	}
 	
 }

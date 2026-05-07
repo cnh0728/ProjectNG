@@ -7,9 +7,7 @@
 #include "Pawn/NGUnitPawn.h"
 #include "Combat/GridMapManager.h"
 #include "Components/NGPocketComponent.h"
-#include "Components/SplineComponent.h"
 #include "Core/NGPoolSubSystem.h"
-#include "Core/NGSpawnHelper.h"
 #include "Game/NGGameState.h"
 #include "GameModes/NGInGameGameMode.h"
 #include "Net/UnrealNetwork.h"
@@ -76,8 +74,6 @@ bool ACombatManager::SpawnEnemy()
 	}
 
 	if (!IsValid(GridMapManager))	return false;
-		
-	if (!IsValid(GridMapManager->EnemyPathSpline))	return false;
 	
 	UNGPoolSubSystem* Pool = GetWorld()->GetSubsystem<UNGPoolSubSystem>();
 	
@@ -85,10 +81,6 @@ bool ACombatManager::SpawnEnemy()
 	
 	UE_LOG(LogTemp, Warning, TEXT("Enemy Spawned!"));
 	
-	FVector SpawnLocation = GridMapManager->EnemyPathSpline->GetLocationAtSplinePoint(0, ESplineCoordinateSpace::World);
-	FRotator SpawnRotation = GridMapManager->EnemyPathSpline->GetRotationAtSplinePoint(0, ESplineCoordinateSpace::World);
-	
-	FTransform SpawnTransform(SpawnRotation, SpawnLocation);
 	
 	// TSubclassOf<ANGEnemyPawn> EnemyClass = WaveList[CurrentWaveIndex].EnemyClass;
 	TSubclassOf<ANGEnemyPawn> EnemyClass = ANGEnemyPawn::StaticClass(); //TODO: 웨이브시스템 구현하면 위에꺼로 바꾸기
@@ -97,13 +89,12 @@ bool ACombatManager::SpawnEnemy()
 	SpawnParameters.Owner = RequestingPlayerControllerCache;
 	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	
-	ANGEnemyPawn* NewEnemy = UNGSpawnHelper::SpawnPawn<ANGEnemyPawn>(this, EnemyClass, SpawnTransform, RequestingPlayerControllerCache);
-	if (!NewEnemy)
-	{
-		return false;
-	}
+	// ANGEnemyPawn* NewEnemy = UNGSpawnHelper::SpawnPawn<ANGEnemyPawn>(this, EnemyClass, SpawnTransform, RequestingPlayerControllerCache);
+	// if (!NewEnemy)
+	// {
+	// 	return false;
+	// }
 	
-	NewEnemy->InitPatrolPath(GridMapManager->EnemyPathSpline); //TODO: 땅에 파묻히면 여기서 CapsuleHalfHeight 주기
 	EnemiesSpawnedSoFar++;
 	
 	return true;

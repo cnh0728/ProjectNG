@@ -29,6 +29,6 @@ public:
 	TMap<TSubclassOf<ANGPawnBase>, TSoftClassPtr<ANGPawnBase>> PawnClass;
 
 	UPROPERTY(Config, EditAnywhere, Category = "NG Pool Settings")
-	TMap<TSubclassOf<AGridMapManager>, TSoftClassPtr<AGridMapManager>> GridmapClass;
+	TSoftClassPtr<AGridMapManager> GridMapClass;
 
 };
