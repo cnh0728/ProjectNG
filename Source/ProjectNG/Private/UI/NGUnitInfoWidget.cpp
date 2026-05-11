@@ -5,9 +5,9 @@
 
 #include "AbilitySystem/NGAbilitySystemComponent.h"
 #include "AbilitySystem/NGAttributeSet.h"
-#include "Character/NGUnitCharacter.h"
+#include "Pawn/NGUnitPawn.h"
 
-void UNGUnitInfoWidget::SetTargetUnit(ANGUnitCharacter* NewUnit)
+void UNGUnitInfoWidget::SetTargetUnit(ANGUnitPawn* NewUnit)
 {
 	//기존 바인딩 해제
 	ClearTargetUnit();
@@ -19,6 +19,8 @@ void UNGUnitInfoWidget::SetTargetUnit(ANGUnitCharacter* NewUnit)
 	if (!ASC) return;
 	
 	TargetASC = Cast<UNGAbilitySystemComponent>(ASC);
+	
+	if (!TargetASC.IsValid())	return;
 	
 	float CurrentHP = ASC->GetNumericAttribute(UNGAttributeSet::GetHealthAttribute());
 	float MaxHP = ASC->GetNumericAttribute(UNGAttributeSet::GetMaxHealthAttribute());

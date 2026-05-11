@@ -3,25 +3,21 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameplayAbilitySpecHandle.h"
-#include "Character/NGCharacterBase.h"
-#include "NGUnitCharacter.generated.h"
+#include "SelectableInterface.h"
+#include "Pawn/NGPawnBase.h"
+#include "NGUnitPawn.generated.h"
 
-class UNGWeaponData;
-class UGameplayAbility;
-class ANGEnemyCharacter;
+class ANGPlayerController;
 struct FOnAttributeChangeData;
-class USphereComponent;
-class AGridMapManager;
-class UGameplayEffect;
 
 UCLASS()
-class PROJECTNG_API ANGUnitCharacter : public ANGCharacterBase, public ISelectableInterface
+class PROJECTNG_API ANGUnitPawn : public ANGPawnBase, public ISelectableInterface
 {
 	GENERATED_BODY()
 
 public:
-	ANGUnitCharacter();
+	// Sets default values for this character's properties
+	ANGUnitPawn();
 	
 	virtual void OnSelected_Implementation() override;
 	virtual void OnDeselected_Implementation() override;
@@ -30,31 +26,39 @@ public:
 	virtual void OnDrag_Implementation() override;
 	virtual void OnUndrag_Implementation() override;
 	
-	virtual void Activate() override;
-	virtual void Deactivate() override;
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	
 protected:
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
 	virtual void InitializeAttributes() override;
+	
+private:
 	virtual void InitAbilityActorInfo() override;
 	
 public:
-	virtual void BeginPlay() override;
-	
+	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 	
 	void ExecuteAttack();
 
+	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
-	void SetDragTargetGridIndex(const TOptional<FIntVector2>& NewIndex);
-	
+	UFUNCTION(Server, Reliable)
+	void SetDragTargetGridIndex(const FIntVector2& NewIndex);
+
 	void SetPlacedGridIndex(const FIntVector2& NewIndex);
-	TOptional<FIntVector2> GetPlacedGridIndex();
 	
-	void RefreshCache();
+	FIntVector2 GetPlacedGridIndex();
+	
+	void SetCurrentGridIndex(const FIntVector2& NewIndex);
 	
 	void UpdateDecalRange();
 	
+	virtual void OnRep_PlayerState() override;
+	
+	void Initialize(ANGPlayerController* InController);
 protected:
 	virtual void OnAttackRangeChanged(const FOnAttributeChangeData& Data) override;
 	
@@ -78,12 +82,20 @@ private:
 	float AcceptanceRadius;
 
 	uint8 bIsGrabbed : 1;
-	uint8 bIsDragMoving : 1;
 	uint8 bIsSelected : 1;
 	
-	UPROPERTY(EditDefaultsOnly, Category = "GridIndex")
-	TOptional<FIntVector2> PlacedGridIndex;
-	
+	UPROPERTY(Replicated)
+	uint8 bIsDragMoving : 1;
+
 	UPROPERTY()
-	AGridMapManager* MapManagerCache;
+	uint8 bIsOnField : 1;
+	
+	UPROPERTY(Replicated, EditDefaultsOnly, Category = "GridIndex")
+	FIntVector2 PlacedGridIndex;
+	
+	UPROPERTY(Replicated, EditDefaultsOnly, Category = "GridIndex")
+	FIntVector2 CurrentGridIndex;
+	
+	UPROPERTY(Transient)
+	TObjectPtr<ANGPlayerController> OwnerController;
 };

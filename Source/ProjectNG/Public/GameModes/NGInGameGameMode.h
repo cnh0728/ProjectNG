@@ -5,14 +5,15 @@
 #include "CoreMinimal.h"
 #include "NGGameModeBase.h"
 #include "Combat/NGCombatData.h"
+#include "Core/NGUnitData.h"
 #include "NGInGameGameMode.generated.h"
 
 /**
  * 
  */
 
+class ANGPawnBase;
 class AGridMapManager;
-class ANGCharacterBase;
 class ACombatManager;
 
 UENUM(BlueprintType)
@@ -28,23 +29,19 @@ UCLASS()
 class PROJECTNG_API ANGInGameGameMode : public ANGGameModeBase
 {
 	GENERATED_BODY()
-	
-	
-public:
-	void RequestStartCombat();
-	void OnCombatFinished(const FCombatResultData& ResultData);
-	void ReportCharacterDeath(ANGCharacterBase* DeadCharacter);
 
-	void InitializeGridMapManager(AGridMapManager* InitGridMap){ GridMapManager = InitGridMap; }
+public:
+	void RequestStartCombat(APlayerController* PC);
+	void OnCombatFinished(const FCombatResultData& ResultData);
+	void ReportPawnDeath(ANGPawnBase* DeadPawn);
 	
-	AGridMapManager* GetGridMapManager(){ return GridMapManager; }
+	virtual void BeginPlay() override;
 	
 	ACombatManager* GetCombatManager(){ return ActiveCombatManager; }
 	
 protected:
 	void ChangeState(EGameState NewState);	
 
-protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	EGameState CurrentState;
 	
@@ -53,7 +50,36 @@ protected:
 	
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Managers")
 	TObjectPtr<ACombatManager> ActiveCombatManager;
+
+public:
+	/** 유닛풀에서 유닛 카운트를 하나 감소시킵니다. 이후 감소된 카운트를 반환합니다.
+ *  반환할 수 없다면 -1을 반환합니다.
+ */
+	int32 GrabUnitFromPool(FName UnitRowName);
+
+	/** true일 경우, UnitPool에 유닛이 1개 이상 존재합니다. */
+	bool IsExistUnit(FName UnitRowName);
+
+	bool IsExistUnitDataTable();
 	
-	UPROPERTY(Transient, BlueprintReadOnly, Category = "Managers")
-	TObjectPtr<AGridMapManager> GridMapManager;
+	/** UnitPool로 유닛을 UnitCount만큼 반환합니다. */
+	void ReturnUnitToPool(FName UnitRowName, int32 UnitCount = 1);
+
+	// 특정 티어의 유닛을 랜덤으로 반환합니다.
+	FName GetRandomUnitByTier(EUnitTier Tier);
+
+	TSubclassOf<ANGUnitPawn> GetUnitClass(FName UnitName) const;
+
+	
+protected:
+	// Key: DataTable RowName, Value: remain count
+	TMap<FName, int32> UnitPool;
+
+	// Tier unit pool
+	TMap<EUnitTier, TArray<FName>> TieredUnitPool;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Game|DataTable")
+	TObjectPtr<UDataTable> UnitDataTable;
+	
+	void InitializeUnitPool();
 };

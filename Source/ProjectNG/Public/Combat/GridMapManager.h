@@ -3,11 +3,29 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Grid/Grid.h"
 #include "GridMapManager.generated.h"
 
+USTRUCT()
+struct FGridBuildData{
+	GENERATED_BODY()
+	
+	UPROPERTY(VisibleAnywhere)
+	int32 SizeX;
+	UPROPERTY(VisibleAnywhere)
+	int32 SizeY;
+	UPROPERTY(VisibleAnywhere)
+	int32 CellSize;
+	
+	bool operator==(const FGridBuildData& Other) const {
+		return SizeX == Other.SizeX && SizeY == Other.SizeY && CellSize == Other.CellSize;
+	}
+	bool operator!=(const FGridBuildData& Other) const {
+		return !(*this == Other);
+	}
+	
+};
+
 class USplineComponent;
-class ANGUnitCharacter;
 /**
  * 
  */
@@ -18,28 +36,30 @@ class PROJECTNG_API AGridMapManager : public AActor
 
 public:
 	AGridMapManager();
-	bool IsPossibleSpawnCharacter(AGridMapManager* MapManager) const;
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
-	bool SpawnUnitCharacter(FName UnitName) const;
-	
 protected:
 	virtual void BeginPlay() override;
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-	virtual void OnConstruction(const FTransform& Transform) override;
-	
-	void DrawGridLine();
-	void MakeEnemySpline();
 
 	void InitGridMap(const int32 InitSizeX = 10, const int32 InitSizeY = 10, const double CellSize = 100.f);
 
 public:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	USplineComponent* EnemyPathSpline;
+	UFUNCTION()
+	void OnRep_BuildGridVisual();
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Grid")
-	FGridMap GridMap;
-
+	void Initialize(FGridBuildData BuildData);
+	
 private:
+	UPROPERTY(VisibleAnywhere)
+	UInstancedStaticMeshComponent* HexGridVisualComponent;
+	UPROPERTY(EditAnywhere, Category = "Visual")
+	UStaticMesh* HexMeshAsset;
+
+	UPROPERTY(VisibleAnywhere)
+	UInstancedStaticMeshComponent* QuadGridVisualComponent;
+	UPROPERTY(EditAnywhere, Category = "Visual")
+	UStaticMesh* QuadMeshAsset;
+	
 	// 디버그 라인 색상 등 시각화 관련 변수
 	UPROPERTY(EditAnywhere, Category = "Visualization")
 	FColor GridLineColor = FColor::Cyan;
@@ -50,4 +70,6 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Spline")
 	float SplineMarginFromEdge = 30.f;
 	
+	UPROPERTY(Replicated, VisibleAnywhere, ReplicatedUsing=OnRep_BuildGridVisual)
+	FGridBuildData GridBuildData;
 };

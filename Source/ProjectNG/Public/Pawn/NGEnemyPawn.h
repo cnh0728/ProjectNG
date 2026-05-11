@@ -3,33 +3,37 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameplayEffectTypes.h"
-#include "NGCharacterBase.h"
-#include "NGEnemyCharacter.generated.h"
+#include "Pawn/NGPawnBase.h"
+#include "NGEnemyPawn.generated.h"
 
 class UWidgetComponent;
 class USplineComponent;
 
 UCLASS()
-class PROJECTNG_API ANGEnemyCharacter : public ANGCharacterBase
+class PROJECTNG_API ANGEnemyPawn : public ANGPawnBase
 {
 	GENERATED_BODY()
 
 public:
-	ANGEnemyCharacter();
+	// Sets default values for this character's properties
+	ANGEnemyPawn();
+
+protected:
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
 
 public:
-	virtual void BeginPlay() override;
-	
+	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 	void MoveOnSpline(float DeltaTime);
 
+	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 public:
 	void InitPatrolPath(USplineComponent* SplineComponent, FVector InLocationOffset = FVector::ZeroVector);
 
-protected:
+private:
 	virtual void InitAbilityActorInfo() override;
 	
 private:

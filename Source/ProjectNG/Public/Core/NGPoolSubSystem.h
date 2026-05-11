@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Character/NGCharacterBase.h"
+#include "Pawn/NGPawnBase.h"
 #include "Subsystems/WorldSubsystem.h"
 #include "NGPoolSubSystem.generated.h"
 
@@ -23,12 +23,12 @@ struct FNGProjectileList
 };
 
 USTRUCT()
-struct FNGCharacterList
+struct FNGPawnList
 {
 	GENERATED_BODY()
 	
 	UPROPERTY()
-	TArray<ANGCharacterBase*> FreeCharacterList;
+	TArray<ANGPawnBase*> FreePawnList;
 };
 
 UCLASS()
@@ -37,18 +37,18 @@ class PROJECTNG_API UNGPoolSubSystem : public UWorldSubsystem
 	GENERATED_BODY()
 	
 public:
-	ANGProjectile* AcquireProjectile(TSubclassOf<ANGProjectile> ProjectileClass, const FTransform& SpawnTransform, ANGCharacterBase* Target);
+	ANGProjectile* AcquireProjectile(TSubclassOf<ANGProjectile> ProjectileClass, const FTransform& SpawnTransform, ANGPawnBase* Target);
 	void ReleaseSegment(ANGProjectile* Projectile);
 	
-	ANGCharacterBase* AcquireCharacter(TSubclassOf<ANGCharacterBase> CharacterClass, const FTransform& SpawnTransform);
-	void ReleaseSegment(ANGCharacterBase* Character);
+	ANGPawnBase* AcquirePawn(TSubclassOf<ANGPawnBase> PawnClass, const FTransform& SpawnTransform, const FActorSpawnParameters& SpawnParams);
+	void ReleaseSegment(ANGPawnBase* Pawn);
 	
-	void ReleaseDefault(AActor* InActor);
 protected:
 	UPROPERTY()
 	TMap<TSubclassOf<ANGProjectile>, FNGProjectileList> ProjectilePools;
 	
 	UPROPERTY()
-	TMap<TSubclassOf<ANGCharacterBase>, FNGCharacterList> CharacterPools;
+	TMap<TSubclassOf<ANGPawnBase>, FNGPawnList> PawnPools;
 	
+	void ReleaseDefaultSetting(AActor* InActor);
 };

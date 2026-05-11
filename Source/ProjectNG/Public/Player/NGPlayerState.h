@@ -5,9 +5,12 @@
 #include "CoreMinimal.h"
 #include "AbilitySystemInterface.h"
 #include "AbilitySystem/NGAbilitySystemComponent.h"
+#include "Combat/Grid/Grid.h"
 #include "GameFramework/PlayerState.h"
 #include "NGPlayerState.generated.h"
 
+class AGridMapManager;
+class UNGPocketComponent;
 /**
  * In-Game에서의 플레이어의 상태 정보를 저장하는 클래스
  *
@@ -21,16 +24,54 @@ class PROJECTNG_API ANGPlayerState : public APlayerState, public IAbilitySystemI
 
 public:
 	ANGPlayerState();
-
-public:
+	
 	//~Begin IAbilitySystemInterface
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override { return AbilitySystemComponent; }
 	//~End IAbilitySystemInterface
 
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	void SpawnGridMapManager();
+
 	UNGAbilitySystemComponent* GetNGAbilitySystemComponent() const { return AbilitySystemComponent; }
+
+	void InitializeLogin(uint32 AssignedIndex);
 	
 protected:
 	UPROPERTY()
 	TObjectPtr<UNGAbilitySystemComponent> AbilitySystemComponent;
+
+/*************************************/
+/*				Pocket 관련			 */
+/*************************************/
+	
+public:
+	UNGPocketComponent* GetPlayerPocket() { return PlayerPocket; }
+
+protected:
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Game|Pocket")
+	TObjectPtr<UNGPocketComponent> PlayerPocket;
+	
+	/*************************************/
+	/*				GridMap 관련			 */
+	/*************************************/
+public:
+	FHexGridMap& GetCombatGridMap() { return CombatGridMap; }
+	
+	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadWrite, Category = "Grid")
+	FQuadGridMap WaitGridMap;
+	
+	UFUNCTION()
+	void SetUserIndex(uint32 Idx);
+	
+protected:
+	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadWrite, Category = "Grid")
+	FHexGridMap CombatGridMap;
+	
+	//그리드 맵의 실체를 담당(각 유저당 하나임)
+	UPROPERTY(Replicated)
+	TObjectPtr<AGridMapManager> GridManager;
+	
+	UPROPERTY(Replicated)
+	uint32 UserIndex;
 	
 };

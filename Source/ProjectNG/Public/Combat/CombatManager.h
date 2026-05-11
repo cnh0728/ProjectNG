@@ -4,11 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "NGCombatData.h"
+#include "Pawn/NGPawnBase.h"
 #include "CombatManager.generated.h"
 
+class ANGPlayerController;
 class ANGCharacterBase;
 class AGridMapManager;
-class ANGEnemyCharacter;
+class ANGEnemyPawn;
 
 UCLASS()
 class PROJECTNG_API ACombatManager : public AActor
@@ -29,19 +31,18 @@ public:
 	
 public:
 	UFUNCTION(BlueprintCallable)
-	void StartWave();
+	void StartWave(APlayerController* PC);
 	
 protected:
 	void SpawnEnemyTimerElapsed();
-	
-	void SpawnEnemy();
+
+	bool SpawnEnemy();
 
 public:
+	void StartCombat(FCombatSettingData SettingData, APlayerController* PC);
 	
-	void StartCombat(FCombatSettingData SettingData);
-	
-	void CharacterDied(ANGCharacterBase* DeadCharacter);
-	
+	void PawnDied(ANGPawnBase* DeadPawn);
+
 protected:
 	
 	void SetupCombat(FCombatSettingData SettingData);
@@ -50,6 +51,11 @@ protected:
 
 	int32 CurrentEnemyCount = 0;
 	int32 TargetKillCount = 10;
+	
+	UPROPERTY(Transient)
+	TObjectPtr<APlayerController> RequestingPlayerControllerCache;
+	
+	
 	
 public:
 	UPROPERTY(EditAnywhere, Category = "Combat")

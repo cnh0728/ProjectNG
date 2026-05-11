@@ -3,15 +3,15 @@
 
 #include "Combat/CombatManager.h"
 
-#include "Character/NGEnemyCharacter.h"
-#include "Character/NGUnitCharacter.h"
+#include "Pawn/NGEnemyPawn.h"
+#include "Pawn/NGUnitPawn.h"
 #include "Combat/GridMapManager.h"
-#include "Components/CapsuleComponent.h"
-#include "Components/SplineComponent.h"
-#include "Core/NGDeveloperSettings.h"
+#include "Components/NGPocketComponent.h"
 #include "Core/NGPoolSubSystem.h"
+#include "Game/NGGameState.h"
 #include "GameModes/NGInGameGameMode.h"
 #include "Net/UnrealNetwork.h"
+#include "Player/NGPlayerState.h"
 
 
 class UNGDeveloperSettings;
@@ -34,9 +34,11 @@ void ACombatManager::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-void ACombatManager::StartWave()
+void ACombatManager::StartWave(APlayerController* PC)
 {
 	if (!HasAuthority())	return;
+	
+	RequestingPlayerControllerCache = PC;
 	
 	if (WaveList.IsValidIndex(CurrentWaveIndex))
 	{
@@ -51,6 +53,7 @@ void ACombatManager::StartWave()
 
 void ACombatManager::SpawnEnemyTimerElapsed()
 {
+	//PC가져와서 넘겨줘야할듯?
 	SpawnEnemy();
 	
 	// 목표 다 채웠으면 정지
@@ -60,68 +63,49 @@ void ACombatManager::SpawnEnemyTimerElapsed()
 	}
 }
 
-void ACombatManager::SpawnEnemy()
+bool ACombatManager::SpawnEnemy()
 {
 	AGridMapManager* GridMapManager = nullptr;
 	
-	if (ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>())
+	if (ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>())
 	{
-		GridMapManager = GM->GetGridMapManager();
+		//임시로 0
+		GridMapManager = GS->GetGridMapManager(0);
 	}
 
-	if (!IsValid(GridMapManager))	return;
-		
-	if (!IsValid(GridMapManager->EnemyPathSpline))	return;
+	if (!IsValid(GridMapManager))	return false;
 	
 	UNGPoolSubSystem* Pool = GetWorld()->GetSubsystem<UNGPoolSubSystem>();
 	
-	if (!Pool)	return;
+	if (!Pool)	return false;
 	
 	UE_LOG(LogTemp, Warning, TEXT("Enemy Spawned!"));
 	
-	FVector SpawnLocation = GridMapManager->EnemyPathSpline->GetLocationAtSplinePoint(0, ESplineCoordinateSpace::World);
 	
-	FRotator SpawnRotation = GridMapManager->EnemyPathSpline->GetRotationAtSplinePoint(0, ESplineCoordinateSpace::World);
+	// TSubclassOf<ANGEnemyPawn> EnemyClass = WaveList[CurrentWaveIndex].EnemyClass;
+	TSubclassOf<ANGEnemyPawn> EnemyClass = ANGEnemyPawn::StaticClass(); //TODO: 웨이브시스템 구현하면 위에꺼로 바꾸기
 	
-	TSubclassOf<ANGEnemyCharacter> EnemyClass = WaveList[CurrentWaveIndex].EnemyClass;
+	FActorSpawnParameters SpawnParameters;
+	SpawnParameters.Owner = RequestingPlayerControllerCache;
+	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	
-	/////////////////////////
-	/// 캐릭터 스폰 오프셋이 발끝기준으로 소환되게 조정
-	FVector CapsuleHalfHeight = FVector::ZeroVector;
-	if (IsValid(EnemyClass))
-	{
-		if (ACharacter* DefaultChar = Cast<ACharacter>(EnemyClass->GetDefaultObject()))
-		{
-			CapsuleHalfHeight.Z = DefaultChar->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
-			SpawnLocation += CapsuleHalfHeight;
-		}
-	}
-	/////////////////////////
+	// ANGEnemyPawn* NewEnemy = UNGSpawnHelper::SpawnPawn<ANGEnemyPawn>(this, EnemyClass, SpawnTransform, RequestingPlayerControllerCache);
+	// if (!NewEnemy)
+	// {
+	// 	return false;
+	// }
 	
-	if (TSoftClassPtr<ANGCharacterBase> ClassPtr = GetDefault<UNGDeveloperSettings>()->CharacterClass[ANGEnemyCharacter::StaticClass()])
-	{
-		UClass* CC = ClassPtr.LoadSynchronous();
-		
-		if (ANGEnemyCharacter* NewEnemy = Cast<ANGEnemyCharacter>(Pool->AcquireCharacter(CC, FTransform(SpawnRotation, SpawnLocation))))
-		{
-			NewEnemy->InitPatrolPath(GridMapManager->EnemyPathSpline, CapsuleHalfHeight);
-		}
-		
-		EnemiesSpawnedSoFar++;
-	}else
-	{
-		UE_LOG(LogTemp, Error, TEXT("Cannot Find EnemyClass"));
-	}
-
+	EnemiesSpawnedSoFar++;
 	
+	return true;
 }
 
 
-void ACombatManager::StartCombat(FCombatSettingData SettingData)
+void ACombatManager::StartCombat(FCombatSettingData SettingData, APlayerController* PC)
 {
 	SetupCombat(SettingData);
 	
-	StartWave();
+	StartWave(PC);
 	//화면띄우고 이것저것
 	
 }
@@ -142,17 +126,17 @@ void ACombatManager::FinishCombat()
 	}
 }
 
-void ACombatManager::CharacterDied(ANGCharacterBase* DeadCharacter)
+void ACombatManager::PawnDied(ANGPawnBase* DeadPawn)
 {
-	if (!DeadCharacter)	return;
+	if (!DeadPawn)	return;
 	
-	if (DeadCharacter->IsA(ANGEnemyCharacter::StaticClass()))
+	if (DeadPawn->IsA(ANGEnemyPawn::StaticClass()))
 	{
 		UE_LOG(LogTemp, Log, TEXT("적 사망"));
 		++CurrentEnemyCount;
 		//적 사망 이벤트
 		//적 사망 델리게이트 만들어서 구독시키게 하고 델리게이트 호출도 나쁘지 않을듯
-	}else if (DeadCharacter->IsA(ANGUnitCharacter::StaticClass()))
+	}else if (DeadPawn->IsA(ANGUnitPawn::StaticClass()))
 	{
 		UE_LOG(LogTemp, Log, TEXT("유닛 사망"));
 		//유닛 죽었을때 이벤트
@@ -166,8 +150,42 @@ void ACombatManager::CharacterDied(ANGCharacterBase* DeadCharacter)
 
 void ACombatManager::SetupCombat(FCombatSettingData SettingData)
 {
+	ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>();
+	if (!GS)	return;
+	
+	AGridMapManager* MapManager = GS->GetGridMapManager(0);
+	if (!MapManager)	return;
+	
 	CurrentEnemyCount = 0;
 	TargetKillCount = SettingData.EnemyCount;
+	
+	const FHexGridMap& FightGridMap = SettingData.PlayerA->GetCombatGridMap();
+	
+	if (SettingData.PlayerA)
+	{
+		UNGPocketComponent* PocketComponentA = SettingData.PlayerA->GetPlayerPocket();
+		
+		for (TWeakObjectPtr<ANGUnitPawn> Unit : PocketComponentA->GetPlacedUnitPocket())
+		{
+			FVector TargetLoc = FightGridMap.GetWorldLocation(Unit->GetPlacedGridIndex());
+			Unit->SetActorLocation(TargetLoc);
+			Unit->SetActorRotation(FRotator::ZeroRotator);
+		}
+		
+	}
+	
+	if (SettingData.PlayerB)
+	{
+		UNGPocketComponent* PocketComponentB = SettingData.PlayerB->GetPlayerPocket();
+		for (TWeakObjectPtr<ANGUnitPawn> Unit : PocketComponentB->GetPlacedUnitPocket())
+		{
+			FIntVector2 MirroredIdx = FightGridMap.GetMirroredIndex(Unit->GetPlacedGridIndex());
+			FVector TargetLoc = FightGridMap.GetWorldLocation(MirroredIdx);
+			
+			Unit->SetActorLocation(TargetLoc);
+			Unit->SetActorRotation(FRotator(0.f, 180.f, 0.f));
+		}
+	}
 }
 
 void ACombatManager::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

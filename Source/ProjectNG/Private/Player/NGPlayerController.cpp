@@ -6,29 +6,35 @@
 #include "Components/NGPocketComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Blueprint/UserWidget.h"
-#include "Character/NGUnitCharacter.h"
-#include "Character/SelectableInterface.h"
-#include "Combat/CombatManager.h"
+#include "Pawn/NGUnitPawn.h"
+#include "Pawn/SelectableInterface.h"
 #include "Combat/GridMapManager.h"
+#include "Core/NGSpawnHelper.h"
 #include "Game/NGGameState.h"
 #include "GameModes/NGInGameGameMode.h"
 #include "Input/NGInputComponent.h"
+#include "Net/UnrealNetwork.h"
+#include "Player/NGPlayerState.h"
 
 #include "ProjectNG/ProjectNG.h"
 #include "UI/NGUnitInfoWidget.h"
 
-class UNGInputComponent;
-
 ANGPlayerController::ANGPlayerController() : bIsDragging(false)
 {
+	UE_LOG(LogTemp, Warning, TEXT("---------------PC Created!---------------"));
+	UE_LOG(LogTemp, Warning, TEXT("PC Addr: %p"), this);
+	
 	//커서 보이게 하는 변수
 	bShowMouseCursor = true;
 	bEnableClickEvents = true; 
 	bEnableMouseOverEvents = true;
 	DefaultMouseCursor = EMouseCursor::Default;
+	
+}
 
-	PlayerPocket = CreateDefaultSubobject<UNGPocketComponent>("PocketComponent");
-
+ANGPlayerController::~ANGPlayerController()
+{
+	UE_LOG(LogTemp, Warning, TEXT("---------------PC Destroyed!---------------"));
 }
 
 void ANGPlayerController::BeginPlay()
@@ -63,6 +69,7 @@ void ANGPlayerController::SetupInputComponent()
 		if (ClickInputAction)
 		{
 			EnhancedInputComponent->BindAction(ClickInputAction, ETriggerEvent::Started, this, &ThisClass::HandleClickPressed);
+			EnhancedInputComponent->BindAction(ClickInputAction, ETriggerEvent::Triggered, this, &ThisClass::HandleClickTriggered);
 			EnhancedInputComponent->BindAction(ClickInputAction, ETriggerEvent::Completed, this, &ThisClass::HandleClickReleased);
 		}
 	}
@@ -75,7 +82,27 @@ void ANGPlayerController::Tick(float DeltaTime)
 	GetMousePosition(CurrentMouseLocation.X, CurrentMouseLocation.Y);
 	
 	//TODO: UI랑 인게임 분기쳐서 인게임에서만 동작하도록 하면 좋을듯
-	ProgressDragActor();
+	// ProgressDragActor();
+}
+
+void ANGPlayerController::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+	
+	
+}
+
+void ANGPlayerController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+	
+}
+
+
+void ANGPlayerController::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	
 }
 
 void ANGPlayerController::ProgressDragActor()
@@ -83,21 +110,24 @@ void ANGPlayerController::ProgressDragActor()
 	if (DraggingUnit.IsValid())
 	{
 		FHitResult HitResult;
+		
 		if (GetHitResultUnderCursor(ECC_Map, false, HitResult))
-		{
+		// if (GetHitResultUnderCursor(ECC_Visibility, false, HitResult))
+		{			
+			UE_LOG(LogTemp, Warning, TEXT("Success! Hit: %s"), *HitResult.GetActor()->GetName());
 			FVector TargetLocation = HitResult.Location;
 
-			if (ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>())
+			if (ANGPlayerState* PS = GetPlayerState<ANGPlayerState>())
 			{
-				if (AGridMapManager* MapManager = GM->GetGridMapManager())
+				const FHexGridMap& GridMapCache = PS->GetCombatGridMap();
+				const FIntVector2 GridIndex = GridMapCache.GetCellIndex(TargetLocation);
+				
+				bool bValidGrid = GridMapCache.IsValidIndex(GridIndex);
+				
+				if (bValidGrid)
 				{
-					const FGridMap& GridMapCache = MapManager->GridMap;
-					const FIntVector2 GridIndex = GridMapCache.GetCellIndex(TargetLocation);
-					if (GridMapCache.IsValidIndex(GridIndex))
-					{
-						// TargetLocation = GridMapCache.GetWorldLocation(GridIndex);
-						DraggingUnit->SetDragTargetGridIndex(GridIndex);
-					}
+					// TargetLocation = GridMapCache.GetWorldLocation(GridIndex);
+					DraggingUnit->SetDragTargetGridIndex(GridIndex);
 				}
 			}
 			
@@ -112,22 +142,28 @@ void ANGPlayerController::HandleClickPressed(const FInputActionValue& Value)
 	PerformDrag();
 }
 
+void ANGPlayerController::HandleClickTriggered(const FInputActionValue& Value)
+{
+	if (DraggingUnit.IsValid())
+	{
+		ProgressDragActor();
+	}
+}
+
 void ANGPlayerController::HandleClickReleased(const FInputActionValue& Value)
 {
 	double MouseDelta = (ClickStartLocation - CurrentMouseLocation).Size();
-		
+	
 	if (MouseDelta > DragThreshold)
 	{
 		// 클릭일땐 선택 유지, 드래그일땐 선택 취소
 		ResetSelectUnit();
 	}
 	
-	ProgressDragActor();
-	
 	ResetDragUnit();
 }
 
-void ANGPlayerController::UpdateUnitWidget(ANGUnitCharacter* NewUnit)
+void ANGPlayerController::UpdateUnitWidget(ANGUnitPawn* NewUnit)
 {
 	//위젯이 없는 상태면 생성
 	if (!UnitInfoWidgetInstance && UnitInfoWidgetClass)
@@ -148,7 +184,7 @@ void ANGPlayerController::UpdateUnitWidget(ANGUnitCharacter* NewUnit)
 	}
 }
 
-void ANGPlayerController::SetSelectedUnit(ANGUnitCharacter* InSelectedUnit)
+void ANGPlayerController::SetSelectedUnit(ANGUnitPawn* InSelectedUnit)
 {
 	ResetSelectUnit();
 	
@@ -186,6 +222,8 @@ void ANGPlayerController::ResetSelectUnit()
 
 void ANGPlayerController::PerformDrag()
 {
+	if (!IsLocalController())	return;
+	
 	ResetDragUnit();
 	ResetSelectUnit();
 	
@@ -193,16 +231,16 @@ void ANGPlayerController::PerformDrag()
 	if (GetHitResultUnderCursor(ECC_SelectableUnit, false, HitResult))
 	{
 		AActor* HitActor = HitResult.GetActor();
-
-		// 디버깅용 로그 (매우 중요: 실제로 무엇이 맞았는지 확인)
-		if(HitActor)
+		if (HitActor->GetOwner() != this)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Hit Actor: %s"), *HitActor->GetName());
+			return;
 		}
-		
+
 		if (HitActor && HitActor->Implements<USelectableInterface>())
 		{
-			DraggingUnit = Cast<ANGUnitCharacter>(HitActor);
+			UE_LOG(LogTemp, Warning, TEXT("Hit Actor: %s"), *HitActor->GetName());
+			
+			DraggingUnit = Cast<ANGUnitPawn>(HitActor);
 			ISelectableInterface::Execute_OnDrag(HitActor);
 			
 			SetSelectedUnit(DraggingUnit.Get());
@@ -223,13 +261,25 @@ void ANGPlayerController::ResetDragUnit()
 	}
 }
 
-void ANGPlayerController::Cmd_StartWave()
+void ANGPlayerController::Server_RequestBuyUnit_Implementation(FName UnitName)
+{
+	if (ANGPlayerState* PS = GetPlayerState<ANGPlayerState>())
+	{
+		if (UNGSpawnHelper::SpawnUnitPawn(this, UnitName))
+		{
+			UNGPocketComponent* PlayerPocket = PS->GetPlayerPocket();
+			PlayerPocket->AddUnitToBuyingPocket(UnitName);
+			UE_LOG(LogTemp, Display, TEXT("BuyUnitFromPocket Success"));
+		}
+	}
+}
+
+void ANGPlayerController::Server_RequestStartWave_Implementation()
 {
 	if (HasAuthority())
 	{
-		// GameState를 통해 CombatManager 가져오기
 		if (ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>()){
-			GM->RequestStartCombat();
+			GM->RequestStartCombat(this);
             
 			// 확인용 로그
 			UE_LOG(LogTemp, Warning, TEXT("Cmd: Wave Started!"));
@@ -242,4 +292,19 @@ void ANGPlayerController::Cmd_StartWave()
 			UE_LOG(LogTemp, Error, TEXT("CombatManager가 GameState에 없습니다!"));
 		}
 	}
+}
+
+UNGPocketComponent* ANGPlayerController::GetPlayerPocket()
+{
+	if (ANGPlayerState* PS = GetPlayerState<ANGPlayerState>())
+	{
+		return PS->GetPlayerPocket();
+	}
+	
+	return nullptr;
+}
+
+void ANGPlayerController::Cmd_StartWave()
+{
+	Server_RequestStartWave();
 }

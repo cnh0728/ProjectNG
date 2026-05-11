@@ -2,10 +2,13 @@
 
 #include "Combat/Weapon/NGProjectile.h"
 
+#include <MaterialExpressionTruncate.generated.h>
+
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
-#include "Character/NGCharacterBase.h"
+#include "Pawn/NGPawnBase.h"
 #include "Components/SphereComponent.h"
+#include "Core/NGPoolableComponent.h"
 #include "Core/NGPoolSubSystem.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 
@@ -16,14 +19,20 @@ ANGProjectile::ANGProjectile()
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	
+	bReplicates = true;		//네트워크 복제 활성화
+	SetReplicatingMovement(true);	//위치 속도 복제 활성화
+	
+	PoolController = CreateDefaultSubobject<UNGPoolableComponent>(FName("PoolController"));
+	
 	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComp"));
 	RootComponent = SphereComponent;
 	SphereComponent->SetCollisionProfileName(TEXT("Projectile"));
 	
-	// ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComponent"));
-	// ProjectileMovementComponent->InitialSpeed = 2000.f;
-	// ProjectileMovementComponent->MaxSpeed = 2000.f;
-	// ProjectileMovementComponent->bRotationFollowsVelocity = true; // 날아가는 방향으로 고개 돌리기
+	ProjectileMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ProjectileMesh"));
+	ProjectileMesh->SetupAttachment(RootComponent);
+	
+	ProjectileMesh->SetCollisionProfileName(TEXT("NoCollision"));
+	
 }
 
 // Called when the game starts or when spawned
@@ -31,15 +40,21 @@ void ANGProjectile::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &ANGProjectile::OnProjectileOverlap);
+	if (GetNetMode() == NM_DedicatedServer) //서버에서만 충돌판정
+	{
+		SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &ANGProjectile::OnProjectileOverlap);
+	}
 }
 
 void ANGProjectile::OnProjectileOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	// 서버에서만 로직 처리
+	if (!HasAuthority())	return;
+	
 	if (OtherActor && !OtherActor->IsA<ANGProjectile>())
 	{
-		//Target이 널일때 Overlap돼서 그렇네; 이거 어케 먼저일어날수있지
+		check(Target);
 		UE_LOG(LogTemp, Log, TEXT("Other Actor Enter, OtherActorName = %s, TargetName = %s"), *OtherActor->GetName(), *Target->GetName());
 
 		if (OtherActor == Target)
@@ -66,7 +81,7 @@ void ANGProjectile::ReleaseProjectile()
 	}
 }
 
-void ANGProjectile::SetTarget(ANGCharacterBase* NewTarget)
+void ANGProjectile::SetTarget(ANGPawnBase* NewTarget)
 {
 	Target = NewTarget;
 	// ProjectileMovementComponent->HomingTargetComponent = NewTarget->GetRootComponent();

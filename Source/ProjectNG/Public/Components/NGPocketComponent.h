@@ -6,7 +6,16 @@
 #include "Components/ActorComponent.h"
 #include "NGPocketComponent.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnUnitsUpdatedSignature);
+
+class ANGUnitPawn;
+
+UENUM(BlueprintType)
+enum class EShopActionType : uint8
+{
+	None,
+	Roll,
+	Buy,
+};
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class PROJECTNG_API UNGPocketComponent : public UActorComponent
@@ -21,11 +30,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Game|Shop")
 	void RequestRoll();
 
-	UPROPERTY(BlueprintAssignable, Category = "Game|Shop")
-	FOnUnitsUpdatedSignature OnUnitsUpdated;
-
 	UFUNCTION(BlueprintPure, Category = "Game|Shop")
-	const TArray<FName>& GetRollPocket() const { return RollPocket; }
+	const TArray<FName>& GetRollPocket() const { return RollShopPocket; }
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Game|Shop")
 	int32 PlayerLevel = 1; // TODO. 어빌리티 시스템으로 처리해야함. 현재 디버깅용으로 임시 변수
@@ -35,17 +41,67 @@ public:
 protected:
 	UFUNCTION(Server, Reliable)
 	void Server_RequestRoll();
+	
+	UFUNCTION()
+	void OnRep_RollPocket();
+	
+	UFUNCTION()
+	void UpdateRollUnit();
 
 	UPROPERTY(EditDefaultsOnly, Category = "Game|Shop")
 	int32 ShopSlotCount = 3;
 
 private:
-	UPROPERTY(VisibleAnywhere, Category = "Game|Shop")
-	TArray<FName> RollPocket; // 플레이어의 상점에 표시된 유닛 목록
-
-	UPROPERTY(VisibleAnywhere, Replicated, Category = "Game|Shop")
-	TArray<FName> PlayerUnitPocket; // 플레이어가 가진 유닛 목록
+	UPROPERTY(VisibleAnywhere, ReplicatedUsing = OnRep_RollPocket, Category = "Game|Shop")
+	TArray<FName> RollShopPocket; // 플레이어의 상점에 표시된 유닛 목록
+	
+	UPROPERTY(Replicated, VisibleAnywhere)
+	EShopActionType LastShopAction;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Game|Shop")
 	TObjectPtr<UDataTable> ProbabilityTable;
+
+
+public:
+	TArray<ANGUnitPawn*> GetOwnedUnits() { return OwnedUnitPocket; };
+
+	void ControlPocketSpawning(ANGUnitPawn* NewPawn);
+	void ControlPocketPlacing(ANGUnitPawn* NewPawn);
+	void ControlPocketUnPlacing(ANGUnitPawn* NewPawn);
+	void ControlPocketSelling(ANGUnitPawn* NewPawn);
+	
+	TArray<ANGUnitPawn*> GetOwnedUnitPocket()	{return OwnedUnitPocket; }
+	TArray<TWeakObjectPtr<ANGUnitPawn>> GetPlacedUnitPocket()	{return PlacedUnitPocket; }
+	
+private:
+	UPROPERTY(Replicated, VisibleAnywhere, Category = "Game|Unit")
+	TArray<ANGUnitPawn*> OwnedUnitPocket;
+	
+	UPROPERTY(VisibleAnywhere, Category = "Game|Unit")
+	TArray<TWeakObjectPtr<ANGUnitPawn>> PlacedUnitPocket;
+
+	UPROPERTY(VisibleAnywhere, Category = "Game|Unit")
+	TArray<TWeakObjectPtr<ANGUnitPawn>> WaitUnitPocket;
+	
+/*************************************/
+/*				Debug용				 */
+/*************************************/
+public:
+	UFUNCTION(BlueprintCallable, Category = "Debug")
+	FString GetDebugNetMode() const
+	{
+		ENetMode NetMode = GetNetMode();
+		switch (NetMode)
+		{
+		case NM_Client: return TEXT("Client");
+		case NM_ListenServer: return TEXT("ListenServer");
+		case NM_DedicatedServer: return TEXT("DedicatedServer");
+		default: return TEXT("Standalone");
+		}
+	}
+	
+	UFUNCTION(BlueprintCallable, Category = "Debug")
+	void Debug_CheckBinding(UObject* WidgetRef) {
+		UE_LOG(LogTemp, Warning, TEXT("[Bind] Pocket Addr: %p, Owner Addr: %p"), this, WidgetRef);
+	}
 };

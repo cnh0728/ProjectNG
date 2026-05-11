@@ -59,22 +59,11 @@ int32 URollShopWidgetController::GainPlayerLevel() const
 
 void URollShopWidgetController::BuyUnitFromPocket(FName UnitName)
 {
-	//여기서 그리드에 칸이 비어있는지 체크 후 사야함
-	if (ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>())
+	if (ANGPlayerController* NGP = Cast<ANGPlayerController>(PlayerController))
 	{
-		if (ANGPlayerController* NGP = Cast<ANGPlayerController>(PlayerController))
+		if (NGP->IsLocalController())
 		{
-			if (UNGPocketComponent* Pocket = NGP->GetPlayerPocket())
-			{
-				if (AGridMapManager* GridManager = GM->GetGridMapManager())
-				{
-					if (GridManager->SpawnUnitCharacter(UnitName))
-					{
-						Pocket->AddUnitToBuyingPocket(UnitName);
-						UE_LOG(LogTemp, Display, TEXT("BuyUnitFromPocket Success"));
-					}
-				}
-			}
+			NGP->Server_RequestBuyUnit(UnitName);
 		}
 	}
 }

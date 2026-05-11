@@ -7,7 +7,7 @@
 #include "NGUnitInfoWidget.generated.h"
 
 struct FOnAttributeChangeData;
-class ANGUnitCharacter;
+class ANGUnitPawn;
 class UNGAbilitySystemComponent;
 /**
  * 
@@ -19,7 +19,7 @@ class PROJECTNG_API UNGUnitInfoWidget : public UNGUserWidget
 	
 public:
 	UFUNCTION(BlueprintCallable)
-	void SetTargetUnit(ANGUnitCharacter* NewUnit);
+	void SetTargetUnit(ANGUnitPawn* NewUnit);
 	void ClearTargetUnit();
 
 protected:

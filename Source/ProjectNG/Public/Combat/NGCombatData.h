@@ -1,15 +1,18 @@
 #pragma once
+
+#include "CoreMinimal.h"
 #include "NGCombatData.generated.h"
 
-class ANGEnemyCharacter;
+class ANGPlayerState;
+class ANGEnemyPawn;
 
-USTRUCT(Blueprintable)
+USTRUCT(BlueprintType)
 struct FWaveData
 {
 	GENERATED_BODY()
 	
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<ANGEnemyCharacter> EnemyClass;
+	TSubclassOf<ANGEnemyPawn> EnemyClass;
 	
 	UPROPERTY(EditAnywhere)
 	int32 EnemyCount = 10;
@@ -33,5 +36,21 @@ USTRUCT()
 struct FCombatSettingData
 {
 	GENERATED_BODY()
+	
+	FCombatSettingData() = default;
+	
+	FCombatSettingData(int InEnemyCount, ANGPlayerState* InPlayerA, ANGPlayerState* InPlayerB)
+	{
+		EnemyCount = InEnemyCount;
+		PlayerA = InPlayerA;
+		PlayerB = InPlayerB;
+	}
+	
 	int EnemyCount;
+		
+	UPROPERTY()
+	TObjectPtr<ANGPlayerState> PlayerA;
+	
+	UPROPERTY()
+	TObjectPtr<ANGPlayerState> PlayerB;
 };

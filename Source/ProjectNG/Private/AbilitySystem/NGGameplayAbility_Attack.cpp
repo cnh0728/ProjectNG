@@ -4,8 +4,6 @@
 #include "AbilitySystem/NGGameplayAbility_Attack.h"
 
 #include "AbilitySystemComponent.h"
-#include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
-#include "Character/NGUnitCharacter.h"
 
 void UNGGameplayAbility_Attack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
                                                 const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
