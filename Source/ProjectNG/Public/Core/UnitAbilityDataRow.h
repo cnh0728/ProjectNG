@@ -14,46 +14,22 @@ struct FUnitAbilityData : public FTableRowBase
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tag", DisplayName = "유닛 식별 태그")
-	FGameplayTag IdentificationTag;
+	FGameplayTag IdentificationTag = FGameplayTag();
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tag", DisplayName = "유닛 부여 태그")
-	FGameplayTagContainer OwnedTags;
+	FGameplayTagContainer OwnedTags = FGameplayTagContainer();
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI", DisplayName = "UI 출력 이름")
-	FText DisplayName;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stat", DisplayName = "체력")
-	float Health;
+	FText DisplayName = FText();
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stat", DisplayName = "공격력")
-	float AttackDamage; // AD
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stat", DisplayName = "주문력")
-	float AbilityPower; // AP
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stat", DisplayName = "공격 사거리")
-	float AttackRange;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stat", DisplayName = "공격 속도")
-	float AttackSpeed;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stat", DisplayName = "크리티컬 확률")
-	float CriticalRate;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stat", DisplayName = "회피율")
-	float DodgeRate;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stat", DisplayName = "물리 방어력")
-	float PhysicalDefense;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stat", DisplayName = "마법 저항력")
-	float MagicDefense;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stat", DisplayName = "유닛 기본 스탯 목록", meta=(ToolTip="최대 체력이나 마나가 먼저 선언되어야 합니다. 예: MaxHealth=100, Health=100"))
+	TMap<FGameplayAttribute, float> DefaultStats;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability", DisplayName = "고유 스킬")
-	TSoftObjectPtr<UGameplayAbility> UniqueAbility;
+	TSoftObjectPtr<UGameplayAbility> UniqueAbility = nullptr;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability", DisplayName = "금전 스킬")
-	TSoftObjectPtr<UGameplayAbility> GoldAbility;
+	TSoftObjectPtr<UGameplayAbility> GoldAbility = nullptr;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability", DisplayName = "범용 스킬 슬롯")
 	int32 MaxSkillSlots = 1;

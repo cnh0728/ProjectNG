@@ -37,6 +37,13 @@ public:
 	virtual void BeginPlay() override;
 	
 	virtual void Tick(float DeltaTime) override;
+
+	// Called when activated or newly created in the pool system.
+	virtual void Activate();
+	
+	// Called when the character dies or returns to the pool system.
+	virtual void Deactivate();
+	
 protected:
 	/** 파생 클래스에서 GAS 초기화를 위한 로직을 작성 */
 	virtual void InitAbilityActorInfo()	PURE_VIRTUAL(ANGPawnBase::InitAbilityActorInfo);
@@ -95,14 +102,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|AbilitySystemComponent")
 	TObjectPtr<UDataTable> DefaultAttributeTable;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|AbilitySystemComponent")
+	UPROPERTY(EditAnywhere, Category = "GAS|AbilitySystemComponent")
 	FGameplayTag IdentificationTag;
 	
 	virtual void InitializeAttributes();
 
 public:
-	void InitializeAttributes(const FUnitAbilityData& AbilityData) const;
-	
 	FVector GetHalfCapsule() const;
 	
 	UAnimMontage* GetAttackMontage() const;
@@ -113,9 +118,12 @@ public:
 	
 	ANGCharacterBase* GetCurrentTarget();
 	
+	FGameplayTag GetIdentificationTag() const { return IdentificationTag; }
+	
 private:
 	void UpdateHPBar();
 	
+	void InitAttributes(const FUnitAbilityData& AbilityData);
 protected:
 	FVector LocationOffset;
 	

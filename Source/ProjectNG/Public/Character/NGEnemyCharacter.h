@@ -29,7 +29,7 @@ public:
 public:
 	void InitPatrolPath(USplineComponent* SplineComponent, FVector InLocationOffset = FVector::ZeroVector);
 
-private:
+protected:
 	virtual void InitAbilityActorInfo() override;
 	
 private:

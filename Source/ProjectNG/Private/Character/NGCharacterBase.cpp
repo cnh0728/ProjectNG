@@ -4,10 +4,10 @@
 
 #include "AbilitySystem/NGAbilitySystemComponent.h"
 #include "AbilitySystem/NGAttributeSet.h"
-#include "Combat/CombatManager.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Core/UnitAbilityDataRow.h"
+#include "Game/NGUnitDataManager.h"
 #include "GameModes/NGInGameGameMode.h"
 #include "UI/NGWidgetInterface.h"
 
@@ -60,6 +60,8 @@ void ANGCharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	ensureMsgf(IdentificationTag.IsValid(), TEXT("IdentificationTag is not valid for %s"), *GetName());
+	
 	LocationOffset = GetHalfCapsule();
 	
 	if (AbilitySystemComponent)
@@ -76,6 +78,33 @@ void ANGCharacterBase::BeginPlay()
 void ANGCharacterBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+}
+
+void ANGCharacterBase::Activate()
+{
+	SetActorHiddenInGame(false);
+	SetActorEnableCollision(true);
+	SetActorTickEnabled(true);
+	
+	UNGUnitDataManager* UnitDataManager = GetWorld()->GetGameInstance()->GetSubsystem<UNGUnitDataManager>();
+	if (!UnitDataManager) return;
+	
+	const FUnitAbilityData* UnitData = UnitDataManager->GetUnitAbilityData(IdentificationTag);
+	if (UnitData)
+	{
+		InitAttributes(*UnitData);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("[%s] 데이터 테이블에서 태그(%s)를 찾을 수 없습니다!"), *GetName(), *IdentificationTag.ToString());
+	}
+}
+
+void ANGCharacterBase::Deactivate()
+{
+	SetActorHiddenInGame(true);
+	SetActorEnableCollision(false);
+	SetActorTickEnabled(false);
 }
 
 void ANGCharacterBase::OnHealthChanged(const FOnAttributeChangeData& Data)
@@ -119,23 +148,22 @@ void ANGCharacterBase::InitializeAttributes()
 	}
 }
 
-void ANGCharacterBase::InitializeAttributes(const FUnitAbilityData& AbilityData) const
+void ANGCharacterBase::InitAttributes(const FUnitAbilityData& AbilityData)
 {
 	if (!AbilitySystemComponent || !AttributeSet) return;
 	
-	// Owned Tags
-	AbilitySystemComponent->AddLooseGameplayTags(AbilityData.OwnedTags);
-	
-	AttributeSet->InitMaxHealth(AbilityData.Health);
-	AttributeSet->InitHealth(AbilityData.Health);
-	AttributeSet->InitAttackDamage(AbilityData.AttackDamage);
-	AttributeSet->InitAbilityPower(AbilityData.AbilityPower);
-	AttributeSet->InitAttackRange(AbilityData.AttackRange);
-	AttributeSet->InitAttackSpeed(AbilityData.AttackSpeed);
-	AttributeSet->InitCriticalRate(AbilityData.CriticalRate);
-	AttributeSet->InitDodgeRate(AbilityData.DodgeRate);
-	AttributeSet->InitPhysicalDefense(AbilityData.PhysicalDefense);
-	AttributeSet->InitMagicDefense(AbilityData.MagicDefense);
+	if (HasAuthority())
+	{
+		// Setup Tag
+		IdentificationTag = AbilityData.IdentificationTag;
+		AbilitySystemComponent->AddLooseGameplayTags(AbilityData.OwnedTags);
+		
+		// Initialize Stat
+		for (const auto& Stat : AbilityData.DefaultStats)
+		{
+			AbilitySystemComponent->SetNumericAttributeBase(Stat.Key, Stat.Value);
+		}
+	}
 }
 
 FVector ANGCharacterBase::GetHalfCapsule() const
@@ -154,6 +182,7 @@ UAnimMontage* ANGCharacterBase::GetAttackMontage() const
 
 void ANGCharacterBase::Die()
 {
+	//Todo: PoolSystem이 있기 때문에 Destroyed가 호출되면 안됨.
 	FGameplayTag DeadTag = FGameplayTag::RequestGameplayTag(FName("State.Dead"));
 	
 	if (GetAbilitySystemComponent()->HasMatchingGameplayTag(DeadTag))	return;

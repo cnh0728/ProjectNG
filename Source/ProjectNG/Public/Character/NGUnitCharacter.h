@@ -30,10 +30,11 @@ public:
 	virtual void OnDrag_Implementation() override;
 	virtual void OnUndrag_Implementation() override;
 	
+	virtual void Activate() override;
+	virtual void Deactivate() override;
+	
 protected:
 	virtual void InitializeAttributes() override;
-	
-private:
 	virtual void InitAbilityActorInfo() override;
 	
 public:

@@ -98,15 +98,10 @@ void ANGUnitCharacter::OnUndrag_Implementation()
 	bIsGrabbed = false;
 }
 
-// Called when the game starts or when spawned
-void ANGUnitCharacter::BeginPlay()
+void ANGUnitCharacter::Activate()
 {
-	Super::BeginPlay();
-
-	RefreshCache();
-	
 	InitAbilityActorInfo();
-	
+
 	if (!AttributeSet)
 	{
 		UE_LOG(LogTemp, Error, TEXT("ANGUnitCharacter::No attribute set"));
@@ -138,6 +133,23 @@ void ANGUnitCharacter::BeginPlay()
 	}
 	
 	GetWorld()->GetTimerManager().SetTimer(AttackCheckTimerHandle, this, &ANGUnitCharacter::CheckAttackCondition, 0.2f, true);
+	
+	Super::Activate();
+}
+
+void ANGUnitCharacter::Deactivate()
+{
+	GetWorld()->GetTimerManager().ClearTimer(AttackCheckTimerHandle);
+	
+	Super::Deactivate();
+}
+
+// Called when the game starts or when spawned
+void ANGUnitCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	RefreshCache();
 }
 
 void ANGUnitCharacter::InitAbilityActorInfo()

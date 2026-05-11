@@ -4,6 +4,7 @@
 #include "Core/NGPoolSubSystem.h"
 
 #include "Combat/Weapon/NGProjectile.h"
+#include "Game/NGUnitDataManager.h"
 
 ANGProjectile* UNGPoolSubSystem::AcquireProjectile(TSubclassOf<ANGProjectile> ProjectileClass,
                                                    const FTransform& SpawnTransform, ANGCharacterBase* Target)
@@ -58,11 +59,14 @@ ANGCharacterBase* UNGPoolSubSystem::AcquireCharacter(TSubclassOf<ANGCharacterBas
 	if (Pool.FreeCharacterList.Num() > 0)
 	{
 		Character = Pool.FreeCharacterList.Pop();
+		Character->SetActorTransform(SpawnTransform);
 	}
 	else
 	{
 		Character = GetWorld()->SpawnActor<ANGCharacterBase>(CharacterClass, SpawnTransform);
 	}
+	
+	Character->Activate();
 	
 	return Character;
 }
