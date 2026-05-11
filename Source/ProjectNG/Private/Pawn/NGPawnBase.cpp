@@ -208,7 +208,7 @@ void ANGPawnBase::InitializeAttributes()
 	
 	if (AbilitySystemComponent)
 	{
-		AbilitySystemComponent->InitStats(UNGAttributeSet::StaticClass(), DefaultAttributeTable);
+		// AbilitySystemComponent->InitStats(UNGAttributeSet::StaticClass(), DefaultAttributeTable);
 	}
 }
 

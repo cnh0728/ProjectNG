@@ -40,6 +40,8 @@ public:
 	
 	virtual void Deactivate();
 	
+	virtual void Die();
+	
 	//~Begin IAbilitySystemInterface
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	//~End IAbilitySystemInterface
@@ -130,8 +132,6 @@ public:
 	FVector GetHalfCapsule() const;
 	
 	UAnimMontage* GetAttackMontage() const;
-	
-	virtual void Die();
 	
 	bool IsDead();
 	
