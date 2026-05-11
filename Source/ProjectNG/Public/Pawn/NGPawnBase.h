@@ -9,6 +9,7 @@
 #include "GameplayCueInterface.h"
 #include "NGPawnBase.generated.h"
 
+struct FUnitAbilityData;
 class UCapsuleComponent;
 class UNGAttributeSet;
 class ANGCharacterBase;
@@ -27,9 +28,23 @@ public:
 	// Sets default values for this pawn's properties
 	ANGPawnBase();
 	
+	virtual void BeginPlay() override;
+	
+	virtual void Tick(float DeltaTime) override;
+	
+	virtual void OnRep_PlayerState() override;
+	
+	virtual void PossessedBy(AController* NewController) override;
+	
+	virtual void Activate();
+	
+	virtual void Deactivate();
+	
 	//~Begin IAbilitySystemInterface
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	//~End IAbilitySystemInterface
+
+	virtual void HandleGameplayCue(UObject* Self, FGameplayTag GameplayCueTag, EGameplayCueEvent::Type EventType, const FGameplayCueParameters& Parameters) override;
 
 	FORCEINLINE USkeletalMeshComponent* GetMesh() const { return UnitMesh; }
 	FORCEINLINE UCapsuleComponent* GetCapsuleComponent() const { return CapsuleComponent; }
@@ -45,9 +60,6 @@ protected:
 	/** 파생 클래스에서 GAS 초기화를 위한 로직을 작성 */
 	virtual void InitAbilityActorInfo()	PURE_VIRTUAL(ANGPawnBase::InitAbilityActorInfo);
 
-	// virtual void ServerSideInit();
-	// virtual void ClientSideInit();
-	
 protected:
 	//캐싱 용도
 	UPROPERTY(BlueprintReadOnly, Category = "GAS|AbilitySystemComponent")
@@ -55,29 +67,18 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pool", meta=(AllowPrivateAccess = "true"))
 	TObjectPtr<UNGPoolableComponent> PoolController;
-	
-	virtual void HandleGameplayCue(UObject* Self, FGameplayTag GameplayCueTag, EGameplayCueEvent::Type EventType, const FGameplayCueParameters& Parameters) override;
-	
-	virtual void OnRep_PlayerState() override;
-	virtual void PossessedBy(AController* NewController) override;
-	
-protected:
 
-	// virtual void ServerSideInit();
-	// virtual void ClientSideInit();
-	
-	virtual void BeginPlay() override;
-	
-	virtual void Tick(float DeltaTime) override;
-	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
-	TObjectPtr<UWidgetComponent> HPBarComponent; 
+	TObjectPtr<UWidgetComponent> HPBarComponent;
 	
 	virtual void OnHealthChanged(const FOnAttributeChangeData& Data);
 	
 	virtual void OnAttackRangeChanged(const FOnAttributeChangeData& Data);
 	
 protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pawn|GameplayTag")
+	FGameplayTag IdentificationTag;
+	
 	UPROPERTY(VisibleAnywhere, Category = "Collision")
 	UCapsuleComponent* CapsuleComponent;
 
@@ -138,6 +139,8 @@ public:
 	
 private:
 	void UpdateHPBar();
+	
+	void InitAbilityData(const FUnitAbilityData& AbilityData);
 	
 protected:
 	FVector LocationOffset;

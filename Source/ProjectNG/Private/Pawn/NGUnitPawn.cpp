@@ -119,7 +119,10 @@ void ANGUnitPawn::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& Ou
 void ANGUnitPawn::BeginPlay()
 {
 	Super::BeginPlay();
+}
 
+void ANGUnitPawn::Activate()
+{
 	InitAbilityActorInfo();
 	
 	if (!AttributeSet)
@@ -153,6 +156,15 @@ void ANGUnitPawn::BeginPlay()
 	}
 	
 	GetWorld()->GetTimerManager().SetTimer(AttackCheckTimerHandle, this, &ANGUnitPawn::CheckAttackCondition, 0.2f, true);
+	
+	Super::Activate();
+}
+
+void ANGUnitPawn::Deactivate()
+{
+	GetWorld()->GetTimerManager().ClearTimer(AttackCheckTimerHandle);
+	
+	Super::Deactivate();
 }
 
 void ANGUnitPawn::InitAbilityActorInfo()

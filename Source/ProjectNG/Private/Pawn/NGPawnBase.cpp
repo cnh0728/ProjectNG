@@ -7,6 +7,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Core/NGPoolableComponent.h"
+#include "Game/NGUnitDataManager.h"
 #include "GameModes/NGInGameGameMode.h"
 #include "UI/NGWidgetInterface.h"
 
@@ -49,6 +50,72 @@ ANGPawnBase::ANGPawnBase()
 	HPBarComponent->SetDrawSize(FVector2D(100.f, 20.f));
 	
 }
+
+void ANGPawnBase::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	ensureMsgf(IdentificationTag.IsValid(), TEXT("UnitIdTag is not valid for %s"), *GetName());
+	
+	LocationOffset = GetHalfCapsule();
+	
+	if (AbilitySystemComponent)
+	{
+		InitializeAttributes();
+		
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+			UNGAttributeSet::GetHealthAttribute()).AddUObject(this, &ANGPawnBase::OnHealthChanged);
+	}
+	
+	UpdateHPBar();
+}
+
+void ANGPawnBase::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+	
+	InitAbilityActorInfo();
+}
+
+void ANGPawnBase::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	
+	InitAbilityActorInfo();
+}
+
+void ANGPawnBase::Activate()
+{
+	SetActorHiddenInGame(false);
+	SetActorEnableCollision(true);
+	SetActorTickEnabled(true);
+	
+	UNGUnitDataManager* UnitDataManager = GetWorld()->GetGameInstance()->GetSubsystem<UNGUnitDataManager>();
+	if (!UnitDataManager) return;
+	
+	const FUnitAbilityData* UnitData = UnitDataManager->GetUnitAbilityData(IdentificationTag);
+	if (UnitData)
+	{
+		InitAbilityData(*UnitData);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("[%s] 데이터 테이블에서 태그(%s)를 찾을 수 없습니다!"), *GetName(), *IdentificationTag.ToString());
+	}
+}
+
+void ANGPawnBase::Deactivate()
+{
+	SetActorHiddenInGame(true);
+	SetActorEnableCollision(false);
+	SetActorTickEnabled(false);
+}
+
+void ANGPawnBase::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+}
+
 
 UAbilitySystemComponent* ANGPawnBase::GetAbilitySystemComponent() const
 {
@@ -121,42 +188,6 @@ void ANGPawnBase::HandleGameplayCue(UObject* Self, FGameplayTag GameplayCueTag, 
 	}
 }
 
-void ANGPawnBase::OnRep_PlayerState()
-{
-	Super::OnRep_PlayerState();
-	
-	InitAbilityActorInfo();
-}
-
-void ANGPawnBase::PossessedBy(AController* NewController)
-{
-	Super::PossessedBy(NewController);
-	
-	InitAbilityActorInfo();
-}
-
-void ANGPawnBase::BeginPlay()
-{
-	Super::BeginPlay();
-	
-	LocationOffset = GetHalfCapsule();
-	
-	if (AbilitySystemComponent)
-	{
-		InitializeAttributes();
-		
-		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
-			UNGAttributeSet::GetHealthAttribute()).AddUObject(this, &ANGPawnBase::OnHealthChanged);
-	}
-	
-	UpdateHPBar();
-}
-
-void ANGPawnBase::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-}
-
 void ANGPawnBase::OnHealthChanged(const FOnAttributeChangeData& Data)
 {
 	UpdateHPBar();
@@ -204,6 +235,9 @@ void ANGPawnBase::Die()
 	// AddLooseGameplayTag는 메모리 상에서만 일시적 태그를 붙일 때 유용
 	GetAbilitySystemComponent()->AddLooseGameplayTag(DeadTag);
 	
+	// Todo: 삭제가 되는 것이 아니라, 비활성화해서 pool로 복귀
+	Deactivate();
+	
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetMesh()->SetSimulatePhysics(true); //레그돌
 	
@@ -248,5 +282,23 @@ void ANGPawnBase::UpdateHPBar()
 	}else
 	{
 		UE_LOG(LogTemp, Error, TEXT("Can't update HPBar"));
+	}
+}
+
+void ANGPawnBase::InitAbilityData(const FUnitAbilityData& AbilityData)
+{
+	if (!AbilitySystemComponent || !AttributeSet) return;
+	
+	if (HasAuthority())
+	{
+		// Setup Tag
+		IdentificationTag = AbilityData.IdentificationTag;
+		AbilitySystemComponent->AddLooseGameplayTags(AbilityData.OwnedTags);
+		
+		// Initialize Stat
+		for (const auto& Stat : AbilityData.DefaultStats)
+		{
+			AbilitySystemComponent->SetNumericAttributeBase(Stat.Key, Stat.Value);
+		}
 	}
 }

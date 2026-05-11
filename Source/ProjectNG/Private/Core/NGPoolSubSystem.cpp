@@ -59,6 +59,7 @@ ANGPawnBase* UNGPoolSubSystem::AcquirePawn(TSubclassOf<ANGPawnBase> PawnClass,
 	if (Pool.FreePawnList.Num() > 0)
 	{
 		Pawn = Pool.FreePawnList.Pop();
+		Pawn->SetActorTransform(SpawnTransform);
 	}
 	else
 	{
@@ -78,6 +79,8 @@ ANGPawnBase* UNGPoolSubSystem::AcquirePawn(TSubclassOf<ANGPawnBase> PawnClass,
 		Pawn = GetWorld()->SpawnActor<ANGPawnBase>(TargetClass, SpawnTransform, SpawnParams);
 		UE_LOG(LogTemp, Log, TEXT("Spawn Default Pawn Class"));
 	}
+	
+	Pawn->Activate();
 	
 	return Pawn;
 }

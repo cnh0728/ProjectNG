@@ -19,6 +19,13 @@ public:
 	// Sets default values for this character's properties
 	ANGUnitPawn();
 	
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
+	
+	virtual void Activate() override;
+	
+	virtual void Deactivate() override;
+	
 	virtual void OnSelected_Implementation() override;
 	virtual void OnDeselected_Implementation() override;
 	void ShowRangeIndicator(bool bVisible) const;
@@ -29,12 +36,12 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	
 protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+	virtual void InitAbilityActorInfo() override;
+	
 	virtual void InitializeAttributes() override;
 	
-private:
-	virtual void InitAbilityActorInfo() override;
+	// Called to bind functionality to input
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
 public:
 	// Called every frame
@@ -42,9 +49,6 @@ public:
 	
 	void ExecuteAttack();
 
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	
 	UFUNCTION(Server, Reliable)
 	void SetDragTargetGridIndex(const FIntVector2& NewIndex);
 
