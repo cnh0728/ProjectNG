@@ -14,8 +14,8 @@ void ANGGameModeBase::PostLogin(APlayerController* NewPlayer)
 	{
 		if (ANGGameState* GS = GetGameState<ANGGameState>())
 		{
-			uint32 AssignedIndex = GS->PlayerArray.Num() - 1;
-			PS->InitializeLogin(AssignedIndex);
+			uint32 AssignedIndex = GS->RegisterPlayer(PS);
+			PS->InitializePostLogin(AssignedIndex);
 		}
 	}
 }

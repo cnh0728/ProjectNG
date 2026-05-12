@@ -5,24 +5,27 @@
 #include "CoreMinimal.h"
 #include "GridMapManager.generated.h"
 
+class ANGPlayerState;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPSReady);
+
 USTRUCT()
 struct FGridBuildData{
 	GENERATED_BODY()
 	
 	UPROPERTY(VisibleAnywhere)
-	int32 SizeX;
+	int32 HexSizeX;
 	UPROPERTY(VisibleAnywhere)
-	int32 SizeY;
+	int32 HexSizeY;
 	UPROPERTY(VisibleAnywhere)
-	int32 CellSize;
-	
-	bool operator==(const FGridBuildData& Other) const {
-		return SizeX == Other.SizeX && SizeY == Other.SizeY && CellSize == Other.CellSize;
-	}
-	bool operator!=(const FGridBuildData& Other) const {
-		return !(*this == Other);
-	}
-	
+	int32 HexCellSize;
+
+	UPROPERTY(VisibleAnywhere)
+	int32 QuadSizeX;
+	UPROPERTY(VisibleAnywhere)
+	int32 QuadSizeY;
+	UPROPERTY(VisibleAnywhere)
+	int32 QuadCellSize;
 };
 
 class USplineComponent;
@@ -41,35 +44,43 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	void InitGridMap(const int32 InitSizeX = 10, const int32 InitSizeY = 10, const double CellSize = 100.f);
+	void InitGridMap(const FGridBuildData& BuildData);
 
 public:
 	UFUNCTION()
 	void OnRep_BuildGridVisual();
 	
-	void Initialize(FGridBuildData BuildData);
+	void Initialize(const FGridBuildData& BuildData, uint32 OwnerIndex);
+	
+	UFUNCTION()
+	void OnRep_OwnerPS();
+	
+	UFUNCTION()
+	void SetOwnerPS(ANGPlayerState* InPS);
+	
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnPSReady OnPSReady;
 	
 private:
+	UPROPERTY(ReplicatedUsing=OnRep_OwnerPS)
+	TObjectPtr<ANGPlayerState> OwnerPS;
+
 	UPROPERTY(VisibleAnywhere)
 	UInstancedStaticMeshComponent* HexGridVisualComponent;
-	UPROPERTY(EditAnywhere, Category = "Visual")
+	UPROPERTY(EditAnywhere, Category = "Grid")
 	UStaticMesh* HexMeshAsset;
 
 	UPROPERTY(VisibleAnywhere)
 	UInstancedStaticMeshComponent* QuadGridVisualComponent;
-	UPROPERTY(EditAnywhere, Category = "Visual")
+	UPROPERTY(EditAnywhere, Category = "Grid")
 	UStaticMesh* QuadMeshAsset;
 	
-	// 디버그 라인 색상 등 시각화 관련 변수
-	UPROPERTY(EditAnywhere, Category = "Visualization")
-	FColor GridLineColor = FColor::Cyan;
-
-	UPROPERTY(EditAnywhere, Category = "Visualization")
-	float LineThickness = 2.0f;
+	UPROPERTY(EditAnywhere, Category = "Grid", meta = (AllowPrivateAccess = "true"))
+	float WaitGridOffsetLocation;
 	
-	UPROPERTY(EditAnywhere, Category = "Spline")
-	float SplineMarginFromEdge = 30.f;
-	
-	UPROPERTY(Replicated, VisibleAnywhere, ReplicatedUsing=OnRep_BuildGridVisual)
+	UPROPERTY(VisibleAnywhere, ReplicatedUsing=OnRep_BuildGridVisual)
 	FGridBuildData GridBuildData;
+	
+	UPROPERTY(VisibleAnywhere)
+	uint32 OwnerPlayerIndex;
 };

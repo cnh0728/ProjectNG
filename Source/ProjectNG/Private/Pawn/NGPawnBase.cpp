@@ -7,7 +7,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Core/NGPoolableComponent.h"
-#include "GameModes/NGInGameGameMode.h"
+#include "GameModes/NGInGameMode.h"
 #include "UI/NGWidgetInterface.h"
 
 ANGPawnBase::ANGPawnBase()
@@ -207,7 +207,7 @@ void ANGPawnBase::Die()
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetMesh()->SetSimulatePhysics(true); //레그돌
 	
-	if (ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>())
+	if (ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>())
 	{
 		GM->ReportPawnDeath(this);
 	}

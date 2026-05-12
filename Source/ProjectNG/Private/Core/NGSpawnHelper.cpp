@@ -7,7 +7,7 @@
 #include "Components/NGPocketComponent.h"
 #include "Core/NGPoolSubSystem.h"
 #include "Game/NGGameState.h"
-#include "GameModes/NGInGameGameMode.h"
+#include "GameModes/NGInGameMode.h"
 #include "Pawn/NGUnitPawn.h"
 #include "Player/NGPlayerController.h"
 #include "ProjectNG/ProjectNG.h"
@@ -16,11 +16,11 @@ bool UNGSpawnHelper::SpawnUnitPawn(ANGPlayerController* OwnerController, FName U
 {
 	ANGPlayerState* PS = Cast<ANGPlayerController>(OwnerController)->GetPlayerState<ANGPlayerState>();
 	
-	FHexGridMap& CombatGridMap = PS->GetCombatGridMap();
+	FQuadGridMap& WaitGridMap = PS->GetWaitGridMap();
 	
-	TOptional<FIntVector2> EmptyGridIndex = CombatGridMap.GetEmptyGridIndex();
+	TOptional<FIntVector2> EmptyGridIndex = WaitGridMap.GetEmptyGridIndex();
 	
-	if (!CombatGridMap.IsPossibleSpawnPawn())		return false;
+	if (!WaitGridMap.IsPossibleSpawnPawn())		return false;
 
 	UNGPocketComponent* Pocket = PS->GetPlayerPocket();
 	if (!Pocket)	return false;
@@ -28,25 +28,24 @@ bool UNGSpawnHelper::SpawnUnitPawn(ANGPlayerController* OwnerController, FName U
 	UWorld* World = OwnerController->GetWorld();
 	if (!World)	return false;
 	
-	ANGInGameGameMode* GM = World->GetAuthGameMode<ANGInGameGameMode>();
+	ANGInGameMode* GM = World->GetAuthGameMode<ANGInGameMode>();
 	if (!GM)	return false;
 	
 	TSubclassOf<ANGPawnBase> UnitClass = GM->GetUnitClass(UnitName);
 	
-	FVector SpawnLoc = CombatGridMap.GetWorldLocation(EmptyGridIndex.GetValue());
+	FGridAddress SpawnGridAddress(EmptyGridIndex.GetValue(), EGridType::Wait, PS);
+	
+	FVector SpawnLoc = UGridMapHelper::GetWorldLocation(SpawnGridAddress);
 	FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLoc);
 
 	ANGUnitPawn* NewPawn = SpawnPawn<ANGUnitPawn>(World, UnitClass, SpawnTransform, OwnerController);
 	if (!NewPawn)	return false;
 	
-	NewPawn->Initialize(OwnerController);
-	
 	//여기서 찾은 그리드에 값 기입
 	FGridData GridData;
 	GridData.PlacedPawn = NewPawn;
 	
-	NewPawn->SetPlacedGridIndex(EmptyGridIndex.GetValue());
-	CombatGridMap.SetGridData(EmptyGridIndex.GetValue(), GridData);
+	NewPawn->SetPawnOnGrid(SpawnGridAddress);
 
 	Pocket->ControlPocketSpawning(NewPawn);
 	

@@ -4,9 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "SelectableInterface.h"
+#include "Combat/Grid/Grid.h"
 #include "Pawn/NGPawnBase.h"
 #include "NGUnitPawn.generated.h"
 
+class ANGPlayerState;
+class UNGWeaponData;
 class ANGPlayerController;
 struct FOnAttributeChangeData;
 
@@ -46,19 +49,27 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
 	UFUNCTION(Server, Reliable)
-	void SetDragTargetGridIndex(const FIntVector2& NewIndex);
+	void Request_MoveGrid(const FVector& TargetLocation, FGridAddress GridAddress);
+	
+	void MoveTo(const FVector& TargetLocation);
+	void UpdatePlacedGridInfo(FGridAddress NewGridAddress);
 
-	void SetPlacedGridIndex(const FIntVector2& NewIndex);
+	UFUNCTION(Client, Reliable)
+	void Client_RejectMove();
 	
-	FIntVector2 GetPlacedGridIndex();
-	
-	void SetCurrentGridIndex(const FIntVector2& NewIndex);
-	
+	EGridType GetCurrentGridType(const FVector& TargetLocation) const;
+	bool CanPlaceUnit(FGridMapBase& GridMap, FIntVector2 GridIndex);
+
+	void MovePawnOnGrid(const FGridAddress& GridAddress);
+	void SetPawnOnGrid(const FGridAddress& GridAddress);
+	void UnSetPawnOnGrid(const FGridAddress& GridAddress) const;
+
 	void UpdateDecalRange();
 	
 	virtual void OnRep_PlayerState() override;
 	
-	void Initialize(ANGPlayerController* InController);
+	const FGridAddress& GetGridAddress() const { return PlacedGridAddress; };
+	
 protected:
 	virtual void OnAttackRangeChanged(const FOnAttributeChangeData& Data) override;
 	
@@ -90,12 +101,10 @@ private:
 	UPROPERTY()
 	uint8 bIsOnField : 1;
 	
-	UPROPERTY(Replicated, EditDefaultsOnly, Category = "GridIndex")
-	FIntVector2 PlacedGridIndex;
+	//클라이언트 reject용
+	UPROPERTY(EditDefaultsOnly, Category = "GridIndex", meta = (AllowPrivateAccess = "true"))
+	FGridAddress PrePlacedGridAddress;
 	
-	UPROPERTY(Replicated, EditDefaultsOnly, Category = "GridIndex")
-	FIntVector2 CurrentGridIndex;
-	
-	UPROPERTY(Transient)
-	TObjectPtr<ANGPlayerController> OwnerController;
+	UPROPERTY(Replicated, EditDefaultsOnly, Category = "GridIndex", meta = (AllowPrivateAccess = "true"))
+	FGridAddress PlacedGridAddress;
 };

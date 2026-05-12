@@ -6,7 +6,7 @@
 #include "Core/NGShopProbability.h"
 #include "Core/NGUnitData.h"
 #include "Game/NGGameState.h"
-#include "GameModes/NGInGameGameMode.h"
+#include "GameModes/NGInGameMode.h"
 #include "Net/UnrealNetwork.h"
 #include "Player/NGPlayerController.h"
 
@@ -122,7 +122,7 @@ void UNGPocketComponent::Server_RequestRoll_Implementation()
 	
 	if (!ProbabilityTable) return;
 
-	ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>();
+	ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>();
 	if (!GM) return;
 	
 	// 레벨에 맞는 확률 데이터 가져오기

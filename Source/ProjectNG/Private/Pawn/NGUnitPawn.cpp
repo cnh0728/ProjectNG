@@ -11,6 +11,7 @@
 #include "Combat/Weapon/NGWeaponData.h"
 #include "Components/DecalComponent.h"
 #include "Components/SphereComponent.h"
+#include "Game/NGGameState.h"
 #include "Net/UnrealNetwork.h"
 #include "Player/NGPlayerController.h"
 #include "ProjectNG/ProjectNG.h"
@@ -112,7 +113,7 @@ void ANGUnitPawn::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& Ou
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
 	DOREPLIFETIME(ANGUnitPawn, bIsDragMoving);
-	DOREPLIFETIME(ANGUnitPawn, PlacedGridIndex);
+	DOREPLIFETIME(ANGUnitPawn, PlacedGridAddress);
 }
 
 // Called when the game starts or when spawned
@@ -169,15 +170,9 @@ void ANGUnitPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
-	if (!OwnerController)	return;
-	
-	ANGPlayerState* PS = OwnerController->GetPlayerState<ANGPlayerState>();
-	if (!PS)	return;
-	
 	if (bIsDragMoving)
 	{
-		FHexGridMap& CombatGridMap = PS->GetCombatGridMap();
-		FVector TargetLocation = CombatGridMap.GetWorldLocation(PlacedGridIndex) + LocationOffset;
+		FVector TargetLocation = UGridMapHelper::GetWorldLocation(PlacedGridAddress) + LocationOffset;
 		
 		FVector CurrentLocation = GetActorLocation();
 		
@@ -187,7 +182,7 @@ void ANGUnitPawn::Tick(float DeltaTime)
 		if (CurrentLocation.Equals(TargetLocation, AcceptanceRadius))
 		{
 			bIsDragMoving = false;
-		}
+		}			
 	}else
 	{
 		//드래그 이동중, 전투x
@@ -234,71 +229,143 @@ void ANGUnitPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
 
-void ANGUnitPawn::SetDragTargetGridIndex_Implementation(const FIntVector2& NewIndex)
+void ANGUnitPawn::MoveTo(const FVector& TargetLocation)
 {
-	if (!OwnerController)	return;
+	ANGPlayerController* PC = GetOwner<ANGPlayerController>();
+	if (!PC)	return;
 	
-	ANGPlayerState* PS = OwnerController->GetPlayerState<ANGPlayerState>();
+	ANGPlayerState* PS = PC->GetPlayerState<ANGPlayerState>();
 	if (!PS)	return;
 	
-	FHexGridMap& CombatGridMap = PS->GetCombatGridMap();
-	if (!CombatGridMap.IsGridIndexEmpty(NewIndex))
+	//Client에서 미리 움직이고 서버에서 못간다 판단하면 reject
+	EGridType NewGridType = GetCurrentGridType(TargetLocation);
+	FIntVector2 NewIndex = UGridMapHelper::GetCellIndex(NewGridType, TargetLocation, PS);
+	
+	FGridAddress NewGridAddress(NewIndex, NewGridType, PS);
+	
+	if (FGridMapBase* GridMap = UGridMapHelper::GetGridMap(NewGridAddress))
 	{
-		return;
+		// UE_LOG(LogTemp, Log, TEXT("GridMap : %s %p, Index: %s"), NewGridType == EGridType::Combat ? TEXT("Combat") : TEXT("Wait"), GridMap, *NewIndex.ToString())
+		if (!CanPlaceUnit(*GridMap, NewIndex))
+		{
+			UE_LOG(LogTemp, Error, TEXT("ANGUnitPawn::MoveTo Cannot Place GridMap!"));
+			return;
+		}
+	}else
+	{
+		UE_LOG(LogTemp, Error, TEXT("ANGUnitPawn::MoveTo Cannot Find GridMap!"));
 	}
 	
-	SetPlacedGridIndex(NewIndex);
+	
+	UpdatePlacedGridInfo(NewGridAddress);
+
+	Request_MoveGrid(TargetLocation, NewGridAddress);
+}
+
+void ANGUnitPawn::UpdatePlacedGridInfo(FGridAddress NewGridAddress)
+{
+	PrePlacedGridAddress = PlacedGridAddress;
+	
 	bIsDragMoving = true;
+	PlacedGridAddress = NewGridAddress;
 }
 
-void ANGUnitPawn::Initialize(ANGPlayerController* InController)
+void ANGUnitPawn::Client_RejectMove_Implementation()
+{		
+	PlacedGridAddress = PrePlacedGridAddress;
+	
+	// 나중에 이동하는거 드래그앤 드랍했을때로 바꾸면 이것도 손보기
+	/*
+	if (ANGPlayerController* PC = GetOwner<ANGPlayerController>())
+	{
+		if (ANGPlayerState* PS = PC->GetPlayerState<ANGPlayerState>())
+		{
+			FVector Location = UGridMapHelper::GetWorldLocation(
+				UGridMapHelper::GetGridMap(PS, PlacedGridType), 
+				PlacedGridIndex, PlacedGridType);
+			SetActorLocation(Location + LocationOffset);
+		}
+	}
+	*/
+}
+
+EGridType ANGUnitPawn::GetCurrentGridType(const FVector& TargetLocation) const
 {
-	OwnerController = InController;
+	if (PlacedGridAddress.GridOwnerPS)
+	{
+		const FIntVector2 CombatGridIndex = UGridMapHelper::GetCellIndex(EGridType::Combat, TargetLocation, PlacedGridAddress.GridOwnerPS);
+		FHexGridMap& CombatGridMap = PlacedGridAddress.GridOwnerPS->GetCombatGridMap();
+		bool bCombatValidGrid = CombatGridMap.IsValidIndex(CombatGridIndex);
+			
+		FQuadGridMap& WaitGridMap = PlacedGridAddress.GridOwnerPS->GetWaitGridMap();
+		const FIntVector2 WaitGridIndex = UGridMapHelper::GetCellIndex(EGridType::Wait, TargetLocation, PlacedGridAddress.GridOwnerPS);
+		bool bWaitValidGrid = WaitGridMap.IsValidIndex(WaitGridIndex);
+			
+		if (bCombatValidGrid)
+		{
+			return EGridType::Combat;
+		} if (bWaitValidGrid)
+		{
+			return EGridType::Wait;
+		}
+	}
+	
+	return EGridType::None;
 }
 
-void ANGUnitPawn::SetPlacedGridIndex(const FIntVector2& NewIndex)
+bool ANGUnitPawn::CanPlaceUnit(FGridMapBase& GridMap, FIntVector2 GridIndex)
+{
+	return GridMap.IsGridIndexEmpty(GridIndex) && GridMap.IsValidIndex(GridIndex);
+}
+
+void ANGUnitPawn::Request_MoveGrid_Implementation(const FVector& TargetLocation, FGridAddress GridAddress)
+{
+	// 여기서 가도되는지 확인 후 서버에서 위치 옮기고 클라이언트한테 결과 전송
+
+	if (FGridMapBase* GridMap = UGridMapHelper::GetGridMap(GridAddress))
+	{
+		FIntVector2 NewIndex = UGridMapHelper::GetCellIndex(GridAddress.GridType, TargetLocation, GridAddress.GridOwnerPS);
+		
+		if (!CanPlaceUnit(*GridMap, NewIndex))
+		{
+			//클라이언트한테 언도 지시
+			Client_RejectMove();
+			return;
+		}
+		
+		MovePawnOnGrid(GridAddress);
+	}
+}
+
+void ANGUnitPawn::MovePawnOnGrid(const FGridAddress& GridAddress)
+{
+	UnSetPawnOnGrid(GridAddress);
+	SetPawnOnGrid(GridAddress);
+}
+
+void ANGUnitPawn::SetPawnOnGrid(const FGridAddress& GridAddress)
 {
 	if (!HasAuthority())	return;
-	
-	if (!OwnerController)	return;
-	
-	ANGPlayerState* PS = OwnerController->GetPlayerState<ANGPlayerState>();
-	if (!PS)	return;
-	
-	FHexGridMap& CombatGridMap = PS->GetCombatGridMap();
-	CombatGridMap.EmptyGridMap(PlacedGridIndex);
-
-	PlacedGridIndex = NewIndex;
 	
 	FGridData GridData;
 	GridData.PlacedPawn = this;
 	
-	CombatGridMap.SetGridData(NewIndex, GridData);
+	UpdatePlacedGridInfo(GridAddress);
+	
+	if (FGridMapBase* GridMap = UGridMapHelper::GetGridMap(GridAddress))
+	{
+		GridMap->SetGridData(GridAddress.GridIndex, GridData);
+	}
 }
 
-FIntVector2 ANGUnitPawn::GetPlacedGridIndex()
-{
-	return PlacedGridIndex;
-}
-
-void ANGUnitPawn::SetCurrentGridIndex(const FIntVector2& NewIndex)
+void ANGUnitPawn::UnSetPawnOnGrid(const FGridAddress& GridAddress) const
 {
 	if (!HasAuthority())	return;
 	
-	if (!OwnerController)	return;
-	
-	ANGPlayerState* PS = OwnerController->GetPlayerState<ANGPlayerState>();
-	if (!PS)	return;
-	
-	FHexGridMap& CombatGridMap = PS->GetCombatGridMap();
-	CombatGridMap.EmptyGridMap(CurrentGridIndex);
-
-	CurrentGridIndex = NewIndex;
-	
-	FGridData GridData;
-	GridData.PlacedPawn = this;
-	
-	CombatGridMap.SetGridData(NewIndex, GridData);
+	if (FGridMapBase* GridMap = UGridMapHelper::GetGridMap(GridAddress))
+	{
+		GridMap->EmptyGridMap(GridAddress.GridIndex);
+	}
 }
 
 void ANGUnitPawn::UpdateDecalRange()
@@ -314,8 +381,6 @@ void ANGUnitPawn::UpdateDecalRange()
 void ANGUnitPawn::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
-	
-	OwnerController = GetOwner<ANGPlayerController>();
 }
 
 void ANGUnitPawn::OnAttackRangeChanged(const FOnAttributeChangeData& Data)

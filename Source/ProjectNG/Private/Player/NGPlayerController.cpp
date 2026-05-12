@@ -11,7 +11,7 @@
 #include "Combat/GridMapManager.h"
 #include "Core/NGSpawnHelper.h"
 #include "Game/NGGameState.h"
-#include "GameModes/NGInGameGameMode.h"
+#include "GameModes/NGInGameMode.h"
 #include "Input/NGInputComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Player/NGPlayerState.h"
@@ -114,23 +114,10 @@ void ANGPlayerController::ProgressDragActor()
 		if (GetHitResultUnderCursor(ECC_Map, false, HitResult))
 		// if (GetHitResultUnderCursor(ECC_Visibility, false, HitResult))
 		{			
-			UE_LOG(LogTemp, Warning, TEXT("Success! Hit: %s"), *HitResult.GetActor()->GetName());
 			FVector TargetLocation = HitResult.Location;
-
-			if (ANGPlayerState* PS = GetPlayerState<ANGPlayerState>())
-			{
-				const FHexGridMap& GridMapCache = PS->GetCombatGridMap();
-				const FIntVector2 GridIndex = GridMapCache.GetCellIndex(TargetLocation);
-				
-				bool bValidGrid = GridMapCache.IsValidIndex(GridIndex);
-				
-				if (bValidGrid)
-				{
-					// TargetLocation = GridMapCache.GetWorldLocation(GridIndex);
-					DraggingUnit->SetDragTargetGridIndex(GridIndex);
-				}
-			}
+			// UE_LOG(LogTemp, Warning, TEXT("Success! Hit: %s"), *TargetLocation.ToString());
 			
+			DraggingUnit->MoveTo(TargetLocation);
 		}
 	}
 }
@@ -278,7 +265,8 @@ void ANGPlayerController::Server_RequestStartWave_Implementation()
 {
 	if (HasAuthority())
 	{
-		if (ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>()){
+		if (ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>())
+		{
 			GM->RequestStartCombat(this);
             
 			// 확인용 로그

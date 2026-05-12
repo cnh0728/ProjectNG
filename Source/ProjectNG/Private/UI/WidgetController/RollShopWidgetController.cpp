@@ -5,7 +5,7 @@
 
 #include "Combat/GridMapManager.h"
 #include "Components/NGPocketComponent.h"
-#include "GameModes/NGInGameGameMode.h"
+#include "GameModes/NGInGameMode.h"
 #include "Player/NGPlayerController.h"
 
 class ANGGameState;

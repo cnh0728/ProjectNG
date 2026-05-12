@@ -3,32 +3,26 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "NGCombatData.h"
-#include "Pawn/NGPawnBase.h"
-#include "CombatManager.generated.h"
+#include "CombatManagerComponent.generated.h"
 
-class ANGPlayerController;
-class ANGCharacterBase;
+struct FWaveData;
+struct FCombatSettingData;
+class ANGPawnBase;
 class AGridMapManager;
-class ANGEnemyPawn;
 
 UCLASS()
-class PROJECTNG_API ACombatManager : public AActor
+class PROJECTNG_API UCombatManagerComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this actor's properties
-	ACombatManager();
+	UCombatManagerComponent();
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-	
 public:
 	UFUNCTION(BlueprintCallable)
 	void StartWave(APlayerController* PC);
@@ -54,8 +48,6 @@ protected:
 	
 	UPROPERTY(Transient)
 	TObjectPtr<APlayerController> RequestingPlayerControllerCache;
-	
-	
 	
 public:
 	UPROPERTY(EditAnywhere, Category = "Combat")

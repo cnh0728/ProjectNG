@@ -140,6 +140,7 @@ private:
 	void UpdateHPBar();
 	
 protected:
+	// 모델링 위치 조정용으로 더해주기
 	FVector LocationOffset;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")

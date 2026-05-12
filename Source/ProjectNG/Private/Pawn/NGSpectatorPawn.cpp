@@ -5,7 +5,9 @@
 
 #include "AbilitySystem/NGAbilitySystemComponent.h"
 #include "Camera/CameraComponent.h"
+#include "Combat/GridMapManager.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Net/UnrealNetwork.h"
 #include "Player/NGPlayerController.h"
 #include "Player/NGPlayerState.h"
 #include "UI/HUD/NGHUD.h"
@@ -14,6 +16,8 @@ class ANGPlayerState;
 // Sets default values
 ANGSpectatorPawn::ANGSpectatorPawn()
 {
+	SetReplicates(true);
+	
 	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	
@@ -40,6 +44,24 @@ ANGSpectatorPawn::ANGSpectatorPawn()
 	bFindCameraComponentWhenViewTarget = true;
 }
 
+void ANGSpectatorPawn::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	
+	DOREPLIFETIME(ANGSpectatorPawn, MyGridManager);
+	// DOREPLIFETIME_CONDITION_NOTIFY(ANGSpectatorPawn, MyGridManager, COND_None, REPNOTIFY_Always);
+}
+
+void ANGSpectatorPawn::InitializeGridManager(AGridMapManager* InGridManager)
+{
+	MyGridManager = InGridManager;
+	
+	if (HasAuthority())
+	{
+		FocusOnGrid(MyGridManager);
+	}
+}
+
 void ANGSpectatorPawn::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
@@ -51,6 +73,18 @@ void ANGSpectatorPawn::PossessedBy(AController* NewController)
 	{
 		PC->SetViewTarget(this);
 		PC->SetControlRotation(FRotator::ZeroRotator);
+		
+		//PossessedBy가 PostLogin보다 빠르기 때문에 다른 타이밍에서 GridManager세팅
+	}
+}
+
+void ANGSpectatorPawn::OnRep_GridManager()
+{
+	UE_LOG(LogTemp, Log, TEXT("OnRep_GridManager"));
+	
+	if (IsLocallyControlled())
+	{
+		FocusOnGrid(MyGridManager);
 	}
 }
 
@@ -64,6 +98,10 @@ void ANGSpectatorPawn::OnRep_PlayerState()
 	{
 		PC->SetControlRotation(FRotator::ZeroRotator);
 	}
+	
+	
+	if(MyGridManager) OnRep_GridManager();
+
 }
 
 // Called when the game starts or when spawned
@@ -76,6 +114,15 @@ void ANGSpectatorPawn::BeginPlay()
 void ANGSpectatorPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	
+	static bool bLogOnce = false;
+	if (!bLogOnce && MyGridManager != nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Tick: Finally MyGridManager is Valid! Name: %s"), *MyGridManager->GetName());
+		OnRep_GridManager();
+		// FocusOnGrid(MyGridManager);
+		bLogOnce = true;
+	}
 }
 
 void ANGSpectatorPawn::OnRep_Controller()
@@ -107,6 +154,16 @@ void ANGSpectatorPawn::InitHUD()
 			//원래 SpectatorPawn이 GAS있었는데 지금은 필요없다고 생각돼서 뺐음. 필요하면 다시 멤버변수 선언 후 넣기
 			MainHUD->InitializeHUD(PC, PS, /*AbilitySystemComponent,*/ nullptr);
 		}
+	}
+}
+
+void ANGSpectatorPawn::FocusOnGrid(AGridMapManager* GridMapManager)
+{
+	if (GridMapManager)
+	{
+		FVector GridLoc = GridMapManager->GetActorLocation();
+		
+		SetActorLocation(GridLoc);
 	}
 }
 

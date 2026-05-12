@@ -6,6 +6,7 @@
 #include "GameFramework/SpectatorPawn.h"
 #include "NGSpectatorPawn.generated.h"
 
+class AGridMapManager;
 class USpringArmComponent;
 class UCameraComponent;
 
@@ -19,11 +20,17 @@ public:
 	ANGSpectatorPawn();
 
 	virtual void PossessedBy(AController* NewController) override;
+	
 	virtual void OnRep_PlayerState() override;
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
 	virtual void OnRep_Controller() override;
+	
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	
+	void InitializeGridManager(AGridMapManager* InGridManager);
+	
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -32,11 +39,19 @@ protected:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	
 	void InitHUD();
-
+	
+	void FocusOnGrid(AGridMapManager* GridMapManager);
+	
+	UFUNCTION()
+	void OnRep_GridManager();
+	
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USpringArmComponent> CameraBoom;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> CameraComponent;
+	
+	UPROPERTY(VisibleAnywhere, ReplicatedUsing=OnRep_GridManager)
+	TObjectPtr<AGridMapManager> MyGridManager;
 };

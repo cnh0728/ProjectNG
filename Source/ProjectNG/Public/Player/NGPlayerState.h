@@ -34,7 +34,9 @@ public:
 
 	UNGAbilitySystemComponent* GetNGAbilitySystemComponent() const { return AbilitySystemComponent; }
 
-	void InitializeLogin(uint32 AssignedIndex);
+	AGridMapManager* GetGridManager() const { return GridManager; }
+	
+	void InitializePostLogin(uint32 AssignedIndex);
 	
 protected:
 	UPROPERTY()
@@ -57,8 +59,11 @@ protected:
 public:
 	FHexGridMap& GetCombatGridMap() { return CombatGridMap; }
 	
-	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadWrite, Category = "Grid")
-	FQuadGridMap WaitGridMap;
+	FQuadGridMap& GetEnemyWaitGridMap() { return EnemyWaitGridMap; }
+	FQuadGridMap& GetWaitGridMap() { return WaitGridMap; }
+	
+	UFUNCTION()
+	void RestoreInitialGrid();
 	
 	UFUNCTION()
 	void SetUserIndex(uint32 Idx);
@@ -66,6 +71,15 @@ public:
 protected:
 	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadWrite, Category = "Grid")
 	FHexGridMap CombatGridMap;
+	
+	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadWrite, Category = "Grid")
+	FQuadGridMap WaitGridMap;
+	
+	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadWrite, Category = "Grid")
+	FQuadGridMap EnemyWaitGridMap;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Grid")
+	FHexGridMap CombatGridMapSnapShot;
 	
 	//그리드 맵의 실체를 담당(각 유저당 하나임)
 	UPROPERTY(Replicated)
