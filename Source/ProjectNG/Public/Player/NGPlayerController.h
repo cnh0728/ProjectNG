@@ -7,7 +7,6 @@
 #include "GameFramework/PlayerController.h"
 #include "NGPlayerController.generated.h"
 
-class AGridMapManager;
 class UNGUnitInfoWidget;
 class ANGUnitPawn;
 struct FInputActionValue;

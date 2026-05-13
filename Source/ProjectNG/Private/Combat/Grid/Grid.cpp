@@ -3,6 +3,7 @@
 
 #include "Combat/Grid/Grid.h"
 
+#include "Pawn/NGPawnBase.h"
 #include "Player/NGPlayerState.h"
 
 void FGridMapBase::Internal_Initialize(int32 InW, int32 InH, float InCellSize, const FVector& InPivot)
@@ -11,7 +12,7 @@ void FGridMapBase::Internal_Initialize(int32 InW, int32 InH, float InCellSize, c
     Height = InH;
     CellSize = InCellSize;
     Pivot = InPivot;
-    ResetEmptyGridIndex();
+    ResetGrid();
 }
 
 bool FGridMapBase::IsValidIndex(const FIntVector2 GridIndex) const
@@ -33,7 +34,6 @@ void FGridMapBase::SetGridData(FIntVector2 GridIndex, const FGridData& GridData)
 {
     if (!IsValidIndex(GridIndex)) return;
     GridInfo[ConvertPointToIndex(GridIndex)] = GridData;
-    EmptyGridIndex.Remove(GridIndex);
 }
 
 void FGridMapBase::EmptyGridMap(const FIntVector2& GridIndex)
@@ -41,10 +41,7 @@ void FGridMapBase::EmptyGridMap(const FIntVector2& GridIndex)
     if (!IsValidIndex(GridIndex)) return;
     
     int32 Idx = ConvertPointToIndex(GridIndex);
-    UE_LOG(LogTemp, Log, TEXT("Empty %s Index"), *GridIndex.ToString());
-    
     GridInfo[Idx].Reset();
-    EmptyGridIndex.AddUnique(GridIndex);
 }
 
 FGridData FGridMapBase::GetGridData(const FIntVector2 GridIndex) const
@@ -53,11 +50,8 @@ FGridData FGridMapBase::GetGridData(const FIntVector2 GridIndex) const
     return GridInfo[ConvertPointToIndex(GridIndex)];
 }
 
-void FGridMapBase::ResetGridInfo() { GridInfo.Reset(); }
-
-void FGridMapBase::ResetEmptyGridIndex()
+void FGridMapBase::ResetGrid()
 {
-    EmptyGridIndex.Reset();
     GridInfo.SetNum(Width * Height);
 
     for (int32 y = 0; y < Height; ++y)
@@ -66,7 +60,6 @@ void FGridMapBase::ResetEmptyGridIndex()
         {
             FGridData EmptyData(nullptr);
             FIntVector2 CurrentIdx(x, y);
-            EmptyGridIndex.Add(CurrentIdx);
             GridInfo[ConvertPointToIndex(CurrentIdx)] = EmptyData;
         }
     }
@@ -74,23 +67,23 @@ void FGridMapBase::ResetEmptyGridIndex()
 
 bool FGridMapBase::IsGridIndexEmpty(const FIntVector2& GridIndex) const
 {
-    return EmptyGridIndex.Contains(GridIndex);
-}
-
-bool FGridMapBase::IsPossibleSpawnPawn() const
-{
-    if (EmptyGridIndex.IsEmpty())
-    {
-        UE_LOG(LogTemp, Warning, TEXT("Grid is full"));
-        return false;
-    }
-    return true;
+    return !IsValid(GridInfo[ConvertPointToIndex(GridIndex)].PlacedPawn);
 }
 
 TOptional<FIntVector2> FGridMapBase::GetEmptyGridIndex() const
 {
-    if (EmptyGridIndex.IsEmpty()) return TOptional<FIntVector2>();
-    return EmptyGridIndex.Last();
+    for (int32 y = 0; y < Height; ++y)
+    {
+        for (int32 x = 0; x < Width; ++x)
+        {
+            if (!IsValid(GridInfo[ConvertPointToIndex(FIntVector2(x, y))].PlacedPawn))
+            {
+                return FIntVector2(x, y);
+            }
+        }
+    }
+    
+    return TOptional<FIntVector2>();
 }
 
 FQuadGridMap::FQuadGridMap() { Internal_Initialize(9, 1, 100.f, FVector::ZeroVector); Offset = 50.f; }

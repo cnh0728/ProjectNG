@@ -89,6 +89,8 @@ void ANGPlayerState::RestoreInitialGrid()
 {
 	if (!HasAuthority())	return;
 	
+	UE_LOG(LogTemp, Warning, TEXT("Restoring Initial Grid State11"));
+	
 	for (int32 i = 0; i < CombatGridMapSnapShot.GridInfo.Num(); i++)
 	{
 		FGridData& GridData = CombatGridMapSnapShot.GridInfo[i];
@@ -96,11 +98,14 @@ void ANGPlayerState::RestoreInitialGrid()
 		//이거 snapshot 그리드를 찍지말고 폰들을 찍는게 나을듯?
 		if (GridData.PlacedPawn)
 		{
+			UE_LOG(LogTemp, Warning, TEXT("Restoring Initial Grid State22"));
 			FIntVector2 OriginalIndex = CombatGridMapSnapShot.ConvertIndexToPoint(i);
 
 			FGridAddress GridAddress(OriginalIndex, EGridType::Combat, this);
 			
 			GridData.PlacedPawn->MovePawnOnGrid(GridAddress);
+			
+			GridData.PlacedPawn->TurnPawnState(EPawnState::Wait);
 		}
 	}
 	
@@ -110,6 +115,22 @@ void ANGPlayerState::RestoreInitialGrid()
 		EnemyWaitGridMap.EmptyGridMap(Index);
 	}
 }
+
+void ANGPlayerState::PrepareStartCombat()
+{
+	FHexGridMap& GridMap = GetCombatGridMap();
+			
+	for (FGridData GridData : GridMap.GetGridInfo())
+	{
+		ANGPawnBase* PlacedPawn = GridData.PlacedPawn;
+		if (IsValid(PlacedPawn))
+		{
+			PlacedPawn->TurnPawnState(EPawnState::Combat);
+		}
+	}
+}
+
+
 
 void ANGPlayerState::SetUserIndex(uint32 Idx)
 {

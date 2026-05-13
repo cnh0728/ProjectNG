@@ -68,8 +68,13 @@ public:
 	UFUNCTION()
 	void RestoreInitialGrid();
 	
+	void PrepareStartCombat();
+	
 	UFUNCTION()
 	void SetUserIndex(uint32 Idx);
+	
+	UFUNCTION()
+	int32 GetUserIndex() { return UserIndex; }
 	
 protected:
 	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadWrite, Category = "Grid")

@@ -8,19 +8,6 @@
 #include "Game/NGGameState.h"
 #include "Player/NGPlayerState.h"
 
-void ANGInGameMode::ResetGrid()
-{
-	ANGGameState* GS = GetGameState<ANGGameState>();
-	if (GS)
-	{
-		for (ANGPlayerState* PS : GS->PlayerStates)
-		{
-			PS->RestoreInitialGrid();
-		}
-		
-	}	
-	
-}
 
 void ANGInGameMode::RequestStartCombat(APlayerController* PC)
 {
@@ -63,8 +50,7 @@ void ANGInGameMode::OnCombatFinished(const FCombatResultData& ResultData)
 	
 	//ResultData로 점수나 그런거 반영하기
 
-	//Grid원래상태로 초기화
-	ResetGrid();
+	
 }
 
 void ANGInGameMode::ReportPawnDeath(ANGPawnBase* DeadPawn)

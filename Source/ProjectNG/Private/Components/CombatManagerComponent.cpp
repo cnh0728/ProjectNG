@@ -8,11 +8,10 @@
 #include "Components/NGPocketComponent.h"
 #include "Game/NGGameState.h"
 #include "GameModes/NGInGameMode.h"
-#include "Net/UnrealNetwork.h"
 #include "Player/NGPlayerState.h"
 
 // Sets default values
-UCombatManagerComponent::UCombatManagerComponent() : CurrentWaveIndex(0), EnemiesSpawnedSoFar(0)
+UCombatManagerComponent::UCombatManagerComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 	SetIsReplicatedByDefault(true);
@@ -29,25 +28,42 @@ void UCombatManagerComponent::StartCombat(FCombatSettingData SettingData, APlaye
 	if (!GetOwner()->HasAuthority())	return;
 	
 	SetupCombat(SettingData);
-	
-	// StartWave(PC);
+
 	//화면띄우고 이것저것
 	
+	//TODO: 모든 플레이어가 Rep된거 확인하고 타이머시작이 더 좋을듯
+	GetWorld()->GetTimerManager().SetTimer(FightStartTimerHandle, this, &UCombatManagerComponent::StartFight, 3.0f, false);	
+}
+
+void UCombatManagerComponent::StartFight()
+{
+	if (!GetOwner()->HasAuthority())	return;
+	
+	ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>();
+	if (!GS)	return;
+	
+	//모든 유저 경기장 순회하면서 전투상태로 변경
+	for (ANGPlayerState* Player : GS->PlayerStates)
+	{
+		if (IsValid(Player))
+		{
+			Player->PrepareStartCombat();
+		}
+	}
 }
 
 void UCombatManagerComponent::FinishCombat()
 {
 	FCombatResultData CombatResult = {};
 	
-	//결과창 띄우기하고 확인 후 값 반환해야할 수 있음
+	//Grid원래상태로 초기화
+	ResetGrid();
 	
+	//결과창 띄우기하고 확인 후 값 반환해야할 수 있음
 	//게임 전체 매니저에 FCombatResultData를 주는 식으로 함수호출을 해야겠는데?
 	if (ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>())
 	{
 		GM->OnCombatFinished(CombatResult);
-	}else
-	{
-		UE_LOG(LogTemp, Error, TEXT("Cannot Find GameMode"));
 	}
 }
 
@@ -90,8 +106,15 @@ void UCombatManagerComponent::SetupCombat(FCombatSettingData SettingData)
 	CurrentEnemyCount = 0;
 	TargetKillCount = SettingData.EnemyCount;
 	
+	if (SettingData.PlayerA)
+	{
+		HomePS = SettingData.PlayerA;
+	}
+	
 	if (SettingData.PlayerB)
 	{
+		AwayPS = SettingData.PlayerB;
+		
 		UNGPocketComponent* PocketComponentB = SettingData.PlayerB->GetPlayerPocket();
 		for (TWeakObjectPtr<ANGUnitPawn> Unit : PocketComponentB->GetOwnedUnitPocket())
 		{
@@ -108,8 +131,18 @@ void UCombatManagerComponent::SetupCombat(FCombatSettingData SettingData)
 	}
 }
 
-void UCombatManagerComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+
+void UCombatManagerComponent::ResetGrid()
 {
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(UCombatManagerComponent, CurrentWaveIndex);
+	if (!GetOwner()->HasAuthority())	return;
+	
+	ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>();
+	if (GS)
+	{
+		for (ANGPlayerState* PS : GS->PlayerStates)
+		{
+			PS->RestoreInitialGrid();
+		}
+	}	
+	
 }

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "CombatManagerComponent.generated.h"
 
+class ANGPlayerState;
 struct FWaveData;
 struct FCombatSettingData;
 class ANGPawnBase;
@@ -25,11 +26,13 @@ protected:
 
 public:
 	void StartCombat(FCombatSettingData SettingData, APlayerController* PC);
-	
+	void StartFight();
+
 	void PawnDied(ANGPawnBase* DeadPawn);
 
 	void FinishCombat();
 
+	void ResetGrid();
 protected:
 	
 	void SetupCombat(FCombatSettingData SettingData);
@@ -40,17 +43,14 @@ protected:
 	UPROPERTY(Transient)
 	TObjectPtr<APlayerController> RequestingPlayerControllerCache;
 	
-public:
-	UPROPERTY(EditAnywhere, Category = "Combat")
-	TArray<FWaveData> WaveList;
+	UPROPERTY()
+	TObjectPtr<ANGPlayerState> HomePS;
 	
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Combat")
-	int32 CurrentWaveIndex;
+	UPROPERTY()
+	TObjectPtr<ANGPlayerState> AwayPS;
 	
 private:
-	FTimerHandle SpawnTimerHandle;
-	int32 EnemiesSpawnedSoFar; //현재 웨이브에서 몇마리 소환됐는지
 	
-	UPROPERTY(EditDefaultsOnly, Category = "Setup")
-	TSubclassOf<AGridMapManager> GridMapManagerClass;
+	
+	FTimerHandle FightStartTimerHandle;
 };

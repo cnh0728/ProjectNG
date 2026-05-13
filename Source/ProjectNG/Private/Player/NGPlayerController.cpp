@@ -6,9 +6,11 @@
 #include "Components/NGPocketComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/CombatManagerComponent.h"
 #include "Pawn/NGUnitPawn.h"
 #include "Pawn/SelectableInterface.h"
 #include "Core/NGSpawnHelper.h"
+#include "Game/NGGameState.h"
 #include "GameModes/NGInGameMode.h"
 #include "Input/NGInputComponent.h"
 #include "Player/NGPlayerState.h"
@@ -230,7 +232,7 @@ void ANGPlayerController::PerformDrag()
 
 		if (HitActor && HitActor->Implements<USelectableInterface>())
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Hit Actor: %s"), *HitActor->GetName());
+			// UE_LOG(LogTemp, Warning, TEXT("Hit Actor: %s"), *HitActor->GetName());
 			
 			DraggingUnit = Cast<ANGUnitPawn>(HitActor);
 			ISelectableInterface::Execute_OnDrag(HitActor);
@@ -301,10 +303,12 @@ void ANGPlayerController::Server_RequestStopCombat_Implementation()
 {
 	if (HasAuthority())
 	{
-		if (ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>())
+		if (ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>())
 		{
-			FCombatResultData ResultData(true);
-			GM->OnCombatFinished(ResultData);
+			if (UCombatManagerComponent* CMC = GS->GetCombatManagerComponent())
+			{
+				CMC->FinishCombat();
+			}
 		}
 	}
 }

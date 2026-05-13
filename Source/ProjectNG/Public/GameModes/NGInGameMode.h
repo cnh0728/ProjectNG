@@ -31,7 +31,6 @@ class PROJECTNG_API ANGInGameMode : public ANGGameModeBase
 	GENERATED_BODY()
 
 public:
-	void ResetGrid();
 	void RequestStartCombat(APlayerController* PC);
 	void OnCombatFinished(const FCombatResultData& ResultData);
 	void ReportPawnDeath(ANGPawnBase* DeadPawn);
@@ -62,7 +61,6 @@ public:
 
 	TSubclassOf<ANGUnitPawn> GetUnitClass(FName UnitName) const;
 
-	
 protected:
 	// Key: DataTable RowName, Value: remain count
 	TMap<FName, int32> UnitPool;

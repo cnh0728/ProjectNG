@@ -20,7 +20,7 @@ bool UNGSpawnHelper::SpawnUnitPawn(ANGPlayerController* OwnerController, FName U
 	
 	TOptional<FIntVector2> EmptyGridIndex = WaitGridMap.GetEmptyGridIndex();
 	
-	if (!WaitGridMap.IsPossibleSpawnPawn())		return false;
+	if (!EmptyGridIndex.IsSet())		return false;
 
 	UNGPocketComponent* Pocket = PS->GetPlayerPocket();
 	if (!Pocket)	return false;
@@ -41,12 +41,14 @@ bool UNGSpawnHelper::SpawnUnitPawn(ANGPlayerController* OwnerController, FName U
 	ANGUnitPawn* NewPawn = SpawnPawn<ANGUnitPawn>(World, UnitClass, SpawnTransform, OwnerController);
 	if (!NewPawn)	return false;
 	
+	NewPawn->Initialize(PS);
+	
 	//여기서 찾은 그리드에 값 기입
 	FGridData GridData;
 	GridData.PlacedPawn = NewPawn;
 	
 	NewPawn->SetPawnOnGrid(SpawnGridAddress);
-
+	
 	Pocket->ControlPocketSpawning(NewPawn);
 	
 	return true;

@@ -9,8 +9,8 @@
  * 
  */
 
+class ANGPawnBase;
 class ANGPlayerState;
-class ANGUnitPawn;
 
 UENUM(BlueprintType)
 enum class EGridType : uint8 {
@@ -41,7 +41,7 @@ struct FGridData
 	GENERATED_BODY()
 
 	UPROPERTY()
-	TObjectPtr<ANGUnitPawn> PlacedPawn;
+	TObjectPtr<ANGPawnBase> PlacedPawn;
 	
 	void Reset()
 	{
@@ -65,10 +65,9 @@ struct PROJECTNG_API FGridMapBase
 	FGridData GetGridData(const FIntVector2 GridIndex) const;
     
 	void ResetGridInfo();
-	void ResetEmptyGridIndex();
+	void ResetGrid();
     
 	bool IsGridIndexEmpty(const FIntVector2& GridIndex) const;
-	bool IsPossibleSpawnPawn() const;
 	TOptional<FIntVector2> GetEmptyGridIndex() const;
 	const TArray<FGridData>& GetGridInfo() const { return GridInfo; }
 	
@@ -86,9 +85,6 @@ struct PROJECTNG_API FGridMapBase
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	EGridType GridType;
-
-	UPROPERTY()
-	TArray<FIntVector2> EmptyGridIndex;
 
 	UPROPERTY()
 	TArray<FGridData> GridInfo;
