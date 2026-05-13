@@ -123,9 +123,21 @@ protected:
 
 public:
 	UFUNCTION(Server, Reliable)
-	void Server_RequestStartWave();
+	void Server_RequestStartCombat();
+	
+	UFUNCTION(Server, Reliable)
+	void Server_RequestStopCombat();
 
 	UFUNCTION(Exec)
-	void Cmd_StartWave();
+	void Cmd_StartCombat();
+	
+	UFUNCTION(Exec)
+	void Cmd_FinishCombat();
+	
+	UFUNCTION(Exec)
+	void Cmd_ToggleDebugGrid();
+	
+private:
+	bool bShowDebugGrid;
 	
 };

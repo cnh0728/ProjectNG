@@ -13,6 +13,8 @@
 
 ANGPlayerState::ANGPlayerState()
 {
+	PrimaryActorTick.bCanEverTick = false;
+	
 	// GAS를 원활히 사용하기 위함
 	SetNetUpdateFrequency(100.0f);
 
@@ -28,6 +30,8 @@ void ANGPlayerState::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>&
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
 	DOREPLIFETIME(ANGPlayerState, CombatGridMap);
+	DOREPLIFETIME(ANGPlayerState, WaitGridMap);
+	DOREPLIFETIME(ANGPlayerState, EnemyWaitGridMap);
 	DOREPLIFETIME(ANGPlayerState, PlayerPocket);
 	DOREPLIFETIME(ANGPlayerState, GridManager);
 }
@@ -76,6 +80,11 @@ void ANGPlayerState::InitializePostLogin(uint32 AssignedIndex)
 	SpawnGridMapManager();
 }
 
+void ANGPlayerState::CaptureSnapShot()
+{
+	CombatGridMapSnapShot = CombatGridMap;
+}
+
 void ANGPlayerState::RestoreInitialGrid()
 {
 	if (!HasAuthority())	return;
@@ -85,7 +94,7 @@ void ANGPlayerState::RestoreInitialGrid()
 		FGridData& GridData = CombatGridMapSnapShot.GridInfo[i];
 
 		//이거 snapshot 그리드를 찍지말고 폰들을 찍는게 나을듯?
-		if (GridData.PlacedPawn.IsValid())
+		if (GridData.PlacedPawn)
 		{
 			FIntVector2 OriginalIndex = CombatGridMapSnapShot.ConvertIndexToPoint(i);
 

@@ -24,24 +24,15 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	UFUNCTION(BlueprintCallable)
-	void StartWave(APlayerController* PC);
-	
-protected:
-	void SpawnEnemyTimerElapsed();
-
-	bool SpawnEnemy();
-
-public:
 	void StartCombat(FCombatSettingData SettingData, APlayerController* PC);
 	
 	void PawnDied(ANGPawnBase* DeadPawn);
 
+	void FinishCombat();
+
 protected:
 	
 	void SetupCombat(FCombatSettingData SettingData);
-	
-	void FinishCombat();
 
 	int32 CurrentEnemyCount = 0;
 	int32 TargetKillCount = 10;

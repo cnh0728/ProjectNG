@@ -231,6 +231,9 @@ void ANGUnitPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 void ANGUnitPawn::MoveTo(const FVector& TargetLocation)
 {
+	// Client에서만 불려야함
+	if (HasAuthority())	return;
+	
 	ANGPlayerController* PC = GetOwner<ANGPlayerController>();
 	if (!PC)	return;
 	
@@ -245,21 +248,18 @@ void ANGUnitPawn::MoveTo(const FVector& TargetLocation)
 	
 	if (FGridMapBase* GridMap = UGridMapHelper::GetGridMap(NewGridAddress))
 	{
-		// UE_LOG(LogTemp, Log, TEXT("GridMap : %s %p, Index: %s"), NewGridType == EGridType::Combat ? TEXT("Combat") : TEXT("Wait"), GridMap, *NewIndex.ToString())
+		UE_LOG(LogTemp, Log, TEXT("GridMap : %s %p, Index: %s"), NewGridType == EGridType::Combat ? TEXT("Combat") : TEXT("Wait"), GridMap, *NewIndex.ToString())
 		if (!CanPlaceUnit(*GridMap, NewIndex))
 		{
-			UE_LOG(LogTemp, Error, TEXT("ANGUnitPawn::MoveTo Cannot Place GridMap!"));
 			return;
 		}
+		UpdatePlacedGridInfo(NewGridAddress);
+
+		Server_MoveGrid(TargetLocation, NewGridAddress);
 	}else
 	{
 		UE_LOG(LogTemp, Error, TEXT("ANGUnitPawn::MoveTo Cannot Find GridMap!"));
 	}
-	
-	
-	UpdatePlacedGridInfo(NewGridAddress);
-
-	Request_MoveGrid(TargetLocation, NewGridAddress);
 }
 
 void ANGUnitPawn::UpdatePlacedGridInfo(FGridAddress NewGridAddress)
@@ -273,6 +273,7 @@ void ANGUnitPawn::UpdatePlacedGridInfo(FGridAddress NewGridAddress)
 void ANGUnitPawn::Client_RejectMove_Implementation()
 {		
 	PlacedGridAddress = PrePlacedGridAddress;
+	
 	
 	// 나중에 이동하는거 드래그앤 드랍했을때로 바꾸면 이것도 손보기
 	/*
@@ -300,11 +301,17 @@ EGridType ANGUnitPawn::GetCurrentGridType(const FVector& TargetLocation) const
 		FQuadGridMap& WaitGridMap = PlacedGridAddress.GridOwnerPS->GetWaitGridMap();
 		const FIntVector2 WaitGridIndex = UGridMapHelper::GetCellIndex(EGridType::Wait, TargetLocation, PlacedGridAddress.GridOwnerPS);
 		bool bWaitValidGrid = WaitGridMap.IsValidIndex(WaitGridIndex);
-			
+		
+		if (!bWaitValidGrid && !bCombatValidGrid)
+		{
+			UE_LOG(LogTemp, Error, TEXT("GridType is None, CombatIndex: %s, WaitIndex: %s"), *CombatGridIndex.ToString(), *WaitGridIndex.ToString());
+		}
+		
 		if (bCombatValidGrid)
 		{
 			return EGridType::Combat;
-		} if (bWaitValidGrid)
+		} 
+		if (bWaitValidGrid)
 		{
 			return EGridType::Wait;
 		}
@@ -318,7 +325,7 @@ bool ANGUnitPawn::CanPlaceUnit(FGridMapBase& GridMap, FIntVector2 GridIndex)
 	return GridMap.IsGridIndexEmpty(GridIndex) && GridMap.IsValidIndex(GridIndex);
 }
 
-void ANGUnitPawn::Request_MoveGrid_Implementation(const FVector& TargetLocation, FGridAddress GridAddress)
+void ANGUnitPawn::Server_MoveGrid_Implementation(const FVector& TargetLocation, FGridAddress GridAddress)
 {
 	// 여기서 가도되는지 확인 후 서버에서 위치 옮기고 클라이언트한테 결과 전송
 
@@ -339,7 +346,8 @@ void ANGUnitPawn::Request_MoveGrid_Implementation(const FVector& TargetLocation,
 
 void ANGUnitPawn::MovePawnOnGrid(const FGridAddress& GridAddress)
 {
-	UnSetPawnOnGrid(GridAddress);
+	UE_LOG(LogTemp, Log, TEXT("ANGUnitPawn::MovePawnOnGrid"));
+	UnSetPawnOnGrid(PlacedGridAddress);
 	SetPawnOnGrid(GridAddress);
 }
 
@@ -347,13 +355,13 @@ void ANGUnitPawn::SetPawnOnGrid(const FGridAddress& GridAddress)
 {
 	if (!HasAuthority())	return;
 	
-	FGridData GridData;
-	GridData.PlacedPawn = this;
-	
-	UpdatePlacedGridInfo(GridAddress);
-	
 	if (FGridMapBase* GridMap = UGridMapHelper::GetGridMap(GridAddress))
 	{
+		UE_LOG(LogTemp, Log, TEXT("ANGUnitPawn::MovePawnOnGrid"));
+		FGridData GridData;
+		GridData.PlacedPawn = this;
+
+		UpdatePlacedGridInfo(GridAddress);
 		GridMap->SetGridData(GridAddress.GridIndex, GridData);
 	}
 }
@@ -364,7 +372,9 @@ void ANGUnitPawn::UnSetPawnOnGrid(const FGridAddress& GridAddress) const
 	
 	if (FGridMapBase* GridMap = UGridMapHelper::GetGridMap(GridAddress))
 	{
-		GridMap->EmptyGridMap(GridAddress.GridIndex);
+		UE_LOG(LogTemp, Log, TEXT("ANGUnitPawn::UnSetPawnOnGrid"));
+		
+		GridMap->EmptyGridMap(PlacedGridAddress.GridIndex);
 	}
 }
 

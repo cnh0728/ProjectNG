@@ -5,13 +5,10 @@
 
 #include "Pawn/NGEnemyPawn.h"
 #include "Pawn/NGUnitPawn.h"
-#include "Combat/GridMapManager.h"
 #include "Components/NGPocketComponent.h"
-#include "Core/NGPoolSubSystem.h"
 #include "Game/NGGameState.h"
 #include "GameModes/NGInGameMode.h"
 #include "Net/UnrealNetwork.h"
-#include "Player/NGPlayerController.h"
 #include "Player/NGPlayerState.h"
 
 // Sets default values
@@ -26,73 +23,6 @@ void UCombatManagerComponent::BeginPlay()
 {
 	Super::BeginPlay();
 }
-
-void UCombatManagerComponent::StartWave(APlayerController* PC)
-{
-	if (!GetOwner()->HasAuthority())	return;
-	
-	RequestingPlayerControllerCache = PC;
-	
-	if (WaveList.IsValidIndex(CurrentWaveIndex))
-	{
-		EnemiesSpawnedSoFar = 0;
-		
-		// 타이머 시작 (SpawnInterval 마다 SpawnEnemyTimerElapsed 호출)
-		float Interval = WaveList[CurrentWaveIndex].SpawnInterval;
-		
-		GetWorld()->GetTimerManager().SetTimer(SpawnTimerHandle, this, &UCombatManagerComponent::SpawnEnemyTimerElapsed, Interval, true);
-	}
-}
-
-void UCombatManagerComponent::SpawnEnemyTimerElapsed()
-{
-	//PC가져와서 넘겨줘야할듯?
-	SpawnEnemy();
-	
-	// 목표 다 채웠으면 정지
-	if (EnemiesSpawnedSoFar >= WaveList[CurrentWaveIndex].EnemyCount)
-	{
-		GetWorld()->GetTimerManager().ClearTimer(SpawnTimerHandle);
-	}
-}
-
-bool UCombatManagerComponent::SpawnEnemy()
-{
-	AGridMapManager* GridMapManager = nullptr;
-	
-	if (ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>())
-	{
-		//임시로 0
-		GridMapManager = GS->PlayerStates[0]->GetGridManager();
-	}
-
-	if (!IsValid(GridMapManager))	return false;
-	
-	UNGPoolSubSystem* Pool = GetWorld()->GetSubsystem<UNGPoolSubSystem>();
-	
-	if (!Pool)	return false;
-	
-	UE_LOG(LogTemp, Warning, TEXT("Enemy Spawned!"));
-	
-	
-	// TSubclassOf<ANGEnemyPawn> EnemyClass = WaveList[CurrentWaveIndex].EnemyClass;
-	TSubclassOf<ANGEnemyPawn> EnemyClass = ANGEnemyPawn::StaticClass(); //TODO: 웨이브시스템 구현하면 위에꺼로 바꾸기
-	
-	FActorSpawnParameters SpawnParameters;
-	SpawnParameters.Owner = RequestingPlayerControllerCache;
-	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	
-	// ANGEnemyPawn* NewEnemy = UNGSpawnHelper::SpawnPawn<ANGEnemyPawn>(this, EnemyClass, SpawnTransform, RequestingPlayerControllerCache);
-	// if (!NewEnemy)
-	// {
-	// 	return false;
-	// }
-	
-	EnemiesSpawnedSoFar++;
-	
-	return true;
-}
-
 
 void UCombatManagerComponent::StartCombat(FCombatSettingData SettingData, APlayerController* PC)
 {
@@ -148,6 +78,15 @@ void UCombatManagerComponent::SetupCombat(FCombatSettingData SettingData)
 	ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>();
 	if (!GS)	return;
 	
+	//전투 시작 전 그리드 상태 복구용 스냅샷
+	for (ANGPlayerState* PlayerState : GS->PlayerStates)
+	{
+		if (PlayerState)
+		{
+			PlayerState->CaptureSnapShot();
+		}
+	}
+	
 	CurrentEnemyCount = 0;
 	TargetKillCount = SettingData.EnemyCount;
 	
@@ -156,18 +95,15 @@ void UCombatManagerComponent::SetupCombat(FCombatSettingData SettingData)
 		UNGPocketComponent* PocketComponentB = SettingData.PlayerB->GetPlayerPocket();
 		for (TWeakObjectPtr<ANGUnitPawn> Unit : PocketComponentB->GetOwnedUnitPocket())
 		{
-			ANGPlayerState* EnemyPS = SettingData.PlayerA;
 			FGridAddress GridAddress = Unit->GetGridAddress();
 			FIntVector2 MirroredIdx = UGridMapHelper::GetMirroredIndex(*UGridMapHelper::GetGridMap(GridAddress), GridAddress.GridIndex);
 			
-			UE_LOG(LogTemp, Log, TEXT("A : %p, B : %p"), &SettingData.PlayerA->GetCombatGridMap(), &SettingData.PlayerB->GetCombatGridMap());
-			
-			FGridAddress UnitGridAddress(MirroredIdx, EGridType::EnemyWait, SettingData.PlayerA);
+			FGridAddress EnemyCombatGridAddress(MirroredIdx, EGridType::EnemyWait, SettingData.PlayerA);
 			if (GridAddress.GridType == EGridType::Combat)
 			{
-				UnitGridAddress.GridType = EGridType::Combat;
+				EnemyCombatGridAddress.GridType = EGridType::Combat;
 			}
-			Unit->SetPawnOnGrid(UnitGridAddress);
+			Unit->SetPawnOnGrid(EnemyCombatGridAddress);
 		}
 	}
 }

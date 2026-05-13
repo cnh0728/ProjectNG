@@ -49,7 +49,7 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
 	UFUNCTION(Server, Reliable)
-	void Request_MoveGrid(const FVector& TargetLocation, FGridAddress GridAddress);
+	void Server_MoveGrid(const FVector& TargetLocation, FGridAddress GridAddress);
 	
 	void MoveTo(const FVector& TargetLocation);
 	void UpdatePlacedGridInfo(FGridAddress NewGridAddress);

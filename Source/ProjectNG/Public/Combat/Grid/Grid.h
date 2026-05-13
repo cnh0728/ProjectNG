@@ -41,7 +41,7 @@ struct FGridData
 	GENERATED_BODY()
 
 	UPROPERTY()
-	TWeakObjectPtr<ANGUnitPawn> PlacedPawn;
+	TObjectPtr<ANGUnitPawn> PlacedPawn;
 	
 	void Reset()
 	{
@@ -133,8 +133,9 @@ public:
 	static FVector GetHexCorner(const FHexGridMap& GridMap, int32 Index);
 	static const FIntVector2 GetMirroredIndex(const FGridMapBase& GridMap, FIntVector2 OriginIndex);
     
-	static FIntVector2 AxialToRect(FIntVector2 Axial);
 	static int32 GetDistance(FIntVector2 A, FIntVector2 B);
 	static FIntVector2 RectToAxial(int32 Col, int32 Row);
-	static FIntVector GetCubeIndex(const FIntVector2 AxialIndex) { return FIntVector(AxialIndex.X, AxialIndex.Y, -AxialIndex.X - AxialIndex.Y); }
+	static FIntVector GetCubeIndex(const FIntVector2 AxialIndex);
+	
+	static void DrawDebugGrid(const UObject* WorldContextObject, FGridAddress GridAddress);
 };

@@ -43,7 +43,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-
+	
 	void InitGridMap(const FGridBuildData& BuildData);
 
 public:

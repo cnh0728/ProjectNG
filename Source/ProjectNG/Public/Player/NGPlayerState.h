@@ -30,14 +30,17 @@ public:
 	//~End IAbilitySystemInterface
 
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
-	void SpawnGridMapManager();
 
 	UNGAbilitySystemComponent* GetNGAbilitySystemComponent() const { return AbilitySystemComponent; }
 
 	AGridMapManager* GetGridManager() const { return GridManager; }
 	
 	void InitializePostLogin(uint32 AssignedIndex);
+
+	void SpawnGridMapManager();
 	
+	void CaptureSnapShot();
+
 protected:
 	UPROPERTY()
 	TObjectPtr<UNGAbilitySystemComponent> AbilitySystemComponent;

@@ -54,7 +54,7 @@ void ANGInGameMode::RequestStartCombat(APlayerController* PC)
 
 void ANGInGameMode::OnCombatFinished(const FCombatResultData& ResultData)
 {
-	if (CurrentState != EGameState::Combat)	return;
+	// if (CurrentState != EGameState::Combat)	return;
 	
 	UE_LOG(LogTemp, Log, TEXT("Combat Finished"));
 	

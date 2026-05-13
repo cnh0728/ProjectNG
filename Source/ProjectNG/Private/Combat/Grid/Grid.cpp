@@ -39,12 +39,12 @@ void FGridMapBase::SetGridData(FIntVector2 GridIndex, const FGridData& GridData)
 void FGridMapBase::EmptyGridMap(const FIntVector2& GridIndex)
 {	
     if (!IsValidIndex(GridIndex)) return;
+    
     int32 Idx = ConvertPointToIndex(GridIndex);
-    if (GridInfo[Idx].PlacedPawn.IsValid())
-    {
-        GridInfo[Idx].Reset();
-        EmptyGridIndex.AddUnique(GridIndex);
-    }
+    UE_LOG(LogTemp, Log, TEXT("Empty %s Index"), *GridIndex.ToString());
+    
+    GridInfo[Idx].Reset();
+    EmptyGridIndex.AddUnique(GridIndex);
 }
 
 FGridData FGridMapBase::GetGridData(const FIntVector2 GridIndex) const
@@ -108,14 +108,6 @@ void FHexGridMap::InitializeMap(int32 InSizeQ, int32 InSizeR, float InCellSize, 
     Internal_Initialize(InSizeQ, InSizeR, InCellSize, InPivot);
 }
 
-
-FIntVector2 UGridMapHelper::AxialToRect(FIntVector2 Axial)
-{
-    int32 Col = Axial.X + FMath::FloorToInt(Axial.Y / 2.0f);
-    int32 Row = Axial.Y;
-    return FIntVector2(Col, Row);
-}
-
 FVector UGridMapHelper::GetRelativeLocation(FGridAddress GridAddress)
 {
     if (FGridMapBase* GridMap = GetGridMap(GridAddress))
@@ -160,18 +152,28 @@ FIntVector2 UGridMapHelper::GetCellIndex(EGridType GridType, const FVector& Loca
         {
         case EGridType::Combat:
             {
-                FVector RelativePos = Location - GridMap->Pivot;
-                float q = (2.0f / 3.0f * RelativePos.X) / GridMap->CellSize;
-                float r = (-1.0f / 3.0f * RelativePos.X + FMath::Sqrt(3.0f) / 3.0f * RelativePos.Y) / GridMap->CellSize;
+                FVector RelativePos = Location - GridMap->Pivot + FVector(0.01f, 0.01f, 0.0f);
+                float Radius = GridMap->CellSize;
 
-                float x = q; float y = r; float z = -q - r;
-                int32 rx = FMath::RoundToInt(x); int32 ry = FMath::RoundToInt(y); int32 rz = FMath::RoundToInt(z);
+                float q = (2.0f / 3.0f * RelativePos.X) / Radius;
+                float r = (-1.0f / 3.0f * RelativePos.X + 1.732051f / 3.0f * RelativePos.Y) / Radius;
+                float s = -q - r;
 
-                float x_diff = FMath::Abs(rx - x); float y_diff = FMath::Abs(ry - y); float z_diff = FMath::Abs(rz - z);
-                if (x_diff > y_diff && x_diff > z_diff) rx = -ry - rz;
-                else if (y_diff > z_diff) ry = -rx - rz;
+                int32 iq = FMath::RoundToInt(q);
+                int32 ir = FMath::RoundToInt(r);
+                int32 is = FMath::RoundToInt(s);
 
-                return FIntVector2(rx, ry + FMath::FloorToInt(rx / 2.0f));
+                float q_diff = FMath::Abs(iq - q);
+                float r_diff = FMath::Abs(ir - r);
+                float s_diff = FMath::Abs(is - s);
+
+                if (q_diff > r_diff && q_diff > s_diff) iq = -ir - is;
+                else if (r_diff > s_diff) ir = -iq - is;
+
+                int32 outX = iq;
+                int32 outY = ir + (iq - (iq & 1)) / 2;
+                
+                return FIntVector2(outX, outY);
             }
         case EGridType::Wait:
         case EGridType::EnemyWait:
@@ -203,12 +205,14 @@ FGridMapBase* UGridMapHelper::GetGridMap(FGridAddress GridAddress)
             {
                 return &GridAddress.GridOwnerPS->GetEnemyWaitGridMap();
             }
+        default:
+            {
+                
+                return nullptr;
+            }
         }
-    }else
-    {
-        UE_LOG(LogTemp, Error, TEXT("UGridMapHelper::GetGridMap - OwnerPS is nullptr!!!"));
     }
-    
+    UE_LOG(LogTemp, Error, TEXT("UGridMapHelper::GetGridMap - OwnerPS is nullptr!!!"));
     return nullptr;
 }
 
@@ -235,5 +239,47 @@ FIntVector2 UGridMapHelper::RectToAxial(int32 Col, int32 Row)
     int32 q = Col - FMath::FloorToInt(Row / 2.0f);
     int32 r = Row;
     return FIntVector2(q, r);
+}
+
+FIntVector UGridMapHelper::GetCubeIndex(const FIntVector2 AxialIndex)
+{
+    return FIntVector(AxialIndex.X, AxialIndex.Y, -AxialIndex.X - AxialIndex.Y);
+}
+
+void UGridMapHelper::DrawDebugGrid(const UObject* WorldContextObject, FGridAddress GridAddress)
+{
+    UWorld* World = WorldContextObject->GetWorld();
+    if (!World) return;
+
+    if (FGridMapBase* GridMap = GetGridMap(GridAddress))
+    {
+        for (int32 i = 0; i < GridMap->GridInfo.Num(); ++i)
+        {
+            const FGridData& Data = GridMap->GridInfo[i];
+            FIntVector2 Idx = GridMap->ConvertIndexToPoint(i);
+            GridAddress.GridIndex = Idx;
+            
+            FVector WorldLoc = GetWorldLocation(GridAddress); // 기존 함수 활용
+            
+            // 1. 유닛 점유 확인 (PlacedPawn)
+            // 가시화: 점유 중이면 빨간 구체, 비어있으면 초록 구체
+            FColor DisplayColor = Data.PlacedPawn ? FColor::Red : FColor::Green;
+            DrawDebugSphere(World, WorldLoc, 50.f, 12, DisplayColor, false, 0.f, 0, 2.f);
+            
+            // 2. EmptyGridIndex 포함 여부 확인 (점유 가능 타일)
+            // 알고리즘 최적화를 위해 실서비스에선 TSet을 권장하지만, 디버그용이니 Contains도 무방합니다.
+            bool bIsEmpty = GridMap->IsGridIndexEmpty(Idx);
+            // EmptyGridIndex에 있다면 테두리 표시
+            if (bIsEmpty)
+            {
+                DrawDebugBox(World, WorldLoc, FVector(GridMap->CellSize * 0.4f), FColor::Cyan, false, 0.f, 0, 1.f);
+            }
+
+            // 인덱스 텍스트 출력
+            DrawDebugString(World, WorldLoc + FVector(0, 0, 20), FString::Printf(TEXT("[%d, %d]"), Idx.X, Idx.Y), nullptr, FColor::White, 0.01f);
+        }
+        
+    }
+    
 }
 

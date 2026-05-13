@@ -8,12 +8,9 @@
 #include "Blueprint/UserWidget.h"
 #include "Pawn/NGUnitPawn.h"
 #include "Pawn/SelectableInterface.h"
-#include "Combat/GridMapManager.h"
 #include "Core/NGSpawnHelper.h"
-#include "Game/NGGameState.h"
 #include "GameModes/NGInGameMode.h"
 #include "Input/NGInputComponent.h"
-#include "Net/UnrealNetwork.h"
 #include "Player/NGPlayerState.h"
 
 #include "ProjectNG/ProjectNG.h"
@@ -81,8 +78,16 @@ void ANGPlayerController::Tick(float DeltaTime)
 	
 	GetMousePosition(CurrentMouseLocation.X, CurrentMouseLocation.Y);
 	
-	//TODO: UI랑 인게임 분기쳐서 인게임에서만 동작하도록 하면 좋을듯
-	// ProgressDragActor();
+	if (bShowDebugGrid)
+	{
+		if (ANGPlayerState* PS = GetPlayerState<ANGPlayerState>())
+		{
+			FGridAddress CombatGridAddress(FIntVector2::ZeroValue, EGridType::Combat, PS);
+			UGridMapHelper::DrawDebugGrid(this, CombatGridAddress);
+			FGridAddress WaitGridAddress(FIntVector2::ZeroValue, EGridType::Wait, PS);
+			UGridMapHelper::DrawDebugGrid(this, WaitGridAddress);
+		}
+	}
 }
 
 void ANGPlayerController::OnRep_PlayerState()
@@ -261,7 +266,17 @@ void ANGPlayerController::Server_RequestBuyUnit_Implementation(FName UnitName)
 	}
 }
 
-void ANGPlayerController::Server_RequestStartWave_Implementation()
+UNGPocketComponent* ANGPlayerController::GetPlayerPocket()
+{
+	if (ANGPlayerState* PS = GetPlayerState<ANGPlayerState>())
+	{
+		return PS->GetPlayerPocket();
+	}
+	
+	return nullptr;
+}
+
+void ANGPlayerController::Server_RequestStartCombat_Implementation()
 {
 	if (HasAuthority())
 	{
@@ -282,17 +297,29 @@ void ANGPlayerController::Server_RequestStartWave_Implementation()
 	}
 }
 
-UNGPocketComponent* ANGPlayerController::GetPlayerPocket()
+void ANGPlayerController::Server_RequestStopCombat_Implementation()
 {
-	if (ANGPlayerState* PS = GetPlayerState<ANGPlayerState>())
+	if (HasAuthority())
 	{
-		return PS->GetPlayerPocket();
+		if (ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>())
+		{
+			FCombatResultData ResultData(true);
+			GM->OnCombatFinished(ResultData);
+		}
 	}
-	
-	return nullptr;
 }
 
-void ANGPlayerController::Cmd_StartWave()
+void ANGPlayerController::Cmd_StartCombat()
 {
-	Server_RequestStartWave();
+	Server_RequestStartCombat();
+}
+
+void ANGPlayerController::Cmd_FinishCombat()
+{
+	Server_RequestStopCombat();
+}
+
+void ANGPlayerController::Cmd_ToggleDebugGrid()
+{
+	bShowDebugGrid = !bShowDebugGrid;
 }
