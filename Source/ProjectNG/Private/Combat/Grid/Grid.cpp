@@ -209,12 +209,6 @@ FGridMapBase* UGridMapHelper::GetGridMap(FGridAddress GridAddress)
     return nullptr;
 }
 
-FVector UGridMapHelper::GetHexCorner(const FHexGridMap& GridMap, int32 Index)
-{
-    float AngleRad = FMath::DegreesToRadians(60.0f * Index);
-    return FVector(GridMap.CellSize * FMath::Cos(AngleRad), GridMap.CellSize * FMath::Sin(AngleRad), 0.0f);
-}
-
 const FIntVector2 UGridMapHelper::GetMirroredIndex(const FGridMapBase& GridMap, FIntVector2 OriginIndex)
 {
     return FIntVector2(GridMap.Width - 1 - OriginIndex.X, GridMap.Height - 1 - OriginIndex.Y);

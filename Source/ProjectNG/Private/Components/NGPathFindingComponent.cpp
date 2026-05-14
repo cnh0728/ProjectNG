@@ -60,9 +60,11 @@ TArray<FIntVector2> UNGPathFindingComponent::FindPath(const FGridAddress& StartA
             FIntVector2 TraceIdx = TargetIdx;
             while (TraceIdx != StartIdx)
             {
-                Path.Insert(TraceIdx, 0); // 배열의 맨 앞에 삽입하여 순서 맞춤
+                Path.Add(TraceIdx); // 배열의 맨 앞에 삽입하여 순서 맞춤
                 TraceIdx = CameFrom[TraceIdx];
             }
+            
+            Algo::Reverse(Path);
             return Path; // 최종 경로 반환
         }
 
@@ -107,7 +109,7 @@ TArray<FIntVector2> UNGPathFindingComponent::FindPath(const FGridAddress& StartA
 
 TArray<FIntVector2> UNGPathFindingComponent::FindPathToClosestEnemy(const FGridAddress& StartAddress, uint32 OwnerIndex)
 {
-TArray<FIntVector2> Path;
+    TArray<FIntVector2> Path;
     FGridMapBase* GridMap = UGridMapHelper::GetGridMap(StartAddress);
     if (!GridMap) return Path;
 
@@ -146,14 +148,15 @@ TArray<FIntVector2> Path;
                 if (bIsEnemy)
                 {
                     // 큐에 넣기 전에 적을 발견했으므로 즉시 탐색 종료
-                    CameFrom.Add(Neighbor, CurrentIdx);
-                    
-                    FIntVector2 TraceIdx = Neighbor;
+                    FIntVector2 TraceIdx = CurrentIdx;
+
                     while (TraceIdx != StartIdx)
                     {
-                        Path.Insert(TraceIdx, 0);
+                        Path.Add(TraceIdx);
                         TraceIdx = CameFrom[TraceIdx];
                     }
+                    
+                    Algo::Reverse(Path);
                     return Path; 
                 }
                 else
@@ -180,29 +183,31 @@ TArray<FIntVector2> Path;
 TArray<FIntVector2> UNGPathFindingComponent::GetHexNeighbors(const FIntVector2& CurrentIndex) const
 {
     TArray<FIntVector2> Neighbors;
-    int32 X = CurrentIndex.X;
-    int32 Y = CurrentIndex.Y;
+    int32 X = CurrentIndex.X; // 세로 (Row)
+    int32 Y = CurrentIndex.Y; // 가로 (Column)
 
-    // 세로 육각형 (Pointy-Topped) + 홀수 행(Odd-Row) 지그재그 오프셋 규칙
-    bool bIsOddRow = (Y % 2 != 0);
+    // 1. [핵심 수정] 지그재그 오프셋 판별은 세로(행, X)를 기준으로 해야 합니다!
+    bool bIsShiftedRight = (FMath::Abs(X) % 2 != 0); 
 
-    if (bIsOddRow)
+    if (bIsShiftedRight)
     {
-        Neighbors.Add(FIntVector2(X + 1, Y));     // 우
-        Neighbors.Add(FIntVector2(X, Y - 1));     // 우상단
-        Neighbors.Add(FIntVector2(X - 1, Y - 1)); // 좌상단
-        Neighbors.Add(FIntVector2(X - 1, Y));     // 좌
-        Neighbors.Add(FIntVector2(X - 1, Y + 1)); // 좌하단
-        Neighbors.Add(FIntVector2(X, Y + 1));     // 우하단
+        // 홀수 행 (X = 1, 3, 5...): 오른쪽으로 0.5칸 밀려있는 상태
+        Neighbors.Add(FIntVector2(X, Y + 1));     // 우
+        Neighbors.Add(FIntVector2(X, Y - 1));     // 좌
+        Neighbors.Add(FIntVector2(X + 1, Y));     // 좌상단
+        Neighbors.Add(FIntVector2(X + 1, Y + 1)); // 우상단
+        Neighbors.Add(FIntVector2(X - 1, Y));     // 좌하단
+        Neighbors.Add(FIntVector2(X - 1, Y + 1)); // 우하단
     }
     else
     {
-        Neighbors.Add(FIntVector2(X + 1, Y));     // 우
-        Neighbors.Add(FIntVector2(X + 1, Y - 1)); // 우상단
-        Neighbors.Add(FIntVector2(X, Y - 1));     // 좌상단
-        Neighbors.Add(FIntVector2(X - 1, Y));     // 좌
-        Neighbors.Add(FIntVector2(X, Y + 1));     // 좌하단
-        Neighbors.Add(FIntVector2(X + 1, Y + 1)); // 우하단
+        // 짝수 행 (X = 0, 2, 4...): 제자리에 있는 상태 (왼쪽)
+        Neighbors.Add(FIntVector2(X, Y + 1));     // 우
+        Neighbors.Add(FIntVector2(X, Y - 1));     // 좌
+        Neighbors.Add(FIntVector2(X + 1, Y - 1)); // 좌상단
+        Neighbors.Add(FIntVector2(X + 1, Y));     // 우상단
+        Neighbors.Add(FIntVector2(X - 1, Y - 1)); // 좌하단
+        Neighbors.Add(FIntVector2(X - 1, Y));     // 우하단
     }
 
     return Neighbors;

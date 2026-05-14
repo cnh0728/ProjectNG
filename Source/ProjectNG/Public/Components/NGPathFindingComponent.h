@@ -27,10 +27,10 @@ public:
 	UFUNCTION(Category = "Grid|PathFinding")
 	TArray<FIntVector2> FindPathToClosestEnemy(const FGridAddress& StartAddress, uint32 OwnerIndex);
 	
-	
-protected:
 	// 육각형(Odd-Row 기반) 이웃 타일 6방향 반환
 	TArray<FIntVector2> GetHexNeighbors(const FIntVector2& CurrentIndex) const;
+	
+protected:
 
 	// A* 비용 계산용 휴리스틱 (UGridMapHelper의 GetDistance 활용)
 	int32 GetHeuristicCost(const FIntVector2& A, const FIntVector2& B) const;

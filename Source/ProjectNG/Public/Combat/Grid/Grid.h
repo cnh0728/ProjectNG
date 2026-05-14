@@ -64,7 +64,6 @@ struct PROJECTNG_API FGridMapBase
 	void EmptyGridMap(const FIntVector2& GridIndex);
 	FGridData GetGridData(const FIntVector2 GridIndex) const;
     
-	void ResetGridInfo();
 	void ResetGrid();
     
 	bool IsGridIndexEmpty(const FIntVector2& GridIndex) const;
@@ -126,7 +125,6 @@ public:
 	
 	static FGridMapBase* GetGridMap(FGridAddress GridAddress);
 
-	static FVector GetHexCorner(const FHexGridMap& GridMap, int32 Index);
 	static const FIntVector2 GetMirroredIndex(const FGridMapBase& GridMap, FIntVector2 OriginIndex);
     
 	static int32 GetDistance(FIntVector2 A, FIntVector2 B);

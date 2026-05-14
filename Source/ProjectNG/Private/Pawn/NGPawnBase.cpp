@@ -197,26 +197,26 @@ void ANGPawnBase::Tick(float DeltaTime)
 	{
 		GetWorld()->GetTimerManager().SetTimer(AttackCheckTimerHandle, this, &ANGUnitPawn::CheckAttackCondition, 0.2f, true);
 		
-		if (PathFindingComponent)
-		{
-			TArray<FIntVector2> Path = PathFindingComponent->FindPathToClosestEnemy(PlacedGridAddress, OwnerIndex);
-			for (FIntVector2 PathIndex : Path)
-			{
-				FGridAddress NodeAddress(PathIndex, PlacedGridAddress.GridType, PlacedGridAddress.GridOwnerPS);
-				FVector WorldLocation = UGridMapHelper::GetWorldLocation(NodeAddress) + FVector(0.f, 0.f, 50.f);
-				DrawDebugSphere(
-					GetWorld(),             // 월드 컨텍스트
-					WorldLocation,          // 구의 중심 좌표
-					20.0f,                  // 반지름 (크기)
-					12,                     // 세그먼트 수 (구의 형태, 너무 높으면 프레임 드랍 발생)
-					FColor::Green,          // 색상 (경로는 초록색 추천)
-					false,                  // bPersistentLines: false로 해야 계속 안 쌓입니다.
-					-1.0f,                  // LifeTime: -1.0f로 두면 딱 다음 틱(1프레임)까지만 유지됩니다.
-					0,                      // DepthPriority: 0은 기본 렌더링 순서
-					2.0f                    // 선 두께
-				);
-			}
-		}
+		// if (PathFindingComponent)
+		// {
+		// 	TArray<FIntVector2> Path = PathFindingComponent->FindPathToClosestEnemy(PlacedGridAddress, OwnerIndex);
+		// 	for (FIntVector2 PathIndex : Path)
+		// 	{
+		// 		FGridAddress NodeAddress(PathIndex, PlacedGridAddress.GridType, PlacedGridAddress.GridOwnerPS);
+		// 		FVector WorldLocation = UGridMapHelper::GetWorldLocation(NodeAddress) + FVector(0.f, 0.f, 50.f);
+		// 		DrawDebugSphere(
+		// 			GetWorld(),             // 월드 컨텍스트
+		// 			WorldLocation,          // 구의 중심 좌표
+		// 			20.0f,                  // 반지름 (크기)
+		// 			12,                     // 세그먼트 수 (구의 형태, 너무 높으면 프레임 드랍 발생)
+		// 			FColor::Green,          // 색상 (경로는 초록색 추천)
+		// 			false,                  // bPersistentLines: false로 해야 계속 안 쌓입니다.
+		// 			-1.0f,                  // LifeTime: -1.0f로 두면 딱 다음 틱(1프레임)까지만 유지됩니다.
+		// 			0,                      // DepthPriority: 0은 기본 렌더링 순서
+		// 			2.0f                    // 선 두께
+		// 		);
+		// 	}
+		// }
 	}else
 	{
 		GetWorldTimerManager().ClearTimer(AttackCheckTimerHandle);

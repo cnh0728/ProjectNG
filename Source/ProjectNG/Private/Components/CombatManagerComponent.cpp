@@ -32,7 +32,7 @@ void UCombatManagerComponent::StartCombat(FCombatSettingData SettingData, APlaye
 	//화면띄우고 이것저것
 	
 	//TODO: 모든 플레이어가 Rep된거 확인하고 타이머시작이 더 좋을듯
-	GetWorld()->GetTimerManager().SetTimer(FightStartTimerHandle, this, &UCombatManagerComponent::StartFight, 3.0f, false);	
+	GetWorld()->GetTimerManager().SetTimer(FightStartTimerHandle, this, &UCombatManagerComponent::StartFight, 0.1f, false);	
 }
 
 void UCombatManagerComponent::StartFight()
