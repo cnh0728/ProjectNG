@@ -79,9 +79,6 @@ ANGPawnBase* UNGPoolSubSystem::AcquirePawn(TSubclassOf<ANGPawnBase> PawnClass,
 		Pawn = GetWorld()->SpawnActor<ANGPawnBase>(TargetClass, SpawnTransform, SpawnParams);
 		UE_LOG(LogTemp, Log, TEXT("Spawn Default Pawn Class"));
 	}
-	
-	Pawn->Activate();
-	
 	return Pawn;
 }
 

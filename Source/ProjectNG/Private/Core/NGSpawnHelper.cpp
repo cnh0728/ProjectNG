@@ -40,6 +40,7 @@ bool UNGSpawnHelper::SpawnUnitPawn(ANGPlayerController* OwnerController, FName U
 	if (!NewPawn)	return false;
 	
 	NewPawn->Initialize(OwnerController);
+	NewPawn->Activate();
 	
 	//여기서 찾은 그리드에 값 기입
 	FGridData GridData;

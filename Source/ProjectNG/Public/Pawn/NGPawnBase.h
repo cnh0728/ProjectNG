@@ -7,6 +7,7 @@
 #include "GameFramework/Pawn.h"
 #include "GameplayAbilitySpecHandle.h"
 #include "GameplayCueInterface.h"
+#include "Interface/Poolable.h"
 #include "NGPawnBase.generated.h"
 
 struct FUnitAbilityData;
@@ -20,7 +21,7 @@ class UNGPoolableComponent;
 class UNGAbilitySystemComponent;
 
 UCLASS()
-class PROJECTNG_API ANGPawnBase : public APawn, public IAbilitySystemInterface, public IGameplayCueInterface
+class PROJECTNG_API ANGPawnBase : public APawn, public IAbilitySystemInterface, public IGameplayCueInterface, public IPoolable
 {
 	GENERATED_BODY()
 
@@ -36,9 +37,11 @@ public:
 	
 	virtual void PossessedBy(AController* NewController) override;
 	
-	virtual void Activate();
+	//~Begin IPoolable
+	virtual void Activate() override;
 	
-	virtual void Deactivate();
+	virtual void Deactivate() override;
+	//~End IPoolable
 	
 	virtual void Die();
 	
