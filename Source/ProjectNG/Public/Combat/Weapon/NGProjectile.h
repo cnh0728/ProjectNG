@@ -5,15 +5,15 @@
 #include "CoreMinimal.h"
 #include "GameplayEffectTypes.h"
 #include "GameFramework/Actor.h"
+#include "Interface/Poolable.h"
 #include "NGProjectile.generated.h"
 
-class UNGPoolableComponent;
 class ANGPawnBase;
 class UProjectileMovementComponent;
 class USphereComponent;
 
 UCLASS()
-class PROJECTNG_API ANGProjectile : public AActor
+class PROJECTNG_API ANGProjectile : public AActor, public IPoolable
 {
 	GENERATED_BODY()
 
@@ -22,6 +22,9 @@ public:
 	ANGProjectile();
 
 	virtual void Tick(float DeltaTime) override;
+	
+	virtual void Activate() override;
+	virtual void Deactivate() override;
 	
 protected:
 	// Called when the game starts or when spawned
@@ -47,9 +50,6 @@ protected:
 
 	UPROPERTY(BlueprintReadWrite, Category = "Setting | Projectile")
 	float RotateSpeed = 10.f;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pool", meta=(AllowPrivateAccess = "true"))
-	TObjectPtr<UNGPoolableComponent> PoolController;
 	
 public:
 	void SetSpecHandle(const FGameplayEffectSpecHandle InSpecHandle) { SpecHandle = InSpecHandle; }

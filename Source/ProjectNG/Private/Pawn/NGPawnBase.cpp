@@ -18,8 +18,6 @@ ANGPawnBase::ANGPawnBase()
 	bReplicates = true;		//네트워크 복제 활성화
 	SetReplicatingMovement(true);	//위치 속도 복제 활성화
 	
-	PoolController = CreateDefaultSubobject<UNGPoolableComponent>(FName("PoolController"));
-		
 	CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CollisionComp"));
 	RootComponent = CapsuleComponent;
     

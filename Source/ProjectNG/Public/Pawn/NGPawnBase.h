@@ -17,7 +17,6 @@ class ANGCharacterBase;
 class ANGEnemyPawn;
 class USphereComponent;
 class UWidgetComponent;
-class UNGPoolableComponent;
 class UNGAbilitySystemComponent;
 
 UCLASS()
@@ -69,9 +68,6 @@ protected:
 	//캐싱 용도
 	UPROPERTY(BlueprintReadOnly, Category = "GAS|AbilitySystemComponent")
 	TObjectPtr<UNGAbilitySystemComponent> AbilitySystemComponent;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pool", meta=(AllowPrivateAccess = "true"))
-	TObjectPtr<UNGPoolableComponent> PoolController;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
 	TObjectPtr<UWidgetComponent> HPBarComponent;

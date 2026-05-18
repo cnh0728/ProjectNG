@@ -22,8 +22,6 @@ ANGProjectile::ANGProjectile()
 	bReplicates = true;		//네트워크 복제 활성화
 	SetReplicatingMovement(true);	//위치 속도 복제 활성화
 	
-	PoolController = CreateDefaultSubobject<UNGPoolableComponent>(FName("PoolController"));
-	
 	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComp"));
 	RootComponent = SphereComponent;
 	SphereComponent->SetCollisionProfileName(TEXT("Projectile"));
@@ -114,5 +112,13 @@ void ANGProjectile::Tick(float DeltaTime)
 		//TODO: 바로 없애지말고 죽기전 타겟위치까지는 가게하는게 나아보임 -> 매틱 타겟 위치 기록해놓고 타겟없어지면 거기로 가면 될듯
 		ReleaseProjectile();
 	}
+}
+
+void ANGProjectile::Activate()
+{
+}
+
+void ANGProjectile::Deactivate()
+{
 }
 
