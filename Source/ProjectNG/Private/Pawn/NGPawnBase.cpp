@@ -6,7 +6,6 @@
 #include "AbilitySystem/NGAttributeSet.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
-#include "Core/NGPoolableComponent.h"
 #include "Game/NGUnitDataManager.h"
 #include "GameModes/NGInGameGameMode.h"
 #include "UI/NGWidgetInterface.h"

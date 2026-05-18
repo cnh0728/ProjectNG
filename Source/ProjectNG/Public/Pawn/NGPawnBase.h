@@ -136,6 +136,8 @@ public:
 	
 	ANGPawnBase* GetCurrentTarget();
 	
+	FGameplayTag GetIdentificationTag() const { return IdentificationTag; };
+	
 private:
 	void UpdateHPBar();
 	

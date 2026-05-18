@@ -1,16 +1,11 @@
 // Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 #include "Combat/Weapon/NGProjectile.h"
-
-#include <MaterialExpressionTruncate.generated.h>
-
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Pawn/NGPawnBase.h"
 #include "Components/SphereComponent.h"
-#include "Core/NGPoolableComponent.h"
 #include "Core/NGPoolSubSystem.h"
-#include "GameFramework/ProjectileMovementComponent.h"
 
 
 // Sets default values
