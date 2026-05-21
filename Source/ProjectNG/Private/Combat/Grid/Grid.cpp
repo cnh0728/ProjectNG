@@ -6,12 +6,13 @@
 #include "Pawn/NGPawnBase.h"
 #include "Player/NGPlayerState.h"
 
-void FGridMapBase::Internal_Initialize(int32 InW, int32 InH, float InCellSize, const FVector& InPivot)
+void FGridMapBase::Internal_Initialize(int32 InW, int32 InH, float InCellSize, const FVector& InPivot, EGridType InGridType)
 {
     Width = InW;
     Height = InH;
     CellSize = InCellSize;
     Pivot = InPivot;
+    GridType = InGridType;
     ResetGrid();
 }
 
@@ -86,19 +87,19 @@ TOptional<FIntVector2> FGridMapBase::GetEmptyGridIndex() const
     return TOptional<FIntVector2>();
 }
 
-FQuadGridMap::FQuadGridMap() { Internal_Initialize(9, 1, 100.f, FVector::ZeroVector); Offset = 50.f; }
+FQuadGridMap::FQuadGridMap() { Internal_Initialize(9, 1, 100.f, FVector::ZeroVector, EGridType::Wait); Offset = 50.f; }
 
 void FQuadGridMap::InitializeMap(const int32 InSizeX, const int32 InSizeY, const float InCellSize, const FVector& InPivot)
 {
     Offset = InCellSize / 2.0f;
-    Internal_Initialize(InSizeX, InSizeY, InCellSize, InPivot);
+    Internal_Initialize(InSizeX, InSizeY, InCellSize, InPivot, EGridType::Wait);
 }
 
-FHexGridMap::FHexGridMap() { Internal_Initialize(8, 8, 100.f, FVector::ZeroVector); }
+FHexGridMap::FHexGridMap() { Internal_Initialize(8, 8, 100.f, FVector::ZeroVector, EGridType::Combat); }
 
 void FHexGridMap::InitializeMap(int32 InSizeQ, int32 InSizeR, float InCellSize, const FVector& InPivot)
 {
-    Internal_Initialize(InSizeQ, InSizeR, InCellSize, InPivot);
+    Internal_Initialize(InSizeQ, InSizeR, InCellSize, InPivot, EGridType::Combat);
 }
 
 FVector UGridMapHelper::GetRelativeLocation(FGridAddress GridAddress)
@@ -109,11 +110,12 @@ FVector UGridMapHelper::GetRelativeLocation(FGridAddress GridAddress)
         {
         case EGridType::Combat:
             {
-                int32 q = GridAddress.GridIndex.X;
-                int32 r = GridAddress.GridIndex.Y - FMath::FloorToInt(GridAddress.GridIndex.X / 2.0f);
+                int32 r = GridAddress.GridIndex.Y;
+                int32 q = GridAddress.GridIndex.X - FMath::FloorToInt(GridAddress.GridIndex.Y / 2.0f);
 
-                float X = GridMap->CellSize * (3.0f / 2.0f) * q;
-                float Y = GridMap->CellSize * FMath::Sqrt(3.0f) * (r + q * 0.5f);
+                float X = GridMap->CellSize * (3.0f / 2.0f) * r;
+                float Y = GridMap->CellSize * FMath::Sqrt(3.0f) * (q + r * 0.5f);
+
                 return FVector(X, Y, 0.0f);
             }
         case EGridType::Wait:
@@ -148,8 +150,8 @@ FIntVector2 UGridMapHelper::GetCellIndex(EGridType GridType, const FVector& Loca
                 FVector RelativePos = Location - GridMap->Pivot + FVector(0.01f, 0.01f, 0.0f);
                 float Radius = GridMap->CellSize;
 
-                float q = (2.0f / 3.0f * RelativePos.X) / Radius;
-                float r = (-1.0f / 3.0f * RelativePos.X + 1.732051f / 3.0f * RelativePos.Y) / Radius;
+                float r = (2.0f / 3.0f * RelativePos.X) / Radius;
+                float q = (1.732051f / 3.0f * RelativePos.Y - 1.0f / 3.0f * RelativePos.X) / Radius;
                 float s = -q - r;
 
                 int32 iq = FMath::RoundToInt(q);
@@ -160,12 +162,12 @@ FIntVector2 UGridMapHelper::GetCellIndex(EGridType GridType, const FVector& Loca
                 float r_diff = FMath::Abs(ir - r);
                 float s_diff = FMath::Abs(is - s);
 
-                if (q_diff > r_diff && q_diff > s_diff) iq = -ir - is;
-                else if (r_diff > s_diff) ir = -iq - is;
+                if (q_diff > r_diff && q_diff > s_diff)      iq = -ir - is;
+                else if (r_diff > s_diff)                    ir = -iq - is;
 
-                int32 outX = iq;
-                int32 outY = ir + (iq - (iq & 1)) / 2;
-                
+                int32 outX = iq + FMath::FloorToInt(ir / 2.0f);
+                int32 outY = ir;
+
                 return FIntVector2(outX, outY);
             }
         case EGridType::Wait:
@@ -178,6 +180,40 @@ FIntVector2 UGridMapHelper::GetCellIndex(EGridType GridType, const FVector& Loca
     
     
     return FIntVector2::ZeroValue;
+}
+
+void UGridMapHelper::GetHexNeighborNodesInRange(FIntVector2 MidIndex, int32 Range, TArray<FIntVector2>& OutNeighborNodes)
+{
+    // 런타임 할당 오버헤드 최적화
+    int32 ExpectedSize = 1 + 3 * Range * (Range + 1);
+    OutNeighborNodes.Empty(ExpectedSize);
+
+    int32 CenterR = MidIndex.Y;
+    int32 CenterQ = MidIndex.X - FMath::FloorToInt(MidIndex.Y / 2.0f);
+
+    for (int32 dq = -Range; dq <= Range; ++dq)
+    {
+        int32 LowDr = FMath::Max(-Range, -dq - Range);
+        int32 HighDr = FMath::Min(Range, -dq + Range);
+
+        for (int32 dr = LowDr; dr <= HighDr; ++dr)
+        {
+            int32 ds = -dq - dr;
+
+            if (dq == 0 && dr == 0 && ds == 0)
+                continue;
+
+            int32 NeighborQ = CenterQ + dq;
+            int32 NeighborR = CenterR + dr;
+
+            int32 FinalY = NeighborR; 
+            int32 FinalX = NeighborQ + FMath::FloorToInt(NeighborR / 2.0f);
+
+            FIntVector2 NeighborCoord(FinalX, FinalY);
+                
+            OutNeighborNodes.Add(NeighborCoord);
+        }
+    }
 }
 
 FGridMapBase* UGridMapHelper::GetGridMap(FGridAddress GridAddress)

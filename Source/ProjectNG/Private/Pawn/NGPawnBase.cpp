@@ -50,22 +50,7 @@ ANGPawnBase::ANGPawnBase()
 	HPBarComponent->SetWidgetSpace(EWidgetSpace::Screen);
 	HPBarComponent->SetDrawSize(FVector2D(100.f, 20.f));
 	
-	DetectionSphere = CreateDefaultSubobject<USphereComponent>(FName("DetectionSphere"));
-	DetectionSphere->SetupAttachment(RootComponent);
-	
-	//ECC_Pawn에서 원하는 채널만 오버랩되도록 변경
-	FVector HalfCap = GetHalfCapsule();
-	FVector DetectionSphereLocation = DetectionSphere->GetComponentLocation();
-	DetectionSphere->SetRelativeLocation(DetectionSphereLocation - HalfCap);
-	
-	DetectionSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	DetectionSphere->SetCollisionObjectType(ECC_WorldDynamic);
-	DetectionSphere->SetCollisionResponseToAllChannels(ECR_Ignore);
-	DetectionSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	GetCapsuleComponent()->SetCollisionObjectType(ECC_Pawn);
-	
-	DetectionSphere->OnComponentBeginOverlap.AddDynamic(this, &ANGPawnBase::OnDetectionBeginOverlap);
-	DetectionSphere->OnComponentEndOverlap.AddDynamic(this, &ANGPawnBase::OnDetectionEndOverlap);
 	
 	PathFindingComponent = CreateDefaultSubobject<UNGPathFindingComponent>(TEXT("PathFindingComp"));
 }
@@ -176,15 +161,6 @@ void ANGPawnBase::BeginPlay()
 			UNGAttributeSet::GetHealthAttribute()).AddUObject(this, &ANGPawnBase::OnHealthChanged);
 	}
 	
-	if (AttributeSet)
-	{
-		if (DetectionSphere)
-		{
-			float CurrentRange = AttributeSet->GetAttackRange();
-			DetectionSphere->SetSphereRadius(CurrentRange);
-		}
-	}
-	
 	UpdateHPBar();
 	
 }
@@ -197,26 +173,26 @@ void ANGPawnBase::Tick(float DeltaTime)
 	{
 		GetWorld()->GetTimerManager().SetTimer(AttackCheckTimerHandle, this, &ANGUnitPawn::CheckAttackCondition, 0.2f, true);
 		
-		// if (PathFindingComponent)
-		// {
-		// 	TArray<FIntVector2> Path = PathFindingComponent->FindPathToClosestEnemy(PlacedGridAddress, OwnerIndex);
-		// 	for (FIntVector2 PathIndex : Path)
-		// 	{
-		// 		FGridAddress NodeAddress(PathIndex, PlacedGridAddress.GridType, PlacedGridAddress.GridOwnerPS);
-		// 		FVector WorldLocation = UGridMapHelper::GetWorldLocation(NodeAddress) + FVector(0.f, 0.f, 50.f);
-		// 		DrawDebugSphere(
-		// 			GetWorld(),             // 월드 컨텍스트
-		// 			WorldLocation,          // 구의 중심 좌표
-		// 			20.0f,                  // 반지름 (크기)
-		// 			12,                     // 세그먼트 수 (구의 형태, 너무 높으면 프레임 드랍 발생)
-		// 			FColor::Green,          // 색상 (경로는 초록색 추천)
-		// 			false,                  // bPersistentLines: false로 해야 계속 안 쌓입니다.
-		// 			-1.0f,                  // LifeTime: -1.0f로 두면 딱 다음 틱(1프레임)까지만 유지됩니다.
-		// 			0,                      // DepthPriority: 0은 기본 렌더링 순서
-		// 			2.0f                    // 선 두께
-		// 		);
-		// 	}
-		// }
+		if (PathFindingComponent)
+		{
+			TArray<FIntVector2> Path = PathFindingComponent->FindPathToClosestEnemy(PlacedGridAddress, OwnerIndex);
+			for (FIntVector2 PathIndex : Path)
+			{
+				FGridAddress NodeAddress(PathIndex, PlacedGridAddress.GridType, PlacedGridAddress.GridOwnerPS);
+				FVector WorldLocation = UGridMapHelper::GetWorldLocation(NodeAddress) + FVector(0.f, 0.f, 50.f);
+				DrawDebugSphere(
+					GetWorld(),             // 월드 컨텍스트
+					WorldLocation,          // 구의 중심 좌표
+					20.0f,                  // 반지름 (크기)
+					12,                     // 세그먼트 수 (구의 형태, 너무 높으면 프레임 드랍 발생)
+					FColor::Green,          // 색상 (경로는 초록색 추천)
+					false,                  // bPersistentLines: false로 해야 계속 안 쌓입니다.
+					-1.0f,                  // LifeTime: -1.0f로 두면 딱 다음 틱(1프레임)까지만 유지됩니다.
+					0,                      // DepthPriority: 0은 기본 렌더링 순서
+					2.0f                    // 선 두께
+				);
+			}
+		}
 	}else
 	{
 		GetWorldTimerManager().ClearTimer(AttackCheckTimerHandle);
@@ -230,7 +206,6 @@ void ANGPawnBase::OnHealthChanged(const FOnAttributeChangeData& Data)
 
 void ANGPawnBase::OnAttackRangeChanged(const FOnAttributeChangeData& Data)
 {
-	DetectionSphere->SetSphereRadius(Data.NewValue);
 }
 
 void ANGPawnBase::InitializeAttributes()
@@ -469,29 +444,6 @@ void ANGPawnBase::UnSetPawnOnGrid(const FGridAddress& GridAddress) const
 	if (FGridMapBase* GridMap = UGridMapHelper::GetGridMap(GridAddress))
 	{
 		GridMap->EmptyGridMap(PlacedGridAddress.GridIndex);
-	}
-}
-
-void ANGPawnBase::OnDetectionBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	// TODO: 이거 IsA말고 인터페이스로 하게 변경하는게 좋을듯
-	if (OtherActor && OtherActor != this && OtherActor->IsA(ANGPawnBase::StaticClass()))
-	{
-		//TODO: 오너인덱스 확인
-		InRangeTarget.AddUnique(Cast<ANGPawnBase>(OtherActor));
-		
-		UE_LOG(LogTemp, Log, TEXT("적 감지: %s"), *OtherActor->GetName());
-	}
-}
-
-void ANGPawnBase::OnDetectionEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
-{
-	if (OtherActor)
-	{
-		InRangeTarget.Remove(Cast<ANGPawnBase>(OtherActor));
-		UE_LOG(LogTemp, Log, TEXT("적 사거리 이탈: %s"), *OtherActor->GetName());
 	}
 }
 

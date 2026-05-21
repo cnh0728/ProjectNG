@@ -41,6 +41,11 @@ bool UNGSpawnHelper::SpawnUnitPawn(ANGPlayerController* OwnerController, FName U
 	ANGUnitPawn* NewPawn = SpawnPawn<ANGUnitPawn>(World, UnitClass, SpawnTransform, OwnerController);
 	if (!NewPawn)	return false;
 	
+	if (UCapsuleComponent* Capsule = NewPawn->GetCapsuleComponent())
+	{
+		Capsule->SetCollisionResponseToChannel(ECC_SelectableUnit, ECR_Block);
+	}
+	
 	NewPawn->Initialize(PS);
 	
 	//여기서 찾은 그리드에 값 기입
@@ -87,7 +92,6 @@ ANGPawnBase* UNGSpawnHelper::Internal_SpawnPawn(UObject* WorldContextObject, TSu
 
 	if (UCapsuleComponent* Capsule = NewPawn->GetCapsuleComponent())
 	{
-		Capsule->SetCollisionResponseToChannel(ECC_SelectableUnit, ECR_Block);
 		Capsule->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	}
 	

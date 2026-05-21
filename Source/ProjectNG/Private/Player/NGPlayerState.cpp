@@ -120,7 +120,7 @@ void ANGPlayerState::PrepareStartCombat()
 {
 	FHexGridMap& GridMap = GetCombatGridMap();
 			
-	for (FGridData GridData : GridMap.GetGridInfo())
+	for (FGridData GridData : GridMap.GridInfo)
 	{
 		ANGPawnBase* PlacedPawn = GridData.PlacedPawn;
 		if (IsValid(PlacedPawn))

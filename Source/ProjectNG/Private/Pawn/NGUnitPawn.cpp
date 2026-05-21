@@ -200,7 +200,6 @@ void ANGUnitPawn::Tick(float DeltaTime)
 		}			
 	}else
 	{
-		//드래그 이동중, 전투x
 		if (InRangeTarget.Num() > 0 && IsValid(InRangeTarget[0]))
 		{
 			CurrentTarget = InRangeTarget[0];

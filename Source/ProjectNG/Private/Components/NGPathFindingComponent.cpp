@@ -73,7 +73,9 @@ TArray<FIntVector2> UNGPathFindingComponent::FindPath(const FGridAddress& StartA
         ClosedSet.Add(CurrentIdx);
 
         // 4. 인접한 이웃 노드(6방향) 검사
-        TArray<FIntVector2> Neighbors = GetHexNeighbors(CurrentIdx);
+        TArray<FIntVector2> Neighbors;
+        UGridMapHelper::GetHexNeighborNodesInRange(CurrentIdx, 1, Neighbors);
+
         for (const FIntVector2& Neighbor : Neighbors)
         {
             // 유효한 인덱스가 아니거나, 이미 닫힌 노드면 무시
@@ -118,28 +120,47 @@ TArray<FIntVector2> UNGPathFindingComponent::FindPathToClosestEnemy(const FGridA
     TArray<FIntVector2> Queue;
     TSet<FIntVector2> Visited;
     TMap<FIntVector2, FIntVector2> CameFrom;
-
+    
     Queue.Add(StartIdx);
     Visited.Add(StartIdx);
 
     int32 HeadIndex = 0; 
 
+    // UE_LOG(LogTemp, Warning, TEXT("--------------------------------"));
+    
     while (HeadIndex < Queue.Num())
     {
         // 큐에서 꺼낸 현재 위치 (이 위치는 무조건 내가 서 있거나, '빈 공간'임이 보장됨)
         FIntVector2 CurrentIdx = Queue[HeadIndex++]; 
 
         // 이웃으로 뻗어나가기
-        TArray<FIntVector2> Neighbors = GetHexNeighbors(CurrentIdx);
+        TArray<FIntVector2> Neighbors;
+        UGridMapHelper::GetHexNeighborNodesInRange(CurrentIdx, 1, Neighbors);
         for (const FIntVector2& Neighbor : Neighbors)
         {
             // 유효하지 않거나 이미 방문했다면 스킵
             if (!GridMap->IsValidIndex(Neighbor) || Visited.Contains(Neighbor))
                 continue;
 
+            // if (!GridMap->IsValidIndex(Neighbor))
+            // {
+            //     UE_LOG(LogTemp, Error, TEXT("InValidIndex Index: %s"), *Neighbor.ToString());
+            //     
+            //     continue;
+            // }
+            //     
+            // if (Visited.Contains(Neighbor))
+            // {
+            //     UE_LOG(LogTemp, Error, TEXT("Visited Index: %s"), *Neighbor.ToString());
+            //     
+            //     continue;
+            // }
+            // UE_LOG(LogTemp, Log, TEXT("Neighbor Index: %s"), *Neighbor.ToString());
+            
             int32 NeighborDataIdx = GridMap->ConvertPointToIndex(Neighbor);
             ANGPawnBase* PlacedPawn = GridMap->GridInfo[NeighborDataIdx].PlacedPawn;
-
+            
+            
             if (PlacedPawn != nullptr)
             {
                 // 누군가 서 있을때
@@ -178,39 +199,6 @@ TArray<FIntVector2> UNGPathFindingComponent::FindPathToClosestEnemy(const FGridA
     }
 
     return Path; // 도달할 수 있는 적이 없음 (모두 벽이나 아군으로 둘러싸여 막힌 상태)
-}
-
-TArray<FIntVector2> UNGPathFindingComponent::GetHexNeighbors(const FIntVector2& CurrentIndex) const
-{
-    TArray<FIntVector2> Neighbors;
-    int32 X = CurrentIndex.X; // 세로 (Row)
-    int32 Y = CurrentIndex.Y; // 가로 (Column)
-
-    // 1. [핵심 수정] 지그재그 오프셋 판별은 세로(행, X)를 기준으로 해야 합니다!
-    bool bIsShiftedRight = (FMath::Abs(X) % 2 != 0); 
-
-    if (bIsShiftedRight)
-    {
-        // 홀수 행 (X = 1, 3, 5...): 오른쪽으로 0.5칸 밀려있는 상태
-        Neighbors.Add(FIntVector2(X, Y + 1));     // 우
-        Neighbors.Add(FIntVector2(X, Y - 1));     // 좌
-        Neighbors.Add(FIntVector2(X + 1, Y));     // 좌상단
-        Neighbors.Add(FIntVector2(X + 1, Y + 1)); // 우상단
-        Neighbors.Add(FIntVector2(X - 1, Y));     // 좌하단
-        Neighbors.Add(FIntVector2(X - 1, Y + 1)); // 우하단
-    }
-    else
-    {
-        // 짝수 행 (X = 0, 2, 4...): 제자리에 있는 상태 (왼쪽)
-        Neighbors.Add(FIntVector2(X, Y + 1));     // 우
-        Neighbors.Add(FIntVector2(X, Y - 1));     // 좌
-        Neighbors.Add(FIntVector2(X + 1, Y - 1)); // 좌상단
-        Neighbors.Add(FIntVector2(X + 1, Y));     // 우상단
-        Neighbors.Add(FIntVector2(X - 1, Y - 1)); // 좌하단
-        Neighbors.Add(FIntVector2(X - 1, Y));     // 우하단
-    }
-
-    return Neighbors;
 }
 
 int32 UNGPathFindingComponent::GetHeuristicCost(const FIntVector2& A, const FIntVector2& B) const

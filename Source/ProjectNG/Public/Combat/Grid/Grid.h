@@ -54,7 +54,7 @@ struct PROJECTNG_API FGridMapBase
 {
 	GENERATED_BODY()
 
-	void Internal_Initialize(int32 InW, int32 InH, float InCellSize, const FVector& InPivot);
+	void Internal_Initialize(int32 InW, int32 InH, float InCellSize, const FVector& InPivot, EGridType InGridType);
 	
 	bool IsValidIndex(const FIntVector2 GridIndex) const;
 	int32 ConvertPointToIndex(const FIntVector2 GridIndex) const;
@@ -68,7 +68,6 @@ struct PROJECTNG_API FGridMapBase
     
 	bool IsGridIndexEmpty(const FIntVector2& GridIndex) const;
 	TOptional<FIntVector2> GetEmptyGridIndex() const;
-	const TArray<FGridData>& GetGridInfo() const { return GridInfo; }
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 Width;
@@ -122,6 +121,8 @@ public:
 	static FVector GetRelativeLocation(FGridAddress GridAddress);
 	static FVector GetWorldLocation(FGridAddress GridAddress);
 	static FIntVector2 GetCellIndex(EGridType GridType, const FVector& Location, ANGPlayerState* PS);
+	
+	static void GetHexNeighborNodesInRange(FIntVector2 MidIndex, int32 Range, TArray<FIntVector2>& OutNeighborNodes);
 	
 	static FGridMapBase* GetGridMap(FGridAddress GridAddress);
 
