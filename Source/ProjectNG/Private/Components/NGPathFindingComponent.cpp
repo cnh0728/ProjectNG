@@ -10,15 +10,14 @@ UNGPathFindingComponent::UNGPathFindingComponent()
     PrimaryComponentTick.bCanEverTick = false;
 }
 
-TArray<FIntVector2> UNGPathFindingComponent::FindPath(const FGridAddress& StartAddress, const FGridAddress& TargetAddress)
+void UNGPathFindingComponent::FindPath(const FGridAddress& StartAddress,
+                                       const FGridAddress& TargetAddress, TArray<FIntVector2>& OutPath)
 {
-    TArray<FIntVector2> Path;
-
     // 그리드 맵 유효성 검사
     FGridMapBase* GridMap = UGridMapHelper::GetGridMap(StartAddress);
     if (!GridMap || StartAddress.GridType != TargetAddress.GridType)
     {
-        return Path;
+        return;
     }
 
     FIntVector2 StartIdx = StartAddress.GridIndex;
@@ -60,12 +59,12 @@ TArray<FIntVector2> UNGPathFindingComponent::FindPath(const FGridAddress& StartA
             FIntVector2 TraceIdx = TargetIdx;
             while (TraceIdx != StartIdx)
             {
-                Path.Add(TraceIdx); // 배열의 맨 앞에 삽입하여 순서 맞춤
+                OutPath.Add(TraceIdx); // 배열의 맨 앞에 삽입하여 순서 맞춤
                 TraceIdx = CameFrom[TraceIdx];
             }
             
-            Algo::Reverse(Path);
-            return Path; // 최종 경로 반환
+            Algo::Reverse(OutPath);
+            return; // 최종 경로 반환
         }
 
         // 3. 현재 노드를 Open에서 빼고 Closed에 넣음
@@ -106,99 +105,94 @@ TArray<FIntVector2> UNGPathFindingComponent::FindPath(const FGridAddress& StartA
     }
 
     // 길을 찾지 못함
-    return Path;
+    return;
 }
 
-TArray<FIntVector2> UNGPathFindingComponent::FindPathToClosestEnemy(const FGridAddress& StartAddress, uint32 OwnerIndex)
+ANGPawnBase* UNGPathFindingComponent::FindPathToClosestEnemy(const FGridAddress& StartAddress, uint32 OwnerIndex, TArray<FIntVector2>& OutPath)
 {
-    TArray<FIntVector2> Path;
     FGridMapBase* GridMap = UGridMapHelper::GetGridMap(StartAddress);
-    if (!GridMap) return Path;
+    if (!GridMap) return nullptr;
 
     FIntVector2 StartIdx = StartAddress.GridIndex;
 
     TArray<FIntVector2> Queue;
     TSet<FIntVector2> Visited;
     TMap<FIntVector2, FIntVector2> CameFrom;
+    TMap<FIntVector2, int32> Levels;
     
     Queue.Add(StartIdx);
     Visited.Add(StartIdx);
-
+    Levels.Add(StartIdx, 0);
+    
     int32 HeadIndex = 0; 
-
-    // UE_LOG(LogTemp, Warning, TEXT("--------------------------------"));
+    int32 FindTimingLevel = -1;
+    TArray<ANGPawnBase*> ClosestUnits;
     
     while (HeadIndex < Queue.Num())
     {
-        // 큐에서 꺼낸 현재 위치 (이 위치는 무조건 내가 서 있거나, '빈 공간'임이 보장됨)
         FIntVector2 CurrentIdx = Queue[HeadIndex++]; 
-
-        // 이웃으로 뻗어나가기
+        
+        // 현재 꺼낸 노드의 레벨이 적을 발견했던 레벨보다 깊어졌다면
+        if (FindTimingLevel != -1 && Levels[CurrentIdx] > FindTimingLevel)
+        {
+            break; // 여기서 리턴하지 않고 루프를 빠져나가 아래의 공통 결산 로직을 탑니다.
+        }
+        
         TArray<FIntVector2> Neighbors;
         UGridMapHelper::GetHexNeighborNodesInRange(CurrentIdx, 1, Neighbors);
+        
         for (const FIntVector2& Neighbor : Neighbors)
         {
-            // 유효하지 않거나 이미 방문했다면 스킵
             if (!GridMap->IsValidIndex(Neighbor) || Visited.Contains(Neighbor))
                 continue;
-
-            // if (!GridMap->IsValidIndex(Neighbor))
-            // {
-            //     UE_LOG(LogTemp, Error, TEXT("InValidIndex Index: %s"), *Neighbor.ToString());
-            //     
-            //     continue;
-            // }
-            //     
-            // if (Visited.Contains(Neighbor))
-            // {
-            //     UE_LOG(LogTemp, Error, TEXT("Visited Index: %s"), *Neighbor.ToString());
-            //     
-            //     continue;
-            // }
-            // UE_LOG(LogTemp, Log, TEXT("Neighbor Index: %s"), *Neighbor.ToString());
+            
+            Visited.Add(Neighbor);
             
             int32 NeighborDataIdx = GridMap->ConvertPointToIndex(Neighbor);
             ANGPawnBase* PlacedPawn = GridMap->GridInfo[NeighborDataIdx].PlacedPawn;
             
-            
             if (PlacedPawn != nullptr)
             {
-                // 누군가 서 있을때
-                bool bIsEnemy = !PlacedPawn->IsSameTeam(OwnerIndex); 
-
-                if (bIsEnemy)
+                if (!PlacedPawn->IsSameTeam(OwnerIndex))
                 {
-                    // 큐에 넣기 전에 적을 발견했으므로 즉시 탐색 종료
-                    FIntVector2 TraceIdx = CurrentIdx;
+                    CameFrom.Add(Neighbor, CurrentIdx);
 
-                    while (TraceIdx != StartIdx)
-                    {
-                        Path.Add(TraceIdx);
-                        TraceIdx = CameFrom[TraceIdx];
-                    }
-                    
-                    Algo::Reverse(Path);
-                    return Path; 
+                    FindTimingLevel = Levels[CurrentIdx];
+                    ClosestUnits.Add(PlacedPawn);
                 }
-                else
-                {
-                    // 아군이거나 통과할 수 없는 장애물인 경우
-                    // 방문 처리만 하고 큐에는 절대 넣지 않음
-                    Visited.Add(Neighbor);
-                    continue; 
-                }
+                // 아군이거나 통과 불가 장애물이면 큐에 넣지 않고 지나감
             }
             else
             {
-                // 완벽한 빈 공간일 경우에만 다음 탐색을 위해 큐에 추가
-                Visited.Add(Neighbor);
+                // 빈 공간일 경우에만 다음 탐색을 위해 큐에 추가
                 CameFrom.Add(Neighbor, CurrentIdx);
                 Queue.Add(Neighbor);
+                Levels.Add(Neighbor, Levels[CurrentIdx] + 1);
             }
         }
     }
 
-    return Path; // 도달할 수 있는 적이 없음 (모두 벽이나 아군으로 둘러싸여 막힌 상태)
+    if (ClosestUnits.Num() > 0)
+    {
+        int32 RandomIndex = FMath::RandRange(0, ClosestUnits.Num() - 1);
+        ANGPawnBase* ClosestPawn = ClosestUnits[RandomIndex];
+                             
+        //적 위치는 포함시키지 않기 때문에 한 칸 앞에서부터
+        FIntVector2 TraceIdx = CameFrom[ClosestPawn->GetGridAddress().GridIndex];
+            
+        // 경로 역추적
+        while (TraceIdx != StartIdx)
+        {
+            OutPath.Add(TraceIdx);
+            TraceIdx = CameFrom[TraceIdx]; 
+        }
+            
+        Algo::Reverse(OutPath);
+        return ClosestPawn;
+    }
+
+    // 맵 전체를 뒤졌는데 적이 아예 없는 경우
+    return nullptr;
 }
 
 int32 UNGPathFindingComponent::GetHeuristicCost(const FIntVector2& A, const FIntVector2& B) const

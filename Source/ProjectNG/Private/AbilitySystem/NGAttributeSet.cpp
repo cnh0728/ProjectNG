@@ -27,6 +27,7 @@ void UNGAttributeSet::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>
 	DOREPLIFETIME_CONDITION_NOTIFY(UNGAttributeSet, AttackSpeed, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UNGAttributeSet, TargetCount, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UNGAttributeSet, Income, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UNGAttributeSet, MoveSpeed, COND_None, REPNOTIFY_Always);
 }
 
 DEFAULT_REPLICATION_IMPLEMENTATION(UNGAttributeSet, Health)
@@ -43,6 +44,7 @@ DEFAULT_REPLICATION_IMPLEMENTATION(UNGAttributeSet, AttackRange)
 DEFAULT_REPLICATION_IMPLEMENTATION(UNGAttributeSet, AttackSpeed)
 DEFAULT_REPLICATION_IMPLEMENTATION(UNGAttributeSet, TargetCount)
 DEFAULT_REPLICATION_IMPLEMENTATION(UNGAttributeSet, Income)
+DEFAULT_REPLICATION_IMPLEMENTATION(UNGAttributeSet, MoveSpeed)
 
 void UNGAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
 {

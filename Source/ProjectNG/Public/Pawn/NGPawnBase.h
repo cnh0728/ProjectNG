@@ -14,7 +14,6 @@ class UNGPathFindingComponent;
 class UCapsuleComponent;
 class UNGAttributeSet;
 class ANGEnemyPawn;
-class USphereComponent;
 class UWidgetComponent;
 class UNGPoolableComponent;
 class UNGAbilitySystemComponent;
@@ -24,6 +23,7 @@ enum class EPawnState : uint8
 {
 	None,
 	Wait,
+	Following,
 	Combat,
 };
 
@@ -80,14 +80,33 @@ protected:
 	virtual void BeginPlay() override;
 	
 	virtual void Tick(float DeltaTime) override;
-	
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
 	TObjectPtr<UWidgetComponent> HPBarComponent; 
 	
 	virtual void OnHealthChanged(const FOnAttributeChangeData& Data);
 	
 	virtual void OnAttackRangeChanged(const FOnAttributeChangeData& Data);
+
+	void VisualizePath();
+
+	void CheckCombatState(float DeltaTime);
+	void ConsiderTransitionState();
+	void UpdateGridMovement(float DeltaTime);
 	
+	void OnReachedNextGrid();
+	
+	void ReFindPath();
+	void FindNewTarget();
+	
+	bool IsCurrentTargetInRange() const;
+	void CollectInRangeUnits(TArray<ANGPawnBase*>& OutEnemies);
+
+	void ForceTransitionToState(EPawnState NewState);
+	void TransitionToState(EPawnState NewState);
+	void OnExitCurrentState(EPawnState RestState);
+	void OnEnterNewState(EPawnState EnteringState);
+
 protected:
 	UPROPERTY(VisibleAnywhere, Category = "Collision")
 	UCapsuleComponent* CapsuleComponent;
@@ -102,12 +121,20 @@ protected:
 	UPROPERTY(Replicated, VisibleAnywhere, Category = "Combat", meta = (AllowPrivateAccess = "true"))
 	EPawnState PawnState;
 	
-	//Queue로 하고싶은데
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
-	TArray<ANGPawnBase*> InRangeTarget;
-	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	TObjectPtr<ANGPawnBase> CurrentTarget;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+	FIntVector2 TargetLastIndex;	
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+	TArray<FIntVector2> TargetPath;
+	
+	UPROPERTY()
+	int32 CurrentPathIndex;
+
+	UPROPERTY()
+	FIntVector2 NextGridPoint;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Combat")
 	float RotationInterpSpeed = 10.0f;
@@ -183,7 +210,7 @@ public:
 	
 	bool CanPlaceUnit(FGridMapBase& GridMap, FIntVector2 GridIndex);
 	EGridType GetCurrentGridType(const FVector& TargetLocation) const;
-	const FGridAddress& GetGridAddress() const { return PlacedGridAddress; };
+	const FGridAddress& GetGridAddress() const { return CurrentGridAddress; };
 	
 	void ExecuteAttack();
 
@@ -192,10 +219,10 @@ protected:
 
 	//클라이언트 reject용
 	UPROPERTY(EditDefaultsOnly, Category = "GridIndex", meta = (AllowPrivateAccess = "true"))
-	FGridAddress PrePlacedGridAddress;
+	FGridAddress PreGridAddress;
 	
 	UPROPERTY(Replicated, EditDefaultsOnly, Category = "GridIndex", meta = (AllowPrivateAccess = "true"))
-	FGridAddress PlacedGridAddress;
+	FGridAddress CurrentGridAddress;
 	
 	UPROPERTY(VisibleAnywhere, Category = "PathFinding")
 	UNGPathFindingComponent* PathFindingComponent;

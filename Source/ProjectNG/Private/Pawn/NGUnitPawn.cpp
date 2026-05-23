@@ -131,9 +131,6 @@ void ANGUnitPawn::BeginPlay()
 	
 	if (AbilitySystemComponent)
 	{	        
-		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
-			AttributeSet->GetAttackRangeAttribute()).AddUObject(this, &ANGUnitPawn::OnAttackRangeChanged);
-		
 		AttackAbilitySpecHandle = AbilitySystemComponent->GiveAbility(
 			FGameplayAbilitySpec(AttackAbilityClass, 1, INDEX_NONE, this)
 		);
@@ -187,7 +184,7 @@ void ANGUnitPawn::Tick(float DeltaTime)
 	{
 		// UE_LOG(LogTemp, Log, TEXT("Move to Grid Info"));
 		
-		FVector TargetLocation = UGridMapHelper::GetWorldLocation(PlacedGridAddress) + LocationOffset;
+		FVector TargetLocation = UGridMapHelper::GetWorldLocation(CurrentGridAddress) + LocationOffset;
 		
 		FVector CurrentLocation = GetActorLocation();
 		
@@ -200,10 +197,8 @@ void ANGUnitPawn::Tick(float DeltaTime)
 		}			
 	}else
 	{
-		if (InRangeTarget.Num() > 0 && IsValid(InRangeTarget[0]))
+		if (CurrentTarget)
 		{
-			CurrentTarget = InRangeTarget[0];
-			
 			FVector Direction = CurrentTarget->GetActorLocation() - GetActorLocation();
 			FRotator TargetRotation = Direction.Rotation();
 			
@@ -213,9 +208,6 @@ void ANGUnitPawn::Tick(float DeltaTime)
 			
 			FRotator NewRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, RotationInterpSpeed);
 			SetActorRotation(NewRotation);
-		}else
-		{
-			CurrentTarget = nullptr;
 		}
 	}
 }

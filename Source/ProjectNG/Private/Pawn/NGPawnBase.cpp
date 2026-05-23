@@ -7,7 +7,6 @@
 #include "AbilitySystem/NGAttributeSet.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/NGPathFindingComponent.h"
-#include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Core/NGPoolableComponent.h"
 #include "GameModes/NGInGameMode.h"
@@ -116,7 +115,7 @@ void ANGPawnBase::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& Ou
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
-	DOREPLIFETIME(ANGPawnBase, PlacedGridAddress);
+	DOREPLIFETIME(ANGPawnBase, CurrentGridAddress);
 }
 
 void ANGPawnBase::HandleGameplayCue(UObject* Self, FGameplayTag GameplayCueTag, EGameplayCueEvent::Type EventType,
@@ -158,7 +157,11 @@ void ANGPawnBase::BeginPlay()
 		InitializeAttributes();
 		
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
-			UNGAttributeSet::GetHealthAttribute()).AddUObject(this, &ANGPawnBase::OnHealthChanged);
+			AttributeSet->GetHealthAttribute()).AddUObject(this, &ANGPawnBase::OnHealthChanged);
+		
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+			AttributeSet->GetAttackRangeAttribute()).AddUObject(this, &ANGPawnBase::OnAttackRangeChanged);
+
 	}
 	
 	UpdateHPBar();
@@ -168,34 +171,222 @@ void ANGPawnBase::BeginPlay()
 void ANGPawnBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	// VisualizePath();
 	
+	CheckCombatState(DeltaTime);
+}
+
+void ANGPawnBase::CheckCombatState(float DeltaTime)
+{
 	if (PawnState == EPawnState::Combat)
 	{
-		GetWorld()->GetTimerManager().SetTimer(AttackCheckTimerHandle, this, &ANGUnitPawn::CheckAttackCondition, 0.2f, true);
-		
-		if (PathFindingComponent)
+		//싸우다가 적이 범위를 벗어나거나 죽으면 Wait 
+		if (!IsCurrentTargetInRange() || CurrentTarget->IsDead())
 		{
-			TArray<FIntVector2> Path = PathFindingComponent->FindPathToClosestEnemy(PlacedGridAddress, OwnerIndex);
-			for (FIntVector2 PathIndex : Path)
-			{
-				FGridAddress NodeAddress(PathIndex, PlacedGridAddress.GridType, PlacedGridAddress.GridOwnerPS);
-				FVector WorldLocation = UGridMapHelper::GetWorldLocation(NodeAddress) + FVector(0.f, 0.f, 50.f);
-				DrawDebugSphere(
-					GetWorld(),             // 월드 컨텍스트
-					WorldLocation,          // 구의 중심 좌표
-					20.0f,                  // 반지름 (크기)
-					12,                     // 세그먼트 수 (구의 형태, 너무 높으면 프레임 드랍 발생)
-					FColor::Green,          // 색상 (경로는 초록색 추천)
-					false,                  // bPersistentLines: false로 해야 계속 안 쌓입니다.
-					-1.0f,                  // LifeTime: -1.0f로 두면 딱 다음 틱(1프레임)까지만 유지됩니다.
-					0,                      // DepthPriority: 0은 기본 렌더링 순서
-					2.0f                    // 선 두께
-				);
-			}
+			TransitionToState(EPawnState::Wait);
 		}
+	}else if (PawnState == EPawnState::Wait)
+	{
+		FindNewTarget();
+	}else if (PawnState == EPawnState::Following)
+	{
+		UpdateGridMovement(DeltaTime);
+	}
+}
+
+void ANGPawnBase::UpdateGridMovement(float DeltaTime)
+{
+	if (PawnState != EPawnState::Following)	return;
+	
+	if (!AttributeSet)	return;
+	
+	FVector CurrentLocation = GetActorLocation();
+	float MoveSpeed = AttributeSet->GetMoveSpeed();
+	
+	FGridAddress NextGridAddress = CurrentGridAddress;
+	NextGridAddress.GridIndex = NextGridPoint;
+	FVector NextGridLocation = UGridMapHelper::GetWorldLocation(NextGridAddress);
+	
+	FVector NewLocation = FMath::VInterpTo(CurrentLocation, NextGridLocation, DeltaTime, MoveSpeed);
+	SetActorLocation(NewLocation);
+	
+	FVector MoveDirection = (NextGridLocation - CurrentLocation).GetSafeNormal2D();
+	if (!MoveDirection.IsNearlyZero())
+	{
+		FRotator TargetRotation = MoveDirection.Rotation();
+		FRotator NewRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, 10.f * MoveSpeed);
+		SetActorRotation(NewRotation);
+	}
+	
+	float DistanceSq = FVector::DistSquared(NextGridLocation, NewLocation);
+	if (DistanceSq < 1.f)
+	{
+		SetActorLocation(NextGridLocation);
+		OnReachedNextGrid();
+	}
+}
+
+void ANGPawnBase::ConsiderTransitionState()
+{
+	//찾아갈길이 없으면 바로 앞에 있단 뜻
+	if (TargetPath.Num() == 0)
+	{
+		TransitionToState(EPawnState::Combat);
 	}else
 	{
+		ForceTransitionToState(EPawnState::Following);
+	}
+}
+
+void ANGPawnBase::OnReachedNextGrid()
+{
+	//도착시 우선 그리드 업데이트 및 현재 길찾기 상황변동 파악
+	FGridMapBase* GridMap = UGridMapHelper::GetGridMap(CurrentGridAddress);
+	if (!GridMap)	return;
+	
+	FGridAddress NextGridAddress = CurrentGridAddress;
+	NextGridAddress.GridIndex = NextGridPoint;
+	MovePawnOnGrid(NextGridAddress);
+	
+	//적에게 도착시 전투상태로 이전
+	if (AttributeSet)
+	{
+		int32 AttackRange = AttributeSet->GetAttackRange();
+		if (UGridMapHelper::GetDistance(CurrentGridAddress.GridIndex, CurrentTarget->CurrentGridAddress.GridIndex) <= AttackRange || ++CurrentPathIndex >= TargetPath.Num())
+		{
+			TransitionToState(EPawnState::Combat);
+			return;
+		}
+	}
+	
+	//적이 죽었으면 새로운 적 찾기
+	if (CurrentTarget->IsDead())
+	{
+		FindNewTarget();
+		return;
+	}
+	
+	//쫓던 적이 이동했으면 다시 찾기
+	if (CurrentTarget && CurrentTarget->GetGridAddress().GridIndex != TargetLastIndex)
+	{
+		ReFindPath();
+		return;
+	}
+	
+	FIntVector2 NextGrid = TargetPath[CurrentPathIndex];
+	if (GridMap->GridInfo[GridMap->ConvertPointToIndex(NextGrid)].PlacedPawn != nullptr)
+	{
+		ReFindPath();
+		return;
+	}
+	
+	//아무일 없으면 길따라 가기
+	NextGridPoint = NextGrid;
+}
+
+void ANGPawnBase::ReFindPath()
+{
+	PathFindingComponent->FindPath(CurrentGridAddress, CurrentTarget->GetGridAddress(), TargetPath);
+	TargetLastIndex = CurrentTarget->CurrentGridAddress.GridIndex;
+	
+	ConsiderTransitionState();
+}
+
+void ANGPawnBase::FindNewTarget()
+{
+	if (ANGPawnBase* NewTarget = PathFindingComponent->FindPathToClosestEnemy(CurrentGridAddress, OwnerIndex, TargetPath))
+	{
+		CurrentTarget = NewTarget;
+		TargetLastIndex = NewTarget->CurrentGridAddress.GridIndex;
+		
+		ConsiderTransitionState();
+	}
+}
+
+void ANGPawnBase::ForceTransitionToState(EPawnState NewState)
+{
+	//강제로 None으로 만들어서 무조건 TransitionToState수행
+	PawnState = EPawnState::None;
+	
+	TransitionToState(NewState);
+}
+
+void ANGPawnBase::TransitionToState(EPawnState NewState)
+{
+	if (PawnState == NewState)	return;
+	
+	OnExitCurrentState(PawnState);
+	
+	PawnState = NewState;
+	
+	OnEnterNewState(NewState);
+}
+
+void ANGPawnBase::OnExitCurrentState(EPawnState RestState)
+{
+	if (RestState == EPawnState::Combat)
+	{
 		GetWorldTimerManager().ClearTimer(AttackCheckTimerHandle);
+		CurrentTarget = nullptr;
+	}
+}
+
+void ANGPawnBase::OnEnterNewState(EPawnState EnteringState)
+{
+	if (EnteringState == EPawnState::Combat)
+	{
+		GetWorld()->GetTimerManager().SetTimer(AttackCheckTimerHandle, this, &ANGUnitPawn::CheckAttackCondition, 0.2f, true);
+	}
+	else if (EnteringState == EPawnState::Following)
+	{
+		CurrentPathIndex = 0;
+		NextGridPoint = TargetPath[CurrentPathIndex];
+	}
+}
+
+bool ANGPawnBase::IsCurrentTargetInRange() const
+{
+	if (!AttributeSet)	return false;
+	
+	if (!IsValid(CurrentTarget))	return false;
+		
+	int32 Distance = UGridMapHelper::GetDistance(CurrentGridAddress.GridIndex, CurrentTarget->CurrentGridAddress.GridIndex);
+	int32 AttackRange = AttributeSet->GetAttackRange();
+	
+	if (Distance > AttackRange)
+	{
+		return false;
+	}
+	
+	return true;
+
+}
+
+void ANGPawnBase::CollectInRangeUnits(TArray<ANGPawnBase*>& OutEnemies)
+{
+	//TODO: 나중에 여러명 한번에 때리는거 있으면 이거 쓰기
+	if (!AttributeSet)	return;
+	
+	uint32 AttackRange = AttributeSet->GetAttackRange();
+	
+	TArray<FIntVector2> Neighbors;
+	UGridMapHelper::GetHexNeighborNodesInRange(CurrentGridAddress.GridIndex, AttackRange, Neighbors);
+	
+	//Neighbors 순회하면서 
+	if (FGridMapBase* GridMap = UGridMapHelper::GetGridMap(CurrentGridAddress))
+	{
+		for (FIntVector2 NeighborIndex : Neighbors)
+		{
+			if (!GridMap->IsValidIndex(NeighborIndex))	continue;
+			
+			uint32 ConvertIndex = GridMap->ConvertPointToIndex(NeighborIndex);
+			ANGPawnBase* FindPawn = GridMap->GridInfo[ConvertIndex].PlacedPawn;
+			if (IsValid(FindPawn))
+			{
+				OutEnemies.Add(FindPawn);
+			}
+		}
 	}
 }
 
@@ -338,14 +529,14 @@ void ANGPawnBase::MoveTo(const FVector& TargetLocation)
 
 void ANGPawnBase::UpdatePlacedGridInfo(FGridAddress NewGridAddress)
 {
-	PrePlacedGridAddress = PlacedGridAddress;
+	PreGridAddress = CurrentGridAddress;
 	
-	PlacedGridAddress = NewGridAddress;
+	CurrentGridAddress = NewGridAddress;
 }
 
 void ANGPawnBase::Client_RejectMove_Implementation()
 {		
-	PlacedGridAddress = PrePlacedGridAddress;
+	CurrentGridAddress = PreGridAddress;
 	
 	
 	// 나중에 이동하는거 드래그앤 드랍했을때로 바꾸면 이것도 손보기
@@ -365,14 +556,14 @@ void ANGPawnBase::Client_RejectMove_Implementation()
 
 EGridType ANGPawnBase::GetCurrentGridType(const FVector& TargetLocation) const
 {
-	if (PlacedGridAddress.GridOwnerPS)
+	if (CurrentGridAddress.GridOwnerPS)
 	{
-		const FIntVector2 CombatGridIndex = UGridMapHelper::GetCellIndex(EGridType::Combat, TargetLocation, PlacedGridAddress.GridOwnerPS);
-		FHexGridMap& CombatGridMap = PlacedGridAddress.GridOwnerPS->GetCombatGridMap();
+		const FIntVector2 CombatGridIndex = UGridMapHelper::GetCellIndex(EGridType::Combat, TargetLocation, CurrentGridAddress.GridOwnerPS);
+		FHexGridMap& CombatGridMap = CurrentGridAddress.GridOwnerPS->GetCombatGridMap();
 		bool bCombatValidGrid = CombatGridMap.IsValidIndex(CombatGridIndex);
 			
-		FQuadGridMap& WaitGridMap = PlacedGridAddress.GridOwnerPS->GetWaitGridMap();
-		const FIntVector2 WaitGridIndex = UGridMapHelper::GetCellIndex(EGridType::Wait, TargetLocation, PlacedGridAddress.GridOwnerPS);
+		FQuadGridMap& WaitGridMap = CurrentGridAddress.GridOwnerPS->GetWaitGridMap();
+		const FIntVector2 WaitGridIndex = UGridMapHelper::GetCellIndex(EGridType::Wait, TargetLocation, CurrentGridAddress.GridOwnerPS);
 		bool bWaitValidGrid = WaitGridMap.IsValidIndex(WaitGridIndex);
 		
 		if (!bWaitValidGrid && !bCombatValidGrid)
@@ -419,7 +610,7 @@ void ANGPawnBase::Server_MoveGrid_Implementation(const FVector& TargetLocation, 
 
 void ANGPawnBase::MovePawnOnGrid(const FGridAddress& GridAddress)
 {
-	UnSetPawnOnGrid(PlacedGridAddress);
+	UnSetPawnOnGrid(CurrentGridAddress);
 	SetPawnOnGrid(GridAddress);
 }
 
@@ -443,7 +634,7 @@ void ANGPawnBase::UnSetPawnOnGrid(const FGridAddress& GridAddress) const
 	
 	if (FGridMapBase* GridMap = UGridMapHelper::GetGridMap(GridAddress))
 	{
-		GridMap->EmptyGridMap(PlacedGridAddress.GridIndex);
+		GridMap->EmptyGridMap(CurrentGridAddress.GridIndex);
 	}
 }
 
@@ -473,5 +664,30 @@ void ANGPawnBase::ExecuteAttack()
 		Payload.TargetData = UAbilitySystemBlueprintLibrary::AbilityTargetDataFromActor(CurrentTarget);
 		
 		GetAbilitySystemComponent()->HandleGameplayEvent(FGameplayTag::RequestGameplayTag(FName("Ability.Attack")), &Payload);
+	}
+}
+
+void ANGPawnBase::VisualizePath()
+{
+	if (PathFindingComponent)
+	{
+		TArray<FIntVector2> Path;
+		PathFindingComponent->FindPathToClosestEnemy(CurrentGridAddress, OwnerIndex, Path);
+		for (FIntVector2 PathIndex : Path)
+		{
+			FGridAddress NodeAddress(PathIndex, CurrentGridAddress.GridType, CurrentGridAddress.GridOwnerPS);
+			FVector WorldLocation = UGridMapHelper::GetWorldLocation(NodeAddress) + FVector(0.f, 0.f, 50.f);
+			DrawDebugSphere(
+				GetWorld(),             // 월드 컨텍스트
+				WorldLocation,          // 구의 중심 좌표
+				20.0f,                  // 반지름 (크기)
+				12,                     // 세그먼트 수 (구의 형태, 너무 높으면 프레임 드랍 발생)
+				FColor::Green,          // 색상 (경로는 초록색 추천)
+				false,                  // bPersistentLines: false로 해야 계속 안 쌓입니다.
+				-1.0f,                  // LifeTime: -1.0f로 두면 딱 다음 틱(1프레임)까지만 유지됩니다.
+				0,                      // DepthPriority: 0은 기본 렌더링 순서
+				2.0f                    // 선 두께
+			);
+		}
 	}
 }

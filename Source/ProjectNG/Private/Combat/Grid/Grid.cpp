@@ -182,37 +182,55 @@ FIntVector2 UGridMapHelper::GetCellIndex(EGridType GridType, const FVector& Loca
     return FIntVector2::ZeroValue;
 }
 
-void UGridMapHelper::GetHexNeighborNodesInRange(FIntVector2 MidIndex, int32 Range, TArray<FIntVector2>& OutNeighborNodes)
+void UGridMapHelper::GetHexNeighborNodesAtExactRange(FIntVector2 MidIndex, int32 Range, TArray<FIntVector2>& OutRingNodes)
 {
-    // 런타임 할당 오버헤드 최적화
-    int32 ExpectedSize = 1 + 3 * Range * (Range + 1);
-    OutNeighborNodes.Empty(ExpectedSize);
+    if (Range <= 0) return;
+
+    // 링 테두리의 총 타일 개수는 언제나 정확히 (6 * Range)개
+    int32 ExpectedSize = 6 * Range;
+    OutRingNodes.Empty(ExpectedSize);
 
     int32 CenterR = MidIndex.Y;
     int32 CenterQ = MidIndex.X - FMath::FloorToInt(MidIndex.Y / 2.0f);
 
-    for (int32 dq = -Range; dq <= Range; ++dq)
+    const int32 DirQ[6] = { 1,  0, -1, -1,  0,  1 };
+    const int32 DirR[6] = { 0,  1,  1,  0, -1, -1 };
+
+    int32 CurrentQ = CenterQ + DirQ[4] * Range;
+    int32 CurrentR = CenterR + DirR[4] * Range;
+
+    for (int32 i = 0; i < 6; ++i)
     {
-        int32 LowDr = FMath::Max(-Range, -dq - Range);
-        int32 HighDr = FMath::Min(Range, -dq + Range);
-
-        for (int32 dr = LowDr; dr <= HighDr; ++dr)
+        for (int32 j = 0; j < Range; ++j)
         {
-            int32 ds = -dq - dr;
-
-            if (dq == 0 && dr == 0 && ds == 0)
-                continue;
-
-            int32 NeighborQ = CenterQ + dq;
-            int32 NeighborR = CenterR + dr;
-
-            int32 FinalY = NeighborR; 
-            int32 FinalX = NeighborQ + FMath::FloorToInt(NeighborR / 2.0f);
+            int32 FinalY = CurrentR;
+            int32 FinalX = CurrentQ + FMath::FloorToInt(CurrentR / 2.0f);
 
             FIntVector2 NeighborCoord(FinalX, FinalY);
-                
-            OutNeighborNodes.Add(NeighborCoord);
+
+            // 맵 최대 경계 유효성 검사 (필요 시 주석 해제)
+            // if (IsValidIndex(NeighborCoord)) 
+
+            OutRingNodes.Add(NeighborCoord);
+
+            CurrentQ += DirQ[i];
+            CurrentR += DirR[i];
         }
+    }
+}
+
+void UGridMapHelper::GetHexNeighborNodesInRange(FIntVector2 MidIndex, int32 Range, TArray<FIntVector2>& OutNeighborNodes)
+{
+    int32 ExpectedSize = 1 + 3 * Range * (Range + 1);
+    OutNeighborNodes.Empty(ExpectedSize);
+
+    TArray<FIntVector2> TempRingNodes;
+
+    for (int32 i = 1; i <= Range; ++i)
+    {
+        GetHexNeighborNodesAtExactRange(MidIndex, i, TempRingNodes);
+        
+        OutNeighborNodes.Append(TempRingNodes);
     }
 }
 

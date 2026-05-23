@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Pawn/NGPawnBase.h"
 #include "NGPathFindingComponent.generated.h"
 
 
@@ -22,10 +23,10 @@ public:
 	 * @return 목적지까지의 타일 인덱스 배열 (시작점은 제외, 목적지는 포함)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Grid|PathFinding")
-	TArray<FIntVector2> FindPath(const FGridAddress& StartAddress, const FGridAddress& TargetAddress);
+	void FindPath(const FGridAddress& StartAddress, const FGridAddress& TargetAddress, TArray<FIntVector2>& OutPath);
 
 	UFUNCTION(Category = "Grid|PathFinding")
-	TArray<FIntVector2> FindPathToClosestEnemy(const FGridAddress& StartAddress, uint32 OwnerIndex);
+	ANGPawnBase* FindPathToClosestEnemy(const FGridAddress& StartAddress, uint32 OwnerIndex, TArray<FIntVector2>& OutPath);
 	
 protected:
 
