@@ -11,7 +11,7 @@
 #include "Pawn/NGUnitPawn.h"
 #include "Player/NGPlayerController.h"
 
-ANGPlayerState::ANGPlayerState()
+ANGPlayerState::ANGPlayerState() : PlayerLevel(1)
 {
 	PrimaryActorTick.bCanEverTick = false;
 	
@@ -34,6 +34,7 @@ void ANGPlayerState::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>&
 	DOREPLIFETIME(ANGPlayerState, EnemyWaitGridMap);
 	DOREPLIFETIME(ANGPlayerState, PlayerPocket);
 	DOREPLIFETIME(ANGPlayerState, GridManager);
+	DOREPLIFETIME(ANGPlayerState, PlayerLevel);
 }
 
 void ANGPlayerState::SpawnGridMapManager()

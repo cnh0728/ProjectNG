@@ -6,7 +6,6 @@
 #include "Components/ActorComponent.h"
 #include "NGPocketComponent.generated.h"
 
-
 class ANGUnitPawn;
 
 UENUM(BlueprintType)
@@ -64,24 +63,16 @@ private:
 
 public:
 	TArray<ANGUnitPawn*> GetOwnedUnits() { return OwnedUnitPocket; };
-
+	void GetPlacedUnits(TArray<ANGUnitPawn*>& OutUnits);
+	
 	void ControlPocketSpawning(ANGUnitPawn* NewPawn);
-	void ControlPocketPlacing(ANGUnitPawn* NewPawn);
-	void ControlPocketUnPlacing(ANGUnitPawn* NewPawn);
 	void ControlPocketSelling(ANGUnitPawn* NewPawn);
 	
 	TArray<ANGUnitPawn*> GetOwnedUnitPocket()	{return OwnedUnitPocket; }
-	TArray<TWeakObjectPtr<ANGUnitPawn>> GetPlacedUnitPocket()	{return PlacedUnitPocket; }
 	
 private:
 	UPROPERTY(Replicated, VisibleAnywhere, Category = "Game|Unit")
 	TArray<ANGUnitPawn*> OwnedUnitPocket;
-	
-	UPROPERTY(VisibleAnywhere, Category = "Game|Unit")
-	TArray<TWeakObjectPtr<ANGUnitPawn>> PlacedUnitPocket;
-
-	UPROPERTY(VisibleAnywhere, Category = "Game|Unit")
-	TArray<TWeakObjectPtr<ANGUnitPawn>> WaitUnitPocket;
 	
 /*************************************/
 /*				Debug용				 */

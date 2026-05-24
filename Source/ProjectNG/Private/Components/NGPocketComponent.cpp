@@ -5,7 +5,6 @@
 
 #include "Core/NGShopProbability.h"
 #include "Core/NGUnitData.h"
-#include "Game/NGGameState.h"
 #include "GameModes/NGInGameMode.h"
 #include "Net/UnrealNetwork.h"
 #include "Player/NGPlayerController.h"
@@ -20,6 +19,7 @@ void UNGPocketComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProper
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME_CONDITION(UNGPocketComponent, RollShopPocket, COND_OwnerOnly); //요청보낸 주인한테만 동기화
+	DOREPLIFETIME_CONDITION(UNGPocketComponent, LastShopAction, COND_OwnerOnly); 
 	DOREPLIFETIME(UNGPocketComponent, OwnedUnitPocket);
 }
 
@@ -75,7 +75,7 @@ void UNGPocketComponent::UpdateRollUnit()
 			
 			UE_LOG(LogTemp, Warning, TEXT("[OnRep] Pocket Addr: %p, Owner Addr: %p"), this, Owner);
 			
-			// 2. 델리게이트 바인딩 상태 확인 (중요)
+			// 델리게이트 바인딩 상태 확인
 			if (PC->OnUnitsUpdated.IsBound())
 			{
 				UE_LOG(LogTemp, Warning, TEXT("OnRep_RollChange: Delegate is Bound. Broadcaster Addr: %p"), &(PC->OnUnitsUpdated));
@@ -89,29 +89,25 @@ void UNGPocketComponent::UpdateRollUnit()
 	}
 }
 
+void UNGPocketComponent::GetPlacedUnits(TArray<ANGUnitPawn*>& OutUnits)
+{
+	for (ANGUnitPawn* Unit : OwnedUnitPocket)
+	{
+		if (Unit->GetGridAddress().GridType == EGridType::Combat)
+		{
+			OutUnits.Add(Unit);
+		}
+	}
+}
+
 void UNGPocketComponent::ControlPocketSpawning(ANGUnitPawn* NewPawn)
 {
 	OwnedUnitPocket.AddUnique(NewPawn);
-	WaitUnitPocket.AddUnique(NewPawn);
-}
-
-void UNGPocketComponent::ControlPocketPlacing(ANGUnitPawn* NewPawn)
-{
-	PlacedUnitPocket.AddUnique(NewPawn);
-	WaitUnitPocket.Remove(NewPawn);
-}
-
-void UNGPocketComponent::ControlPocketUnPlacing(ANGUnitPawn* NewPawn)
-{
-	PlacedUnitPocket.Remove(NewPawn);
-	WaitUnitPocket.AddUnique(NewPawn);
 }
 
 void UNGPocketComponent::ControlPocketSelling(ANGUnitPawn* NewPawn)
 {
 	OwnedUnitPocket.Remove(NewPawn);
-	PlacedUnitPocket.Remove(NewPawn);
-	WaitUnitPocket.Remove(NewPawn);
 }
 
 void UNGPocketComponent::Server_RequestRoll_Implementation()

@@ -24,14 +24,14 @@ void ANGInGameMode::RequestStartCombat(APlayerController* PC)
 		FCombatSettingData SettingData;
 		SettingData.EnemyCount = 3;
 				
-		if (GS->PlayerStates.Num() > 0)
+		if (GS->PlayerArray.Num() > 0)
 		{
-			SettingData.PlayerA = GS->PlayerStates[0];
+			SettingData.PlayerA = Cast<ANGPlayerState>(GS->PlayerArray[0]);
 			
 		}
-		if (GS->PlayerStates.Num() > 1)
+		if (GS->PlayerArray.Num() > 1)
 		{
-			SettingData.PlayerB = GS->PlayerStates[1];
+			SettingData.PlayerB = Cast<ANGPlayerState>(GS->PlayerArray[1]);
 		}
 		
 		GS->GetCombatManagerComponent()->StartCombat(SettingData, PC);

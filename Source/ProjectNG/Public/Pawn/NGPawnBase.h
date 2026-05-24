@@ -97,7 +97,7 @@ protected:
 	void CheckCombatState();
 	void ConsiderTransitionState();
 	
-	void VisualizeGridMovement(float DeltaTime);
+	void VisualizeFollowing(float DeltaTime);
 	
 	void OnReachedNextGrid();
 	
@@ -139,7 +139,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	TArray<FIntVector2> TargetPath;
 	
-	UPROPERTY(Replicated, VisibleAnywhere, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, Category = "Combat", meta = (AllowPrivateAccess = "true"))
 	int32 CurrentPathIndex;
 
 	//무조건 SetNextGridPoint 함수를 사용해서 설정할것
@@ -199,7 +199,8 @@ public:
 	
 private:
 	void UpdateHPBar();
-	
+	bool CanAddUnitOnCombatGrid(EGridType NewGridType);
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")
 	TObjectPtr<UAnimMontage> AttackMontage;
@@ -229,11 +230,14 @@ public:
 protected:
 	void CheckAttackCondition();
 
+	UFUNCTION()
+	void OnRep_CurrentGridAddress();
+	
 	//클라이언트 reject용
 	UPROPERTY(EditDefaultsOnly, Category = "GridIndex", meta = (AllowPrivateAccess = "true"))
 	FGridAddress PreGridAddress;
 	
-	UPROPERTY(Replicated, EditDefaultsOnly, Category = "GridIndex", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentGridAddress, EditDefaultsOnly, Category = "GridIndex", meta = (AllowPrivateAccess = "true"))
 	FGridAddress CurrentGridAddress;
 	
 	UPROPERTY(VisibleAnywhere, Category = "PathFinding")

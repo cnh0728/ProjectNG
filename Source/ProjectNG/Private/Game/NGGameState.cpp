@@ -5,6 +5,7 @@
 
 #include "Components/CombatManagerComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "Player/NGPlayerState.h"
 
 ANGGameState::ANGGameState() : GridMargin(3000.f)
 {
@@ -20,11 +21,9 @@ void ANGGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
-	DOREPLIFETIME(ANGGameState, PlayerStates);
 }
 
-uint8 ANGGameState::RegisterPlayer(ANGPlayerState* InPS)
+uint8 ANGGameState::GetPlayerId(const ANGPlayerState* InPS)
 {
-	PlayerStates.Add(InPS);
-	return PlayerStates.Num() - 1;
+	return InPS->GetPlayerId();
 }

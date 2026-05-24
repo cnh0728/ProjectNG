@@ -24,15 +24,12 @@ public:
 	
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 		
-	uint8 RegisterPlayer(ANGPlayerState* InPS);
+	uint8 GetPlayerId(const ANGPlayerState* InPS);
 	
 	float GridMargin;
 	
 	UCombatManagerComponent* GetCombatManagerComponent() { return CombatManagerComponent; };	
-	
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Users")
-	TArray<ANGPlayerState*> PlayerStates;
-	
+
 protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Managers")

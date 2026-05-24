@@ -43,11 +43,14 @@ void UCombatManagerComponent::StartFight()
 	if (!GS)	return;
 	
 	//모든 유저 경기장 순회하면서 전투상태로 변경
-	for (ANGPlayerState* Player : GS->PlayerStates)
+	for (APlayerState* RawPlayer : GS->PlayerArray)
 	{
-		if (IsValid(Player))
+		if (IsValid(RawPlayer))
 		{
-			Player->PrepareStartCombat();
+			if (ANGPlayerState* Player = Cast<ANGPlayerState>(RawPlayer))
+			{
+				Player->PrepareStartCombat();
+			}
 		}
 	}
 }
@@ -95,9 +98,9 @@ void UCombatManagerComponent::SetupCombat(FCombatSettingData SettingData)
 	if (!GS)	return;
 	
 	//전투 시작 전 그리드 상태 복구용 스냅샷
-	for (ANGPlayerState* PlayerState : GS->PlayerStates)
+	for (APlayerState* RawPlayerState : GS->PlayerArray)
 	{
-		if (PlayerState)
+		if (ANGPlayerState* PlayerState = Cast<ANGPlayerState>(RawPlayerState))
 		{
 			PlayerState->CaptureSnapShot();
 		}
@@ -121,11 +124,9 @@ void UCombatManagerComponent::SetupCombat(FCombatSettingData SettingData)
 			FGridAddress GridAddress = Unit->GetGridAddress();
 			FIntVector2 MirroredIdx = UGridMapHelper::GetMirroredIndex(*UGridMapHelper::GetGridMap(GridAddress), GridAddress.GridIndex);
 			
-			FGridAddress EnemyCombatGridAddress(MirroredIdx, EGridType::EnemyWait, SettingData.PlayerA);
-			if (GridAddress.GridType == EGridType::Combat)
-			{
-				EnemyCombatGridAddress.GridType = EGridType::Combat;
-			}
+			FGridAddress EnemyCombatGridAddress(MirroredIdx, 
+				GridAddress.GridType == EGridType::Combat ? EGridType::Combat : EGridType::EnemyWait, SettingData.PlayerA);
+
 			Unit->SetPawnOnGrid(EnemyCombatGridAddress);
 		}
 	}
@@ -139,9 +140,12 @@ void UCombatManagerComponent::ResetGrid()
 	ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>();
 	if (GS)
 	{
-		for (ANGPlayerState* PS : GS->PlayerStates)
+		for (APlayerState* RawPS : GS->PlayerArray)
 		{
-			PS->RestoreInitialGrid();
+			if (ANGPlayerState* PS = Cast<ANGPlayerState>(RawPS))
+			{
+				PS->RestoreInitialGrid();
+			}
 		}
 	}	
 	

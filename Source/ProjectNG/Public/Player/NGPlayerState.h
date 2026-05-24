@@ -52,9 +52,14 @@ protected:
 public:
 	UNGPocketComponent* GetPlayerPocket() { return PlayerPocket; }
 
+	int32 GetPlayerLevel() { return PlayerLevel; }
+	
 protected:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Game|Pocket")
 	TObjectPtr<UNGPocketComponent> PlayerPocket;
+	
+	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadOnly, Category = "Game")
+	int32 PlayerLevel;
 	
 	/*************************************/
 	/*				GridMap 관련			 */

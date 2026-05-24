@@ -13,8 +13,6 @@
  */
 
 class ANGPawnBase;
-class AGridMapManager;
-class UCombatManagerComponent;
 
 UENUM(BlueprintType)
 enum class EGameState : uint8

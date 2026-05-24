@@ -7,6 +7,7 @@
 #include "AbilitySystem/NGAttributeSet.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/NGPathFindingComponent.h"
+#include "Components/NGPocketComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Core/NGPoolableComponent.h"
 #include "GameModes/NGInGameMode.h"
@@ -51,7 +52,7 @@ ANGPawnBase::ANGPawnBase() : RotationInterpSpeed(10.f), SpeedScale(100.f)
 	
 	HPBarComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("HPBarComponent"));
 	HPBarComponent->SetupAttachment(CapsuleComponent);
-	HPBarComponent->SetRelativeLocation(FVector(0.f, 0.f, 10.f) + GetCapsuleComponent()->GetScaledCapsuleHalfHeight());
+	HPBarComponent->SetRelativeLocation(FVector(0.f, -5.f, 10.f) + GetCapsuleComponent()->GetScaledCapsuleHalfHeight());
 	HPBarComponent->SetWidgetSpace(EWidgetSpace::Screen);
 	HPBarComponent->SetDrawSize(FVector2D(100.f, 20.f));
 	
@@ -122,6 +123,8 @@ void ANGPawnBase::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& Ou
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
 	DOREPLIFETIME(ANGPawnBase, CurrentGridAddress);
+	DOREPLIFETIME(ANGPawnBase, NextGridPoint);
+	DOREPLIFETIME(ANGPawnBase, PawnState);
 }
 
 void ANGPawnBase::HandleGameplayCue(UObject* Self, FGameplayTag GameplayCueTag, EGameplayCueEvent::Type EventType,
@@ -185,7 +188,21 @@ void ANGPawnBase::Tick(float DeltaTime)
 	{
 		if (PawnState == EPawnState::Following)
 		{
-			VisualizeGridMovement(DeltaTime);
+			VisualizeFollowing(DeltaTime);
+		}else if (PawnState == EPawnState::Combat)
+		{
+			if (CurrentTarget)
+			{
+				FVector Direction = CurrentTarget->GetActorLocation() - GetActorLocation();
+				FRotator TargetRotation = Direction.Rotation();
+			
+				//Yaw만 사용
+				TargetRotation.Pitch = 0.f;
+				TargetRotation.Roll = 0.f;
+			
+				FRotator NewRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, RotationInterpSpeed);
+				SetActorRotation(NewRotation);
+			}
 		}
 	}
 }
@@ -349,7 +366,7 @@ void ANGPawnBase::OnEnterNewState(EPawnState EnteringState)
 	}
 }
 
-void ANGPawnBase::VisualizeGridMovement(float DeltaTime)
+void ANGPawnBase::VisualizeFollowing(float DeltaTime)
 {
 	//클라이언트에서만 실행됨
 	if (HasAuthority())	return;
@@ -540,6 +557,20 @@ void ANGPawnBase::UpdateHPBar()
 	}
 }
 
+bool ANGPawnBase::CanAddUnitOnCombatGrid(EGridType NewGridType)
+{
+	if (CurrentGridAddress.GridType == EGridType::Wait && NewGridType == EGridType::Combat)
+	{
+		TArray<ANGUnitPawn*> PlacedUnitPocket;
+		CurrentGridAddress.GridOwnerPS->GetPlayerPocket()->GetPlacedUnits(PlacedUnitPocket);
+
+		if (PlacedUnitPocket.Num() >= CurrentGridAddress.GridOwnerPS->GetPlayerLevel())
+		{
+			return false;
+		}
+	}
+	return true;
+}
 
 void ANGPawnBase::MoveTo(const FVector& TargetLocation)
 {
@@ -555,8 +586,13 @@ void ANGPawnBase::MoveTo(const FVector& TargetLocation)
 	//Client에서 미리 움직이고 서버에서 못간다 판단하면 reject
 	EGridType NewGridType = GetCurrentGridType(TargetLocation);
 	FIntVector2 NewIndex = UGridMapHelper::GetCellIndex(NewGridType, TargetLocation, PS);
-	
 	FGridAddress NewGridAddress(NewIndex, NewGridType, PS);
+	
+	if (!CanAddUnitOnCombatGrid(NewGridAddress.GridType))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Full of CombatGrid"));
+		return;
+	}
 	
 	if (FGridMapBase* GridMap = UGridMapHelper::GetGridMap(NewGridAddress))
 	{
@@ -694,6 +730,11 @@ void ANGPawnBase::CheckAttackCondition()
 	ExecuteAttack();
 }
 
+void ANGPawnBase::OnRep_CurrentGridAddress()
+{
+	FVector Location = UGridMapHelper::GetWorldLocation(CurrentGridAddress);
+	SetActorLocation(Location);
+}
 
 void ANGPawnBase::ExecuteAttack()
 {

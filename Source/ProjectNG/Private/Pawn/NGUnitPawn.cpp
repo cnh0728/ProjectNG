@@ -179,34 +179,23 @@ void ANGUnitPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
-	if (bIsDragMoving)
+	if (!HasAuthority())
 	{
-		// UE_LOG(LogTemp, Log, TEXT("Move to Grid Info"));
-		
-		FVector TargetLocation = UGridMapHelper::GetWorldLocation(CurrentGridAddress);
-		
-		FVector CurrentLocation = GetActorLocation();
-		
-		FVector NewLocation = FMath::VInterpTo(CurrentLocation, TargetLocation, DeltaTime, DragInterpSpeed);
-		SetActorLocation(NewLocation);
+		if (bIsDragMoving)
+		{
+			// UE_LOG(LogTemp, Log, TEXT("Move to Grid Info"));
+			
+			FVector TargetLocation = UGridMapHelper::GetWorldLocation(CurrentGridAddress);
+			
+			FVector CurrentLocation = GetActorLocation();
+			
+			FVector NewLocation = FMath::VInterpTo(CurrentLocation, TargetLocation, DeltaTime, DragInterpSpeed);
+			SetActorLocation(NewLocation);
 
-		if (CurrentLocation.Equals(TargetLocation, AcceptanceRadius))
-		{
-			bIsDragMoving = false;
-		}			
-	}else
-	{
-		if (CurrentTarget)
-		{
-			FVector Direction = CurrentTarget->GetActorLocation() - GetActorLocation();
-			FRotator TargetRotation = Direction.Rotation();
-			
-			//Yaw만 사용
-			TargetRotation.Pitch = 0.f;
-			TargetRotation.Roll = 0.f;
-			
-			FRotator NewRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, RotationInterpSpeed);
-			SetActorRotation(NewRotation);
+			if (CurrentLocation.Equals(TargetLocation, AcceptanceRadius))
+			{
+				bIsDragMoving = false;
+			}			
 		}
 	}
 }
