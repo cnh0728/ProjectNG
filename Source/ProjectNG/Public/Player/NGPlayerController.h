@@ -127,6 +127,9 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_RequestStopCombat();
 
+	UFUNCTION(Server, Reliable)
+	void Server_ChangeOwnerIndex(ANGPawnBase* SelectedPawn, int32 NewOwnerIndex);
+	
 	UFUNCTION(Exec)
 	void Cmd_StartCombat();
 	
@@ -135,6 +138,9 @@ public:
 	
 	UFUNCTION(Exec)
 	void Cmd_ToggleDebugGrid();
+
+	UFUNCTION(Exec)
+	void Cmd_ChangeOwner(int32 OtherOwnerIndex);
 	
 private:
 	bool bShowDebugGrid;

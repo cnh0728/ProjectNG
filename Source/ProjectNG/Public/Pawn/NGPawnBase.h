@@ -25,6 +25,7 @@ enum class EPawnState : uint8
 	Wait,
 	Following,
 	Combat,
+	HardCrowdControl,
 };
 
 UCLASS()
@@ -51,6 +52,9 @@ public:
 	void StopAnimMontage(UAnimMontage* AnimMontage);
 	
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	
+	//TODO: 디버깅용 실제론 있어서 안되는 함수
+	void SetOwnerIndex(int32 NewOwnerIndex) { OwnerIndex = NewOwnerIndex; }
 	
 protected:
 	/** 파생 클래스에서 GAS 초기화를 위한 로직을 작성 */
@@ -90,22 +94,27 @@ protected:
 
 	void VisualizePath();
 
-	void CheckCombatState(float DeltaTime);
+	void CheckCombatState();
 	void ConsiderTransitionState();
-	void UpdateGridMovement(float DeltaTime);
+	
+	void VisualizeGridMovement(float DeltaTime);
 	
 	void OnReachedNextGrid();
 	
 	void ReFindPath();
 	void FindNewTarget();
-	
+	void InitializeFindNewPath();
+
 	bool IsCurrentTargetInRange() const;
 	void CollectInRangeUnits(TArray<ANGPawnBase*>& OutEnemies);
 
 	void ForceTransitionToState(EPawnState NewState);
 	void TransitionToState(EPawnState NewState);
+	void OnApplyHardCrowdControl();
+	void OnRemoveHardCrowdControl();
 	void OnExitCurrentState(EPawnState RestState);
 	void OnEnterNewState(EPawnState EnteringState);
+	void SetNextGridPoint(FIntVector2 NewNextGridPoint);
 
 protected:
 	UPROPERTY(VisibleAnywhere, Category = "Collision")
@@ -130,14 +139,18 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	TArray<FIntVector2> TargetPath;
 	
-	UPROPERTY()
+	UPROPERTY(Replicated, VisibleAnywhere, Category = "Combat", meta = (AllowPrivateAccess = "true"))
 	int32 CurrentPathIndex;
 
-	UPROPERTY()
+	//무조건 SetNextGridPoint 함수를 사용해서 설정할것
+	UPROPERTY(Replicated, VisibleAnywhere, Category = "Combat", meta = (AllowPrivateAccess = "true"))
 	FIntVector2 NextGridPoint;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Combat")
-	float RotationInterpSpeed = 10.0f;
+	float SpeedScale;	
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Combat")
+	float RotationInterpSpeed;
 	
 	UPROPERTY(BlueprintReadOnly, Category = "RangeDecal")
 	TObjectPtr<UDecalComponent> RangeDecal;
@@ -156,6 +169,8 @@ protected:
 	
 	FTimerHandle AttackCheckTimerHandle;
 	
+	FTimerHandle PredictGridReachingTimerHandle;
+	
 protected:
 	UPROPERTY(BlueprintReadOnly, Category = "GAS|AbilitySystemComponent")
 	TObjectPtr<UNGAttributeSet> AttributeSet;
@@ -168,7 +183,7 @@ protected:
 public:
 	virtual void Initialize(ANGPlayerState* PS);
 	
-	FVector GetHalfCapsule() const;
+	float GetMoveSpeed() const;
 	
 	UAnimMontage* GetAttackMontage() const;
 	
@@ -186,9 +201,6 @@ private:
 	void UpdateHPBar();
 	
 protected:
-	// 모델링 위치 조정용으로 더해주기
-	FVector LocationOffset;
-	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")
 	TObjectPtr<UAnimMontage> AttackMontage;
 	

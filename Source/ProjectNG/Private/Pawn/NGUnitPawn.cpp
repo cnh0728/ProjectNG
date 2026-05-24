@@ -18,7 +18,6 @@ ANGUnitPawn::ANGUnitPawn() : AcceptanceRadius(1.0f), bIsGrabbed(false), bIsSelec
 {
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-	
 		
 	RangeDecal = CreateDefaultSubobject<UDecalComponent>(TEXT("RangeDecalNew"));
 	RangeDecal->SetupAttachment(RootComponent);
@@ -184,7 +183,7 @@ void ANGUnitPawn::Tick(float DeltaTime)
 	{
 		// UE_LOG(LogTemp, Log, TEXT("Move to Grid Info"));
 		
-		FVector TargetLocation = UGridMapHelper::GetWorldLocation(CurrentGridAddress) + LocationOffset;
+		FVector TargetLocation = UGridMapHelper::GetWorldLocation(CurrentGridAddress);
 		
 		FVector CurrentLocation = GetActorLocation();
 		

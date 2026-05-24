@@ -327,3 +327,22 @@ void ANGPlayerController::Cmd_ToggleDebugGrid()
 {
 	bShowDebugGrid = !bShowDebugGrid;
 }
+
+void ANGPlayerController::Server_ChangeOwnerIndex_Implementation(ANGPawnBase* SelectedPawn, int32 NewOwnerIndex)
+{
+	if (HasAuthority())
+	{
+		if (SelectedPawn)
+		{
+			SelectedPawn->SetOwnerIndex(NewOwnerIndex);
+		}
+	}
+}
+
+void ANGPlayerController::Cmd_ChangeOwner(int32 OtherOwnerIndex)
+{
+	if (SelectedUnit.Get())
+	{
+		Server_ChangeOwnerIndex(SelectedUnit.Get(), OtherOwnerIndex);
+	}
+}
