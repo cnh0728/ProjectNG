@@ -40,6 +40,15 @@ void ANGPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	if (PlayerCameraManager)
+	{
+		PlayerCameraManager->ViewYawMin = -179.9f;
+		PlayerCameraManager->ViewYawMax = 179.9f;
+		PlayerCameraManager->ViewPitchMin = -89.9f;
+		PlayerCameraManager->ViewPitchMax = 89.9f;
+
+	}
+	
 	if (ULocalPlayer* LocalPlayer = GetLocalPlayer())
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
@@ -102,7 +111,7 @@ void ANGPlayerController::OnRep_PlayerState()
 void ANGPlayerController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
-	
+
 }
 
 

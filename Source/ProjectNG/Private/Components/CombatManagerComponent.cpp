@@ -3,11 +3,13 @@
 
 #include "Components/CombatManagerComponent.h"
 
+#include "Combat/GridMapManager.h"
 #include "Pawn/NGEnemyPawn.h"
 #include "Pawn/NGUnitPawn.h"
 #include "Components/NGPocketComponent.h"
 #include "Game/NGGameState.h"
 #include "GameModes/NGInGameMode.h"
+#include "Pawn/NGSpectatorPawn.h"
 #include "Player/NGPlayerState.h"
 
 // Sets default values
@@ -23,7 +25,7 @@ void UCombatManagerComponent::BeginPlay()
 	Super::BeginPlay();
 }
 
-void UCombatManagerComponent::StartCombat(FCombatSettingData SettingData, APlayerController* PC)
+void UCombatManagerComponent::StartCombat(FCombatSettingData& SettingData, APlayerController* PC)
 {
 	if (!GetOwner()->HasAuthority())	return;
 	
@@ -55,12 +57,31 @@ void UCombatManagerComponent::StartFight()
 	}
 }
 
+void UCombatManagerComponent::ReturnSpectatorHome()
+{
+	for (FCombatSettingData Data : CombatDatas)
+	{
+		if (ANGPlayerState* AwayPlayer = Data.PlayerB)
+		{
+			if (AGridMapManager* GridMapManager = AwayPlayer->GetGridManager())
+			{
+				FTransform HomeCameraTransform = GridMapManager->GetHomeCameraTransform();
+				UE_LOG(LogTemp, Log, TEXT("UCombatManagerComponent::ReturnSpectatorHome %s, PS %p"), *HomeCameraTransform.ToString(), AwayPlayer);
+				TranslationSpectatorPawn(HomeCameraTransform, AwayPlayer);
+			}
+		}
+	}
+}
+
 void UCombatManagerComponent::FinishCombat()
 {
 	FCombatResultData CombatResult = {};
 	
 	//Grid원래상태로 초기화
 	ResetGrid();
+	
+	//카메라 위치 원래자리로
+	ReturnSpectatorHome();
 	
 	//결과창 띄우기하고 확인 후 값 반환해야할 수 있음
 	//게임 전체 매니저에 FCombatResultData를 주는 식으로 함수호출을 해야겠는데?
@@ -92,7 +113,7 @@ void UCombatManagerComponent::PawnDied(ANGPawnBase* DeadPawn)
 	}
 }
 
-void UCombatManagerComponent::SetupCombat(FCombatSettingData SettingData)
+void UCombatManagerComponent::SetupCombat(FCombatSettingData& SettingData)
 {
 	ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>();
 	if (!GS)	return;
@@ -112,12 +133,29 @@ void UCombatManagerComponent::SetupCombat(FCombatSettingData SettingData)
 	if (SettingData.PlayerA)
 	{
 		HomePS = SettingData.PlayerA;
+
 	}
 	
 	if (SettingData.PlayerB)
 	{
 		AwayPS = SettingData.PlayerB;
-		
+	}
+	
+	if (AGridMapManager* GridMapManager = SettingData.PlayerA->GetGridManager())
+	{
+		FTransform AwayCameraTransform = GridMapManager->GetAwayCameraTransform();
+		TranslationSpectatorPawn(AwayCameraTransform, SettingData.PlayerB);
+	}
+	//지금 여기서 Away랑 Combat이랑 전부 보내는데, PlayerB의 WaitGrid의 주소를 바꿔끼워야할듯
+	TranslationAwayUnits(SettingData);
+	
+	CombatDatas.Emplace(MoveTemp(SettingData));
+}
+
+void UCombatManagerComponent::TranslationAwayUnits(FCombatSettingData& SettingData)
+{
+	if (SettingData.PlayerB)
+	{
 		UNGPocketComponent* PocketComponentB = SettingData.PlayerB->GetPlayerPocket();
 		for (TWeakObjectPtr<ANGUnitPawn> Unit : PocketComponentB->GetOwnedUnitPocket())
 		{
@@ -132,6 +170,14 @@ void UCombatManagerComponent::SetupCombat(FCombatSettingData SettingData)
 	}
 }
 
+void UCombatManagerComponent::TranslationSpectatorPawn(FTransform DestinationGridTransform, ANGPlayerState* SpecPawnOwner)
+{
+	//waitGrid 이전하고 카메라 이전
+	if (ANGSpectatorPawn* SpecPawn = SpecPawnOwner->GetPawn<ANGSpectatorPawn>())
+	{
+		SpecPawn->PossessCamera(DestinationGridTransform, SpecPawnOwner);
+	}
+}
 
 void UCombatManagerComponent::ResetGrid()
 {
@@ -142,6 +188,7 @@ void UCombatManagerComponent::ResetGrid()
 	{
 		for (APlayerState* RawPS : GS->PlayerArray)
 		{
+			//TODO: 현재 살아있는 상태에서만 Restore
 			if (ANGPlayerState* PS = Cast<ANGPlayerState>(RawPS))
 			{
 				PS->RestoreInitialGrid();

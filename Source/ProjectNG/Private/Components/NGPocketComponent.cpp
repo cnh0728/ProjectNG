@@ -121,8 +121,11 @@ void UNGPocketComponent::Server_RequestRoll_Implementation()
 	ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>();
 	if (!GM) return;
 	
+	ANGPlayerState* PS = GetOwner<ANGPlayerState>();
+	if (!PS) return;
+	
 	// 레벨에 맞는 확률 데이터 가져오기
-	FString RowName = FString::FromInt(PlayerLevel);
+	FString RowName = FString::FromInt(PS->GetPlayerLevel());
 	FShopProbability* ProbabilityData = ProbabilityTable->FindRow<FShopProbability>(*RowName, TEXT(""));
 	
 	if (!ProbabilityData)

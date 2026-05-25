@@ -35,7 +35,7 @@ public:
 
 	AGridMapManager* GetGridManager() const { return GridManager; }
 	
-	void InitializePostLogin(uint32 AssignedIndex);
+	void InitializePostLogin();
 
 	void SpawnGridMapManager();
 	
@@ -52,7 +52,10 @@ protected:
 public:
 	UNGPocketComponent* GetPlayerPocket() { return PlayerPocket; }
 
-	int32 GetPlayerLevel() { return PlayerLevel; }
+	int32 GetPlayerLevel() const { return PlayerLevel; }
+	void SetPlayerLevel(int32 InPlayerLevel) { PlayerLevel = InPlayerLevel; }
+	
+	int32 GetUserIndex();
 	
 protected:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Game|Pocket")
@@ -75,12 +78,6 @@ public:
 	
 	void PrepareStartCombat();
 	
-	UFUNCTION()
-	void SetUserIndex(uint32 Idx);
-	
-	UFUNCTION()
-	int32 GetUserIndex() { return UserIndex; }
-	
 protected:
 	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadWrite, Category = "Grid")
 	FHexGridMap CombatGridMap;
@@ -96,9 +93,5 @@ protected:
 	
 	//그리드 맵의 실체를 담당(각 유저당 하나임)
 	UPROPERTY(Replicated)
-	TObjectPtr<AGridMapManager> GridManager;
-	
-	UPROPERTY(Replicated)
-	uint32 UserIndex;
-	
+	TObjectPtr<AGridMapManager> GridManager;	
 };

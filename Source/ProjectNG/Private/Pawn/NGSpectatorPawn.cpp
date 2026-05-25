@@ -6,8 +6,7 @@
 #include "AbilitySystem/NGAbilitySystemComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Combat/GridMapManager.h"
-#include "GameFramework/SpringArmComponent.h"
-#include "Net/UnrealNetwork.h"
+#include "Components/SphereComponent.h"
 #include "Player/NGPlayerController.h"
 #include "Player/NGPlayerState.h"
 #include "UI/HUD/NGHUD.h"
@@ -17,30 +16,32 @@ class ANGPlayerState;
 ANGSpectatorPawn::ANGSpectatorPawn()
 {
 	SetReplicates(true);
-	
-	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-	
-	bUseControllerRotationPitch = false;
-	bUseControllerRotationYaw = false;
+    
+	bUseControllerRotationPitch = true;
+	bUseControllerRotationYaw = true;
 	bUseControllerRotationRoll = false;
-	
-	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
-	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 300.0f; // 줌 인/아웃은 이 값만 조절하면 됨!
-	CameraBoom->bDoCollisionTest = false; // 카메라가 벽에 부딪혀서 앞으로 튀어나오는 현상 방지
-	CameraBoom->bUsePawnControlRotation = false; 
-	CameraBoom->bUsePawnControlRotation = false; // 컨트롤러 회전 무시
-	CameraBoom->bInheritPitch = false;           // 부모 Pitch 무시
-	CameraBoom->bInheritYaw = false;             // 부모 Yaw 무시
-	CameraBoom->bInheritRoll = false;            // 부모 Roll 무시
-	CameraBoom->SetUsingAbsoluteRotation(true);
-	CameraBoom->SetRelativeRotation(FRotator(-60.f, 0.f, 0.f)); // 카메라 각도 60도로 영구 고정
-	
+    
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
-	CameraComponent->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
-	CameraComponent->bUsePawnControlRotation = false;
-	
+	if (GetCollisionComponent())
+	{
+		CameraComponent->SetupAttachment(GetCollisionComponent());
+	}
+	else
+	{
+		CameraComponent->SetupAttachment(RootComponent);
+	}
+    
+	CameraComponent->SetRelativeRotation(FRotator(0.f, 0.f, 0.f));
+	CameraComponent->SetRelativeLocation(FVector(0.f, 0.f, 0.f)); 
+	CameraComponent->bUsePawnControlRotation = false; 
+
+	// 밀려남 차단
+	if (USphereComponent* CollisionComp = GetCollisionComponent())
+	{
+		CollisionComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+    
 	bFindCameraComponentWhenViewTarget = true;
 }
 
@@ -48,18 +49,6 @@ void ANGSpectatorPawn::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
-	DOREPLIFETIME(ANGSpectatorPawn, MyGridManager);
-	// DOREPLIFETIME_CONDITION_NOTIFY(ANGSpectatorPawn, MyGridManager, COND_None, REPNOTIFY_Always);
-}
-
-void ANGSpectatorPawn::InitializeGridManager(AGridMapManager* InGridManager)
-{
-	MyGridManager = InGridManager;
-	
-	if (HasAuthority())
-	{
-		FocusOnGrid(MyGridManager);
-	}
 }
 
 void ANGSpectatorPawn::PossessedBy(AController* NewController)
@@ -80,12 +69,6 @@ void ANGSpectatorPawn::PossessedBy(AController* NewController)
 
 void ANGSpectatorPawn::OnRep_GridManager()
 {
-	UE_LOG(LogTemp, Log, TEXT("OnRep_GridManager"));
-	
-	if (IsLocallyControlled())
-	{
-		FocusOnGrid(MyGridManager);
-	}
 }
 
 void ANGSpectatorPawn::OnRep_PlayerState()
@@ -94,14 +77,36 @@ void ANGSpectatorPawn::OnRep_PlayerState()
 	
 	InitHUD();
 	
-	if (ANGPlayerController* PC = Cast<ANGPlayerController>(GetController()))
+	FocusOnMyGrid();
+}
+
+void ANGSpectatorPawn::FocusOnMyGrid()
+{
+	if (++RetryCount > 10)
 	{
-		PC->SetControlRotation(FRotator::ZeroRotator);
+		RetryCount = 0;
+		UE_LOG(LogTemp, Error, TEXT("ANGSpectatorPawn::FocusOnGrid TimeOut"));
+		return;
 	}
 	
-	
-	if(MyGridManager) OnRep_GridManager();
-
+	if (ANGPlayerController* PC = Cast<ANGPlayerController>(GetController()))
+	{
+		if (HasLocalNetOwner())
+		{
+			ANGPlayerState* PS = PC->GetPlayerState<ANGPlayerState>();
+			if (AGridMapManager* GridMapManager = PS ? PS->GetGridManager() : nullptr)
+			{
+				UE_LOG(LogTemp, Log, TEXT("FocusOnMyGrid PS: %p"), PS);
+				PossessCamera(GridMapManager->GetHomeCameraTransform(), PS);
+				RetryCount = 0;
+			}else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("ANGSpectatorPawn::FocusOnGrid GridMap is not Prepare retry function..."));
+				GetWorldTimerManager().SetTimer(RetryTimerHandle, this, &ANGSpectatorPawn::FocusOnMyGrid, 0.1f, false);
+				return;	
+			}
+		}
+	}
 }
 
 // Called when the game starts or when spawned
@@ -114,15 +119,7 @@ void ANGSpectatorPawn::BeginPlay()
 void ANGSpectatorPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	
-	static bool bLogOnce = false;
-	if (!bLogOnce && MyGridManager != nullptr)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Tick: Finally MyGridManager is Valid! Name: %s"), *MyGridManager->GetName());
-		OnRep_GridManager();
-		// FocusOnGrid(MyGridManager);
-		bLogOnce = true;
-	}
+
 }
 
 void ANGSpectatorPawn::OnRep_Controller()
@@ -157,13 +154,17 @@ void ANGSpectatorPawn::InitHUD()
 	}
 }
 
-void ANGSpectatorPawn::FocusOnGrid(AGridMapManager* GridMapManager)
+void ANGSpectatorPawn::PossessCamera(const FTransform& CameraTransform, const ANGPlayerState* PS)
 {
-	if (GridMapManager)
+	if (ANGPlayerController* PC = Cast<ANGPlayerController>(PS->GetOwner()))
 	{
-		FVector GridLoc = GridMapManager->GetActorLocation();
+		UE_LOG(LogTemp, Log, TEXT("PossessCamera Transform: %s"), *CameraTransform.ToString());
 		
-		SetActorLocation(GridLoc);
+		FVector TargetLoc = CameraTransform.GetLocation();
+		FRotator TargetRot = CameraTransform.GetRotation().Rotator();
+		
+		PC->ClientSetLocation(TargetLoc, TargetRot);
+		PC->SetControlRotation(TargetRot);
 	}
 }
 

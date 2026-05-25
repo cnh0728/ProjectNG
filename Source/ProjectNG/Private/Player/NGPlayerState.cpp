@@ -7,7 +7,6 @@
 #include "Core/NGDeveloperSettings.h"
 #include "Game/NGGameState.h"
 #include "Net/UnrealNetwork.h"
-#include "Pawn/NGSpectatorPawn.h"
 #include "Pawn/NGUnitPawn.h"
 #include "Player/NGPlayerController.h"
 
@@ -46,6 +45,7 @@ void ANGPlayerState::SpawnGridMapManager()
 	
 	if (ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>())
 	{
+		int32 UserIndex = GS->GetPlayerId(this);
 		FVector Margin(GS->GridMargin * (UserIndex / 4), GS->GridMargin * (UserIndex % 4), 0.f);
 		SpawnTransform.AddToTranslation(Margin);
 	}
@@ -55,30 +55,23 @@ void ANGPlayerState::SpawnGridMapManager()
 	{
 		if (UClass* GridMapManagerBPClass = GridMapClass.LoadSynchronous())
 		{
-			FGridBuildData BuildData(8, 8, 100.f, 1, 9, 150.f);
 			FActorSpawnParameters SpawnParams;
 			SpawnParams.Owner = PC;
 			GridManager = GetWorld()->SpawnActor<AGridMapManager>(GridMapManagerBPClass, SpawnTransform, SpawnParams);
+			
 			if (GridManager)
 			{
-				GridManager->SetOwnerPS(this);
-				GridManager->Initialize(BuildData, UserIndex);
-			}
-			
-			ANGSpectatorPawn* SpectatorPawn = GetPawn<ANGSpectatorPawn>();
-			if (SpectatorPawn)
-			{
-				SpectatorPawn->InitializeGridManager(GridManager);
+				FGridBuildData BuildData(8, 8, 100.f, 1, 9, 150.f);
+				GridManager->Initialize(BuildData, PC->GetPlayerState<ANGPlayerState>());
 			}
 		}
 	}
-	
 }
 
-void ANGPlayerState::InitializePostLogin(uint32 AssignedIndex)
+void ANGPlayerState::InitializePostLogin()
 {
-	SetUserIndex(AssignedIndex);
 	SpawnGridMapManager();
+	
 }
 
 void ANGPlayerState::CaptureSnapShot()
@@ -86,20 +79,26 @@ void ANGPlayerState::CaptureSnapShot()
 	CombatGridMapSnapShot = CombatGridMap;
 }
 
+int32 ANGPlayerState::GetUserIndex()
+{
+	if (ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>())
+	{
+		return GS->GetPlayerId(this);
+	}
+	
+	return -1;
+}
+
 void ANGPlayerState::RestoreInitialGrid()
 {
 	if (!HasAuthority())	return;
-	
-	UE_LOG(LogTemp, Warning, TEXT("Restoring Initial Grid State11"));
 	
 	for (int32 i = 0; i < CombatGridMapSnapShot.GridInfo.Num(); i++)
 	{
 		FGridData& GridData = CombatGridMapSnapShot.GridInfo[i];
 
-		//이거 snapshot 그리드를 찍지말고 폰들을 찍는게 나을듯?
 		if (GridData.PlacedPawn)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Restoring Initial Grid State22"));
 			FIntVector2 OriginalIndex = CombatGridMapSnapShot.ConvertIndexToPoint(i);
 
 			FGridAddress GridAddress(OriginalIndex, EGridType::Combat, this);
@@ -131,10 +130,3 @@ void ANGPlayerState::PrepareStartCombat()
 	}
 }
 
-
-
-void ANGPlayerState::SetUserIndex(uint32 Idx)
-{
-	UserIndex = Idx;
-	UE_LOG(LogTemp, Warning, TEXT("Setting User Index: %i, PC: %p"), UserIndex, GetOwner<ANGPlayerController>());
-}

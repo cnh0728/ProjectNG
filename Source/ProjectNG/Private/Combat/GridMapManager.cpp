@@ -10,7 +10,8 @@
 #include "Player/NGPlayerState.h"
 #include "ProjectNG/ProjectNG.h"
 
-AGridMapManager::AGridMapManager() : WaitGridOffsetLocation(200.f)
+
+AGridMapManager::AGridMapManager() : WaitGridOffsetLocation(200.f), CameraPitchAngle(-60.f), CameraOffset(FVector(-350.f, 700.f, 1200.f))
 {
 	bReplicates = true;
 	
@@ -28,28 +29,11 @@ AGridMapManager::AGridMapManager() : WaitGridOffsetLocation(200.f)
 	QuadGridVisualComponent->SetupAttachment(Root);
 }
 
-void AGridMapManager::Initialize(const FGridBuildData& BuildData, const uint32 OwnerIndex)
-{
-	OwnerPlayerIndex = OwnerIndex;
-	
-	InitGridMap(BuildData);
-}
-
-void AGridMapManager::OnRep_OwnerPS()
-{
-	if (OwnerPS)
-	{
-		UE_LOG(LogTemp, Log, TEXT("OnRep_OwnerPS Called"));
-		
-		OnPSReady.Broadcast();
-		
-		OnPSReady.Clear();
-	}
-}
-
-void AGridMapManager::SetOwnerPS(ANGPlayerState* InPS)
+void AGridMapManager::Initialize(const FGridBuildData& BuildData, ANGPlayerState* InPS)
 {
 	OwnerPS = InPS;
+	
+	InitGridMap(BuildData);
 }
 
 void AGridMapManager::BeginPlay()
@@ -63,7 +47,9 @@ void AGridMapManager::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
 	DOREPLIFETIME(AGridMapManager, GridBuildData);
-	DOREPLIFETIME(AGridMapManager, OwnerPS);
+	DOREPLIFETIME(AGridMapManager, HomeCameraTransform);
+	DOREPLIFETIME(AGridMapManager, AwayCameraTransform);
+	
 }
 
 void AGridMapManager::InitGridMap(const FGridBuildData& BuildData)
@@ -85,7 +71,7 @@ void AGridMapManager::InitGridMap(const FGridBuildData& BuildData)
 			WaitGridMap.InitializeMap(BuildData.QuadSizeX, BuildData.QuadSizeY, BuildData.QuadCellSize, MyLocation + FVector(LowWaitLocation.X - WaitGridOffsetLocation - WaitGridMap.Offset, 0.f, 0.f));
 
 			FGridAddress CombatHighOffsetAddress(FIntVector2(CombatGridMap.Width - 1, CombatGridMap.Height - 1), EGridType::Combat, PS);
-			FQuadGridMap& EnemyWaitGridMap = OwnerPS->GetEnemyWaitGridMap();
+			FQuadGridMap& EnemyWaitGridMap = PS->GetEnemyWaitGridMap();
 			FVector HighWaitLocation = FVector(UGridMapHelper::GetRelativeLocation(CombatHighOffsetAddress));
 			
 			EnemyWaitGridMap.InitializeMap(BuildData.QuadSizeX, BuildData.QuadSizeY, BuildData.QuadCellSize, MyLocation + FVector(HighWaitLocation.X + WaitGridOffsetLocation - WaitGridMap.Offset, 0.f, 0.f));
@@ -99,15 +85,44 @@ void AGridMapManager::InitGridMap(const FGridBuildData& BuildData)
 
 void AGridMapManager::OnRep_BuildGridVisual()
 {	
-	if (!HexGridVisualComponent || !QuadGridVisualComponent)	return;
+	BuildMyGrid();
 	
-	if (!OwnerPS){
-		UE_LOG(LogTemp, Log, TEXT("Delegate PSOnReady"));
-		OnPSReady.AddUniqueDynamic(this, &AGridMapManager::OnRep_BuildGridVisual);
+	//GridmapManager가 더이상 네트워크 패킷 교환 안한다는 뜻. 중간에 맵 변경해야하면 이거 지워야함
+	SetNetDormancy(DORM_Initial);
+}
+
+void AGridMapManager::BuildMyGrid()
+{
+	if (++RetryCount > 10)
+	{
+		RetryCount = 0;
+		UE_LOG(LogTemp, Warning, TEXT("Retry BuildGrid TimeOut"));
 		return;
 	}
 	
-	UE_LOG(LogTemp, Log, TEXT("OnRep_BuildGridVisual Called PS is alive"));
+	if (!OwnerPS)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Retry BuildGrid PS is NULL"));
+		GetWorldTimerManager().SetTimer(RetryTimerHandle, this, &AGridMapManager::BuildMyGrid, 0.1f, false);
+		return;		
+	}
+	
+	RetryCount = 0;
+	UE_LOG(LogTemp, Log, TEXT("BuildGrid is Ready"));
+	
+	//그리드는 모두에게 보여야하기에 전부 생성
+	BuildGridVisual(OwnerPS);
+}
+
+void AGridMapManager::Server_UpdateCameraTransform_Implementation(const FTransform& HomeCam, const FTransform& AwayCam)
+{
+	HomeCameraTransform = HomeCam;
+	AwayCameraTransform = AwayCam;
+}
+
+void AGridMapManager::BuildGridVisual(ANGPlayerState* PS)
+{
+	if (!HexGridVisualComponent || !QuadGridVisualComponent)	return;
 	
 	auto SetISMCCollision = [](UInstancedStaticMeshComponent* ISMC)
 	{
@@ -127,12 +142,12 @@ void AGridMapManager::OnRep_BuildGridVisual()
 	/// Hex Grid Build
 	HexGridVisualComponent->ClearInstances();
 	
-	FHexGridMap& CombatGridMap = OwnerPS->GetCombatGridMap();
+	FHexGridMap& CombatGridMap = PS->GetCombatGridMap();
 	for (int32 y=0; y<GridBuildData.HexSizeY; ++y)
 	{
 		for (int32 x=0; x<GridBuildData.HexSizeX; ++x)
 		{
-			FGridAddress CombatGridAddress(FIntVector2(x, y), EGridType::Combat, OwnerPS);
+			FGridAddress CombatGridAddress(FIntVector2(x, y), EGridType::Combat, PS);
 			FVector RelativeLoc = UGridMapHelper::GetRelativeLocation(CombatGridAddress);
 			FTransform HexInstanceTransform = FTransform(FRotator::ZeroRotator, RelativeLoc, FVector::OneVector);
 					
@@ -149,28 +164,42 @@ void AGridMapManager::OnRep_BuildGridVisual()
 		ISMC->AddInstance(InstanceTransform);
 	};
 	
-	
 	QuadGridVisualComponent->ClearInstances();
+	
+	FGridAddress LowOffsetAddress(FIntVector2(0, 0), EGridType::Combat, PS);
+	FGridAddress HighOffsetAddress(FIntVector2(CombatGridMap.Width-1, CombatGridMap.Height-1), EGridType::Combat, PS);
+
+	FVector HomeSpecPawnLocation = FVector(UGridMapHelper::GetWorldLocation(LowOffsetAddress));
+	FVector AwaySpecPawnLocation = FVector(UGridMapHelper::GetWorldLocation(HighOffsetAddress));
+	
+	//RPC로 서버에 알려주고 Rep
+	HomeCameraTransform.SetLocation(HomeSpecPawnLocation + CameraOffset);
+	HomeCameraTransform.SetRotation(FRotator(CameraPitchAngle, 0.f, 0.f).Quaternion());
+	
+	AwayCameraTransform.SetLocation(AwaySpecPawnLocation + FVector(-CameraOffset.X, -CameraOffset.Y, CameraOffset.Z));
+	AwayCameraTransform.SetRotation(FRotator(CameraPitchAngle, 180.f, 0.f).Quaternion());
+	
+	UE_LOG(LogTemp, Log, TEXT("AwayCamTransform %s Loc %s"), *AwayCameraTransform.ToString(), *AwaySpecPawnLocation.ToString());
+	
+	Server_UpdateCameraTransform(HomeCameraTransform, AwayCameraTransform);
+	
+	FVector LowWaitLocationOffset = FVector(UGridMapHelper::GetRelativeLocation(LowOffsetAddress));
+	FVector HighWaitLocationOffset = FVector(UGridMapHelper::GetRelativeLocation(HighOffsetAddress));
+
 	for (int32 y=0; y<GridBuildData.QuadSizeY; ++y)
 	{
 		for (int32 x=0; x<GridBuildData.QuadSizeX; ++x)
 		{			
-			FQuadGridMap& WaitGridMap = OwnerPS->GetWaitGridMap();
-			FGridAddress LowOffsetAddress(FIntVector2(0, 0), EGridType::Combat, OwnerPS);
-			FVector LowWaitLocationOffset = FVector(UGridMapHelper::GetRelativeLocation(LowOffsetAddress));
-			FGridAddress LowWaitGridAddress = FGridAddress(FIntVector2(x, y), EGridType::Wait, OwnerPS);
+			FQuadGridMap& WaitGridMap = PS->GetWaitGridMap();
+			FGridAddress LowWaitGridAddress = FGridAddress(FIntVector2(x, y), EGridType::Wait, PS);
 			AddGridInstance(QuadGridVisualComponent, LowWaitGridAddress, FVector(LowWaitLocationOffset.X - WaitGridOffsetLocation - WaitGridMap.Offset, 0.f, 0.f));
 					
-			FQuadGridMap& EnemyWaitGridMap = OwnerPS->GetEnemyWaitGridMap();
-			FGridAddress HighOffsetAddress(FIntVector2(CombatGridMap.Width-1, CombatGridMap.Height-1), EGridType::Combat, OwnerPS);
-			FVector HighWaitLocationOffset = FVector(UGridMapHelper::GetRelativeLocation(HighOffsetAddress));
-			FGridAddress HighWaitGridAddress = FGridAddress(FIntVector2(x, y), EGridType::Wait, OwnerPS);
+			FQuadGridMap& EnemyWaitGridMap = PS->GetEnemyWaitGridMap();
+			FGridAddress HighWaitGridAddress = FGridAddress(FIntVector2(x, y), EGridType::Wait, PS);
 			AddGridInstance(QuadGridVisualComponent, HighWaitGridAddress, FVector(HighWaitLocationOffset.X + WaitGridOffsetLocation - EnemyWaitGridMap.Offset, 0.f, 0.f));
 		}
 	}
 	
 	SetISMCCollision(QuadGridVisualComponent);
-	
-	//GridmapManager가 더이상 네트워크 패킷 교환 안한다는 뜻. 중간에 맵 변경해야하면 이거 지워야함
-	SetNetDormancy(DORM_Initial);
 }
+

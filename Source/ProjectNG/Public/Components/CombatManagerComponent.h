@@ -25,17 +25,21 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	void StartCombat(FCombatSettingData SettingData, APlayerController* PC);
+	void StartCombat(FCombatSettingData& SettingData, APlayerController* PC);
 	void StartFight();
+	void ReturnSpectatorHome();
 
 	void PawnDied(ANGPawnBase* DeadPawn);
 
 	void FinishCombat();
 
 	void ResetGrid();
+	
+	void TranslationSpectatorPawn(FTransform DestinationGridTransform, ANGPlayerState* SpecPawnOwner);
 protected:
 	
-	void SetupCombat(FCombatSettingData SettingData);
+	void SetupCombat(FCombatSettingData& SettingData);
+	void TranslationAwayUnits(FCombatSettingData& SettingData);
 
 	int32 CurrentEnemyCount = 0;
 	int32 TargetKillCount = 10;
@@ -49,8 +53,8 @@ protected:
 	UPROPERTY()
 	TObjectPtr<ANGPlayerState> AwayPS;
 	
-private:
-	
+	UPROPERTY()
+	TArray<FCombatSettingData> CombatDatas;
 	
 	FTimerHandle FightStartTimerHandle;
 };

@@ -3,11 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Player/NGPlayerController.h"
 #include "GridMapManager.generated.h"
 
 class ANGPlayerState;
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPSReady);
 
 USTRUCT()
 struct FGridBuildData{
@@ -49,22 +48,20 @@ protected:
 public:
 	UFUNCTION()
 	void OnRep_BuildGridVisual();
+	void BuildMyGrid();
 	
-	void Initialize(const FGridBuildData& BuildData, uint32 OwnerIndex);
+	UFUNCTION(Server, Reliable)
+	void Server_UpdateCameraTransform(const FTransform& HomeCam, const FTransform& AwayCam);
 	
-	UFUNCTION()
-	void OnRep_OwnerPS();
+	void BuildGridVisual(ANGPlayerState* PS);
+
+	void Initialize(const FGridBuildData& BuildData, ANGPlayerState* InPS);
 	
-	UFUNCTION()
-	void SetOwnerPS(ANGPlayerState* InPS);
-	
-	UPROPERTY(BlueprintAssignable, Category = "Events")
-	FOnPSReady OnPSReady;
+	const FTransform& GetHomeCameraTransform() const { return HomeCameraTransform; }
+	const FTransform& GetAwayCameraTransform() const { return AwayCameraTransform; }
 	
 private:
-	UPROPERTY(ReplicatedUsing=OnRep_OwnerPS)
-	TObjectPtr<ANGPlayerState> OwnerPS;
-
+	
 	UPROPERTY(VisibleAnywhere)
 	UInstancedStaticMeshComponent* HexGridVisualComponent;
 	UPROPERTY(EditAnywhere, Category = "Grid")
@@ -81,6 +78,22 @@ private:
 	UPROPERTY(VisibleAnywhere, ReplicatedUsing=OnRep_BuildGridVisual)
 	FGridBuildData GridBuildData;
 	
-	UPROPERTY(VisibleAnywhere)
-	uint32 OwnerPlayerIndex;
+	UPROPERTY(Replicated, VisibleAnywhere, Category = "Grid", meta=(AllowPrivateAccess = "true"))
+	FTransform HomeCameraTransform;
+	
+	UPROPERTY(Replicated, VisibleAnywhere, Category = "Grid", meta=(AllowPrivateAccess = "true"))
+	FTransform AwayCameraTransform;
+	
+	UPROPERTY(EditAnywhere, Category = "Grid", meta=(AllowPrivateAccess = "true"))
+	float CameraPitchAngle;
+
+	UPROPERTY(EditAnywhere, Category = "Grid", meta=(AllowPrivateAccess = "true"))
+	FVector CameraOffset;
+	
+	//PC는 자기꺼 아니면 null이라 참조못함(GetOwner불가) 그래서 PS를 따로 부여
+	UPROPERTY(Replicated)
+	ANGPlayerState* OwnerPS;
+	
+	FTimerHandle RetryTimerHandle;
+	int32 RetryCount;
 };
