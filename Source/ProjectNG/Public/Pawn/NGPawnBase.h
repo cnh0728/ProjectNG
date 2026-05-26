@@ -15,7 +15,6 @@ class UCapsuleComponent;
 class UNGAttributeSet;
 class ANGEnemyPawn;
 class UWidgetComponent;
-class UNGPoolableComponent;
 class UNGAbilitySystemComponent;
 
 UENUM(BlueprintType)
@@ -52,10 +51,7 @@ public:
 	void StopAnimMontage(UAnimMontage* AnimMontage);
 	
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
-	
-	//TODO: 디버깅용 실제론 있어서 안되는 함수
-	void SetOwnerIndex(int32 NewOwnerIndex) { OwnerIndex = NewOwnerIndex; }
-	
+
 protected:
 	/** 파생 클래스에서 GAS 초기화를 위한 로직을 작성 */
 	virtual void InitAbilityActorInfo()	PURE_VIRTUAL(ANGPawnBase::InitAbilityActorInfo);
@@ -67,9 +63,6 @@ protected:
 	//캐싱 용도
 	UPROPERTY(BlueprintReadOnly, Category = "GAS|AbilitySystemComponent")
 	TObjectPtr<UNGAbilitySystemComponent> AbilitySystemComponent;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pool", meta=(AllowPrivateAccess = "true"))
-	TObjectPtr<UNGPoolableComponent> PoolController;
 	
 	virtual void HandleGameplayCue(UObject* Self, FGameplayTag GameplayCueTag, EGameplayCueEvent::Type EventType, const FGameplayCueParameters& Parameters) override;
 	
@@ -84,6 +77,7 @@ protected:
 	virtual void BeginPlay() override;
 	
 	virtual void Tick(float DeltaTime) override;
+	void LookAtTarget(ANGPawnBase* Target, float DeltaTime);
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
 	TObjectPtr<UWidgetComponent> HPBarComponent; 
@@ -152,12 +146,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Combat")
 	float RotationInterpSpeed;
 	
-	UPROPERTY(BlueprintReadOnly, Category = "RangeDecal")
-	TObjectPtr<UDecalComponent> RangeDecal;
-	
-	UPROPERTY(EditAnywhere, Category = "RangeDecal")
-	TObjectPtr<UMaterialInterface> RangeMaterial;
-	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS")
 	TSubclassOf<UGameplayAbility> AttackAbilityClass;
 	
@@ -208,19 +196,24 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")
 	TObjectPtr<UAnimMontage> DamagedMontage;
 	
+	virtual void NotifyActorBeginCursorOver() override;
+	virtual void NotifyActorEndCursorOver() override;
+	void GrantHoverState();
+	void RemoveHoverState() const;
 	
 public:
 	UFUNCTION(Server, Reliable)
-	void Server_MoveGrid(const FVector& TargetLocation, FGridAddress GridAddress);
+	void Server_TryMoveGrid(const FVector& TargetLocation, FGridAddress GridAddress);
 	UFUNCTION(Client, Reliable)
 	void Client_RejectMove();
 
-	void MoveTo(const FVector& TargetLocation);
-	void MovePawnOnGrid(const FGridAddress& GridAddress);
+	void TryMoveTo(const FVector& TargetLocation);
+	void TranslatePawnOnGrid(const FGridAddress& GridAddress);
 	void SetPawnOnGrid(const FGridAddress& GridAddress);
 	void UnSetPawnOnGrid(const FGridAddress& GridAddress) const;
-	virtual void UpdatePlacedGridInfo(FGridAddress NewGridAddress);
-	
+	virtual void UpdateCurrentGridAddress(FGridAddress NewGridAddress);
+	void UpdatePawnCurrentLocation(const FGridAddress& GridAddress);
+
 	bool CanPlaceUnit(FGridMapBase& GridMap, FIntVector2 GridIndex);
 	EGridType GetCurrentGridType(const FVector& TargetLocation) const;
 	const FGridAddress& GetGridAddress() const { return CurrentGridAddress; };

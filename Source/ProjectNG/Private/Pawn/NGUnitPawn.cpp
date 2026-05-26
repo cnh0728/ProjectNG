@@ -3,33 +3,25 @@
 
 #include "Pawn/NGUnitPawn.h"
 
-#include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystem/NGAbilitySystemComponent.h"
 #include "AbilitySystem/NGAttributeSet.h"
 #include "AbilitySystem/NGGameplayAbility.h"
+#include "Combat/Grid/Arena.h"
 #include "Combat/Weapon/NGWeaponData.h"
-#include "Components/DecalComponent.h"
-#include "Net/UnrealNetwork.h"
+#include "Core/NGDeveloperSettings.h"
 #include "Player/NGPlayerController.h"
 #include "ProjectNG/ProjectNG.h"
 
 // Sets default values
-ANGUnitPawn::ANGUnitPawn() : AcceptanceRadius(1.0f), bIsGrabbed(false), bIsSelected(false), bIsDragMoving(false)
+ANGUnitPawn::ANGUnitPawn() : AcceptanceRadius(1.0f), bIsGrabbed(false), bIsSelected(false)
 {
-	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
-		
-	RangeDecal = CreateDefaultSubobject<UDecalComponent>(TEXT("RangeDecalNew"));
-	RangeDecal->SetupAttachment(RootComponent);
-	RangeDecal->SetRelativeRotation(FRotator(-90.f, 0.f, 0.f));
-	
+	PrimaryActorTick.bCanEverTick = false;
+
 	if (UnitMesh)
 	{
 		UnitMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 		UnitMesh->SetCollisionResponseToChannel(ECC_SelectableUnit, ECR_Block);
 	}
-	
-	ShowRangeIndicator(false);
 }
 
 void ANGUnitPawn::EquipWeapon(UNGWeaponData* NewWeaponData)
@@ -54,11 +46,6 @@ void ANGUnitPawn::EquipWeapon(UNGWeaponData* NewWeaponData)
 void ANGUnitPawn::InitializeAttributes()
 {
 	Super::InitializeAttributes();
-	
-	if (IsValid(AbilitySystemComponent))
-	{
-		UpdateDecalRange();
-	}
 }
 
 void ANGUnitPawn::OnSelected_Implementation()
@@ -66,7 +53,8 @@ void ANGUnitPawn::OnSelected_Implementation()
 	ISelectableInterface::OnSelected_Implementation();
 	UE_LOG(LogTemp, Log, TEXT("OnSelected"));
 	
-	ShowRangeIndicator(true);
+	//TODO: GridAddress 인자 받아와서 RangeIndicator 마저 완성하기
+	// ShowRangeIndicator(true, );
 	
 	bIsSelected = true;
 }
@@ -76,17 +64,39 @@ void ANGUnitPawn::OnDeselected_Implementation()
 	ISelectableInterface::OnDeselected_Implementation();
 	UE_LOG(LogTemp, Log, TEXT("OnDeselected"));
 	
-	ShowRangeIndicator(false);
+	// ShowRangeIndicator(false, TODO);
 	
 	bIsSelected = false;
 }
 
-void ANGUnitPawn::ShowRangeIndicator(bool bVisible) const
+void ANGUnitPawn::ShowRangeIndicator(bool bVisible, FGridAddress PivotAddress) const
 {
 	UE_LOG(LogTemp, Warning, TEXT("Decal bVisible %s"), bVisible ? TEXT("On") : TEXT("Off"));
-	if (RangeDecal)
+	
+	
+	int32 HighlightRange = AttributeSet ? AttributeSet->GetAttackRange() : 1;
+	//대기석은 자기위치만
+	if (PivotAddress.GridType != EGridType::Combat)
 	{
-		RangeDecal->SetVisibility(bVisible);
+		HighlightRange = 0;
+	}
+	
+	TArray<FIntVector2> Neighbors;
+	UGridMapHelper::GetHexNeighborIndexInRange(PivotAddress.GridIndex, HighlightRange, Neighbors);
+	
+	//이 유닛이 현재 있는 그리드에서 근처 노드를 가져온 다음에, 그 노드들 인덱스에 맞게 Arena에 있는 것들 GridVisualComponent 켜주기
+	if (AArena* CombatArena = PivotAddress.GridOwnerPS->GetHomeArena())
+	{
+		if (FGridMapBase* GridMap = UGridMapHelper::GetGridMap(PivotAddress))
+		{
+			for (FIntVector2 Neighbor : Neighbors)
+			{
+				if (GridMap->IsValidIndex(Neighbor))
+				{
+					CombatArena->HighlightSpecificGrid(PivotAddress, true);
+				}
+			}
+		}
 	}
 }
 
@@ -95,7 +105,7 @@ void ANGUnitPawn::OnDrag_Implementation()
 	ISelectableInterface::OnDrag_Implementation();
 
 	UE_LOG(LogTemp, Log, TEXT("OnDrag"));
-	
+	//잡힌 모션 -> 레그돌화 해도 ㄱㅊ을듯
 	bIsGrabbed = true;
 }
 
@@ -106,13 +116,6 @@ void ANGUnitPawn::OnUndrag_Implementation()
 	UE_LOG(LogTemp, Log, TEXT("OnUndrag"));
 	
 	bIsGrabbed = false;
-}
-
-void ANGUnitPawn::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	
-	DOREPLIFETIME(ANGUnitPawn, bIsDragMoving);
 }
 
 // Called when the game starts or when spawned
@@ -134,31 +137,8 @@ void ANGUnitPawn::BeginPlay()
 			FGameplayAbilitySpec(AttackAbilityClass, 1, INDEX_NONE, this)
 		);
 	}
-	
-	if (RangeDecal)
-	{
-		UpdateDecalRange();
-		
-		RangeDecal->SetDecalMaterial(RangeMaterial);
-	}	
 }
 
-void ANGUnitPawn::UpdateDecalRange()
-{
-	float CurrentRange = AttributeSet->GetAttackRange();
-	
-	if (RangeDecal)
-	{
-		RangeDecal->DecalSize = FVector(500.f, CurrentRange, CurrentRange);
-	}
-}
-
-void ANGUnitPawn::UpdatePlacedGridInfo(FGridAddress NewGridAddress)
-{
-	Super::UpdatePlacedGridInfo(NewGridAddress);
-	
-	bIsDragMoving = true;
-}
 
 void ANGUnitPawn::OnRep_PlayerState()
 {
@@ -171,32 +151,6 @@ void ANGUnitPawn::InitAbilityActorInfo()
 	if (AbilitySystemComponent)
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
-	}
-}
-
-// Called every frame
-void ANGUnitPawn::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-	
-	if (!HasAuthority())
-	{
-		if (bIsDragMoving)
-		{
-			// UE_LOG(LogTemp, Log, TEXT("Move to Grid Info"));
-			
-			FVector TargetLocation = UGridMapHelper::GetWorldLocation(CurrentGridAddress);
-			
-			FVector CurrentLocation = GetActorLocation();
-			
-			FVector NewLocation = FMath::VInterpTo(CurrentLocation, TargetLocation, DeltaTime, DragInterpSpeed);
-			SetActorLocation(NewLocation);
-
-			if (CurrentLocation.Equals(TargetLocation, AcceptanceRadius))
-			{
-				bIsDragMoving = false;
-			}			
-		}
 	}
 }
 

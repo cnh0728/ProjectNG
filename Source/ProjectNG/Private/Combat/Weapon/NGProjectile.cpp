@@ -2,15 +2,11 @@
 
 #include "Combat/Weapon/NGProjectile.h"
 
-#include <MaterialExpressionTruncate.generated.h>
-
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Pawn/NGPawnBase.h"
 #include "Components/SphereComponent.h"
-#include "Core/NGPoolableComponent.h"
 #include "Core/NGPoolSubSystem.h"
-#include "GameFramework/ProjectileMovementComponent.h"
 
 
 // Sets default values
@@ -21,8 +17,6 @@ ANGProjectile::ANGProjectile()
 	
 	bReplicates = true;		//네트워크 복제 활성화
 	SetReplicatingMovement(true);	//위치 속도 복제 활성화
-	
-	PoolController = CreateDefaultSubobject<UNGPoolableComponent>(FName("PoolController"));
 	
 	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComp"));
 	RootComponent = SphereComponent;

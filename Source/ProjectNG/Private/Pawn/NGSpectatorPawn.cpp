@@ -21,7 +21,10 @@ ANGSpectatorPawn::ANGSpectatorPawn()
 	bUseControllerRotationPitch = true;
 	bUseControllerRotationYaw = true;
 	bUseControllerRotationRoll = false;
-    
+	// bUseControllerRotationPitch = false;
+	// bUseControllerRotationYaw = false;
+	// bUseControllerRotationRoll = false;
+	
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
 	if (GetCollisionComponent())
 	{
@@ -163,6 +166,7 @@ void ANGSpectatorPawn::PossessCamera(const FTransform& CameraTransform, const AN
 		FVector TargetLoc = CameraTransform.GetLocation();
 		FRotator TargetRot = CameraTransform.GetRotation().Rotator();
 		
+		// SetActorTransform(CameraTransform);
 		PC->ClientSetLocation(TargetLoc, TargetRot);
 		PC->SetControlRotation(TargetRot);
 	}

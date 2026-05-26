@@ -31,4 +31,7 @@ public:
 	UPROPERTY(Config, EditAnywhere, Category = "NG Pool Settings")
 	TSoftClassPtr<AArena> ArenaClass;
 
+	UPROPERTY(Config, EditAnywhere, Category = "NG Pool Settings")
+	TSoftObjectPtr<UMaterialInterface> HoverOverlayMaterial;
+	
 };

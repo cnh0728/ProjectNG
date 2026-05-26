@@ -34,7 +34,7 @@ void UCombatManagerComponent::StartCombat(FCombatSettingData& SettingData, APlay
 
 	//화면띄우고 이것저것
 	
-	//TODO: 모든 플레이어가 Rep된거 확인하고 타이머시작이 더 좋을듯
+	//TODO: 모든 플레이어가 Rep된거 확인하고 타이머시작이 더 좋을듯 -> GS에서 PS순회해서 nullptr없어야 고?
 	GetWorld()->GetTimerManager().SetTimer(FightStartTimerHandle, this, &UCombatManagerComponent::StartFight, 0.1f, false);	
 }
 
@@ -152,7 +152,7 @@ void UCombatManagerComponent::ResetGrid()
 	{
 		for (APlayerState* RawPS : GS->PlayerArray)
 		{
-			//TODO: 현재 살아있는 상태에서만 Restore
+			//TODO: 현재 플레이어가 살아있는 상태에서만 Restore
 			if (ANGPlayerState* PS = Cast<ANGPlayerState>(RawPS))
 			{
 				PS->RestoreInitialGrid();

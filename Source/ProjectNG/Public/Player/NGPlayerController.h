@@ -48,19 +48,19 @@ public:
 	virtual void OnRep_PlayerState() override;
 	
 	virtual void OnPossess(APawn* InPawn) override;
+	void PerformDragUpdate(float DeltaTime);
 
-	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	void SetHoveringUnit(ANGPawnBase* InHoveringPawn);
+	ANGPawnBase* GetHoveringUnit() const; 
 	
 protected:
-	virtual void ProgressDragActor();
 
 	void HandleClickPressed(const FInputActionValue& Value);
-	void HandleClickTriggered(const FInputActionValue& Value);
 	void HandleClickReleased(const FInputActionValue& Value);
 	
-	void UpdateUnitWidget(ANGUnitPawn* NewUnit);
+	void UpdateUnitWidget(ANGPawnBase* NewUnit);
 
-	void SetSelectedUnit(ANGUnitPawn* InSelectedUnit);
+	void SetSelectedUnit(ANGPawnBase* InSelectedUnit);
 	void ResetSelectUnit();
 	
 	void PerformDrag();
@@ -76,24 +76,28 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> MousePositionInputAction;
 
-	//상태 관리 변수
-	uint8 bIsDragging : 1;
-	
 	uint8 GridMapIndex;
 	
-	const float DragThreshold = 10.f;
+	UPROPERTY(EditDefaultsOnly, Category = "Drag Drop", meta=(AllowPrivateAccess = "true"))
+	float DragThreshold;
 	
-	UPROPERTY(EditDefaultsOnly, Category = "Drag Drop")
-	float DragHeightOffset = 50.0f;
+	UPROPERTY(EditDefaultsOnly, Category = "Drag Drop", meta=(AllowPrivateAccess = "true"))
+	float DragHeightOffset;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Drag Drop", meta=(AllowPrivateAccess = "true"))
+	float DragInterpSpeed;
+	
 	FVector2D ClickStartLocation;
 	FVector2D CurrentMouseLocation;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Selection")
-	TWeakObjectPtr<ANGUnitPawn> DraggingUnit;
+	TWeakObjectPtr<ANGPawnBase> HoveringUnit;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Selection")
-	TObjectPtr<ANGUnitPawn> SelectedUnit;
+	TWeakObjectPtr<ANGPawnBase> DraggingUnit;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Selection")
+	TObjectPtr<ANGPawnBase> SelectedUnit;
 	
 			
 /*************************************/
@@ -103,7 +107,7 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_RequestBuyUnit(FName UnitName);
 	
-	UNGPocketComponent* GetPlayerPocket();
+	UNGPocketComponent* GetPlayerPocket() const;
 	
 /*************************************/
 /*				UI					 */
@@ -127,9 +131,6 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_RequestStopCombat();
 
-	UFUNCTION(Server, Reliable)
-	void Server_ChangeOwnerIndex(ANGPawnBase* SelectedPawn, int32 NewOwnerIndex);
-	
 	UFUNCTION(Exec)
 	void Cmd_StartCombat();
 	
@@ -139,9 +140,6 @@ public:
 	UFUNCTION(Exec)
 	void Cmd_ToggleDebugGrid();
 
-	UFUNCTION(Exec)
-	void Cmd_ChangeOwner(int32 OtherOwnerIndex);
-	
 private:
 	bool bShowDebugGrid;
 	

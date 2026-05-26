@@ -7,7 +7,6 @@
 #include "GameFramework/Actor.h"
 #include "NGProjectile.generated.h"
 
-class UNGPoolableComponent;
 class ANGPawnBase;
 class UProjectileMovementComponent;
 class USphereComponent;
@@ -47,9 +46,6 @@ protected:
 
 	UPROPERTY(BlueprintReadWrite, Category = "Setting | Projectile")
 	float RotateSpeed = 10.f;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pool", meta=(AllowPrivateAccess = "true"))
-	TObjectPtr<UNGPoolableComponent> PoolController;
 	
 public:
 	void SetSpecHandle(const FGameplayEffectSpecHandle InSpecHandle) { SpecHandle = InSpecHandle; }

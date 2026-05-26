@@ -203,3 +203,21 @@ void AArena::BuildGridVisual(ANGPlayerState* PS)
 	SetISMCCollision(QuadGridVisualComponent);
 }
 
+void AArena::HighlightSpecificGrid(const FGridAddress& GridAddress, bool bHighlight) const
+{
+	float HighlightFactor = bHighlight ? 1.f : 0.f;
+	int32 GridIndex = UGridMapHelper::GetGridMap(GridAddress)->ConvertPointToIndex(GridAddress.GridIndex);
+	
+	if (GridAddress.GridType == EGridType::Combat)
+	{
+		HexGridVisualComponent->SetCustomDataValue(GridIndex, 0, HighlightFactor, true);
+	}
+	else if (GridAddress.GridType == EGridType::Wait){
+		//아군꺼 만들고 적군꺼 만들고 반복해서 했기때문에 아군은 *2, 적군은 *2+1하면 됨
+		HexGridVisualComponent->SetCustomDataValue(GridIndex * 2, 0, HighlightFactor, true);
+	}
+	else if (GridAddress.GridType == EGridType::EnemyWait)
+	{
+		HexGridVisualComponent->SetCustomDataValue(GridIndex * 2 + 1, 0, HighlightFactor, true);
+	}
+}

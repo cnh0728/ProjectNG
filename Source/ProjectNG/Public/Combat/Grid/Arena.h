@@ -54,6 +54,7 @@ public:
 	void Server_UpdateCameraTransform(const FTransform& HomeCam, const FTransform& AwayCam);
 	
 	void BuildGridVisual(ANGPlayerState* PS);
+	void HighlightSpecificGrid(const FGridAddress& GridAddress, bool bHighlight) const;
 
 	void Initialize(const FGridBuildData& BuildData, ANGPlayerState* InPS);
 	

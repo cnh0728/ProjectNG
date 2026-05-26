@@ -18,17 +18,10 @@
 #include "ProjectNG/ProjectNG.h"
 #include "UI/NGUnitInfoWidget.h"
 
-ANGPlayerController::ANGPlayerController() : bIsDragging(false)
+ANGPlayerController::ANGPlayerController() : DragThreshold(10.f), DragHeightOffset(20.f), DragInterpSpeed(20.f)
 {
 	UE_LOG(LogTemp, Warning, TEXT("---------------PC Created!---------------"));
 	UE_LOG(LogTemp, Warning, TEXT("PC Addr: %p"), this);
-	
-	//커서 보이게 하는 변수
-	bShowMouseCursor = true;
-	bEnableClickEvents = true; 
-	bEnableMouseOverEvents = true;
-	DefaultMouseCursor = EMouseCursor::Default;
-	
 }
 
 ANGPlayerController::~ANGPlayerController()
@@ -40,13 +33,21 @@ void ANGPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	SetIgnoreLookInput(true);
+	
+	bShowMouseCursor = true;
+	bEnableClickEvents = true; 
+	bEnableMouseOverEvents = true;
+	DefaultMouseCursor = EMouseCursor::Default;
+	
+	CurrentClickTraceChannel = ECC_SelectableUnit;
+	
 	if (PlayerCameraManager)
 	{
 		PlayerCameraManager->ViewYawMin = -179.9f;
 		PlayerCameraManager->ViewYawMax = 179.9f;
 		PlayerCameraManager->ViewPitchMin = -89.9f;
 		PlayerCameraManager->ViewPitchMax = 89.9f;
-
 	}
 	
 	if (ULocalPlayer* LocalPlayer = GetLocalPlayer())
@@ -77,7 +78,6 @@ void ANGPlayerController::SetupInputComponent()
 		if (ClickInputAction)
 		{
 			EnhancedInputComponent->BindAction(ClickInputAction, ETriggerEvent::Started, this, &ThisClass::HandleClickPressed);
-			EnhancedInputComponent->BindAction(ClickInputAction, ETriggerEvent::Triggered, this, &ThisClass::HandleClickTriggered);
 			EnhancedInputComponent->BindAction(ClickInputAction, ETriggerEvent::Completed, this, &ThisClass::HandleClickReleased);
 		}
 	}
@@ -88,6 +88,11 @@ void ANGPlayerController::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	
 	GetMousePosition(CurrentMouseLocation.X, CurrentMouseLocation.Y);
+	
+	if (IsLocalController() && DraggingUnit.IsValid())
+	{
+		PerformDragUpdate(DeltaTime);
+	}
 	
 	if (bShowDebugGrid)
 	{
@@ -105,7 +110,6 @@ void ANGPlayerController::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
 	
-	
 }
 
 void ANGPlayerController::OnPossess(APawn* InPawn)
@@ -114,59 +118,77 @@ void ANGPlayerController::OnPossess(APawn* InPawn)
 
 }
 
-
-void ANGPlayerController::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+void ANGPlayerController::PerformDragUpdate(float DeltaTime)
 {
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	
-}
-
-void ANGPlayerController::ProgressDragActor()
-{
-	if (DraggingUnit.IsValid())
+	if (!HasAuthority())
 	{
-		FHitResult HitResult;
-		
-		if (GetHitResultUnderCursor(ECC_Map, false, HitResult))
-		// if (GetHitResultUnderCursor(ECC_Visibility, false, HitResult))
-		{			
-			FVector TargetLocation = HitResult.Location;
-			// UE_LOG(LogTemp, Warning, TEXT("Success! Hit: %s"), *TargetLocation.ToString());
+		if (DraggingUnit.IsValid())
+		{
+			FHitResult HitResult;
 			
-			DraggingUnit->MoveTo(TargetLocation);
+			if (GetHitResultUnderCursor(ECC_Map, false, HitResult))
+			{
+				//TODO: HitResult 그리드 하이라이트
+				
+				FVector CurrentLocation = DraggingUnit->GetActorLocation();
+				
+				FVector TargetLocation = HitResult.Location;
+				TargetLocation.Z += DragHeightOffset;
+				
+				FVector SmoothedLocation = FMath::VInterpTo(CurrentLocation, TargetLocation, DeltaTime, DragInterpSpeed);
+				
+				DraggingUnit->SetActorLocation(SmoothedLocation);
+			}
 		}
 	}
+}
+
+void ANGPlayerController::SetHoveringUnit(ANGPawnBase* InHoveringPawn)
+{
+	HoveringUnit = InHoveringPawn;
+}
+
+ANGPawnBase* ANGPlayerController::GetHoveringUnit() const
+{
+	return HoveringUnit.Get();
 }
 
 void ANGPlayerController::HandleClickPressed(const FInputActionValue& Value)
 {
 	GetMousePosition(ClickStartLocation.X, ClickStartLocation.Y);
-		
+	
 	PerformDrag();
-}
-
-void ANGPlayerController::HandleClickTriggered(const FInputActionValue& Value)
-{
-	if (DraggingUnit.IsValid())
-	{
-		ProgressDragActor();
-	}
 }
 
 void ANGPlayerController::HandleClickReleased(const FInputActionValue& Value)
 {
-	double MouseDelta = (ClickStartLocation - CurrentMouseLocation).Size();
-	
-	if (MouseDelta > DragThreshold)
+	if (DraggingUnit.IsValid())
 	{
-		// 클릭일땐 선택 유지, 드래그일땐 선택 취소
-		ResetSelectUnit();
-	}
+		double MouseDelta = (ClickStartLocation - CurrentMouseLocation).Size();
 	
-	ResetDragUnit();
+		if (MouseDelta > DragThreshold)
+		{
+			//많이움직여서 옮긴판정
+			FHitResult HitResult;
+				
+			if (GetHitResultUnderCursor(ECC_Map, false, HitResult))
+			{			
+				ANGPawnBase* Unit = DraggingUnit.Get();
+				
+				FVector TargetLocation = HitResult.Location;
+				
+				Unit->TryMoveTo(TargetLocation);
+			}
+		}else
+		{
+			SetSelectedUnit(DraggingUnit.Get());
+		}
+		
+		ResetDragUnit();
+	}
 }
 
-void ANGPlayerController::UpdateUnitWidget(ANGUnitPawn* NewUnit)
+void ANGPlayerController::UpdateUnitWidget(ANGPawnBase* NewUnit)
 {
 	//위젯이 없는 상태면 생성
 	if (!UnitInfoWidgetInstance && UnitInfoWidgetClass)
@@ -187,7 +209,7 @@ void ANGPlayerController::UpdateUnitWidget(ANGUnitPawn* NewUnit)
 	}
 }
 
-void ANGPlayerController::SetSelectedUnit(ANGUnitPawn* InSelectedUnit)
+void ANGPlayerController::SetSelectedUnit(ANGPawnBase* InSelectedUnit)
 {
 	ResetSelectUnit();
 	
@@ -230,23 +252,20 @@ void ANGPlayerController::PerformDrag()
 	ResetDragUnit();
 	ResetSelectUnit();
 	
-	FHitResult HitResult;
-	if (GetHitResultUnderCursor(ECC_SelectableUnit, false, HitResult))
+	if (HoveringUnit.IsValid())
 	{
-		AActor* HitActor = HitResult.GetActor();
-		if (HitActor->GetOwner() != this)
+		//다른 유저거면 return
+		if (HoveringUnit->GetOwner() != this)
 		{
 			return;
 		}
 
-		if (HitActor && HitActor->Implements<USelectableInterface>())
+		if (HoveringUnit->Implements<USelectableInterface>())
 		{
 			// UE_LOG(LogTemp, Warning, TEXT("Hit Actor: %s"), *HitActor->GetName());
 			
-			DraggingUnit = Cast<ANGUnitPawn>(HitActor);
-			ISelectableInterface::Execute_OnDrag(HitActor);
-			
-			SetSelectedUnit(DraggingUnit.Get());
+			DraggingUnit = Cast<ANGPawnBase>(HoveringUnit);
+			ISelectableInterface::Execute_OnDrag(HoveringUnit.Get());
 		}
 	}
 }
@@ -277,7 +296,7 @@ void ANGPlayerController::Server_RequestBuyUnit_Implementation(FName UnitName)
 	}
 }
 
-UNGPocketComponent* ANGPlayerController::GetPlayerPocket()
+UNGPocketComponent* ANGPlayerController::GetPlayerPocket() const
 {
 	if (ANGPlayerState* PS = GetPlayerState<ANGPlayerState>())
 	{
@@ -335,23 +354,4 @@ void ANGPlayerController::Cmd_FinishCombat()
 void ANGPlayerController::Cmd_ToggleDebugGrid()
 {
 	bShowDebugGrid = !bShowDebugGrid;
-}
-
-void ANGPlayerController::Server_ChangeOwnerIndex_Implementation(ANGPawnBase* SelectedPawn, int32 NewOwnerIndex)
-{
-	if (HasAuthority())
-	{
-		if (SelectedPawn)
-		{
-			SelectedPawn->SetOwnerIndex(NewOwnerIndex);
-		}
-	}
-}
-
-void ANGPlayerController::Cmd_ChangeOwner(int32 OtherOwnerIndex)
-{
-	if (SelectedUnit.Get())
-	{
-		Server_ChangeOwnerIndex(SelectedUnit.Get(), OtherOwnerIndex);
-	}
 }

@@ -39,7 +39,6 @@ void ANGPlayerState::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>&
 
 void ANGPlayerState::SpawnGridMapManager()
 {
-	//TODO: 유저별 인덱스 받고 인덱스에 맞는 위치 주입
 	ANGPlayerController* PC = GetOwner<ANGPlayerController>();
 		
 	FTransform SpawnTransform(FRotator::ZeroRotator, FVector::ZeroVector);
@@ -116,7 +115,7 @@ void ANGPlayerState::RestoreInitialGrid()
 
 			FGridAddress GridAddress(OriginalIndex, EGridType::Combat, this);
 			
-			GridData.PlacedPawn->MovePawnOnGrid(GridAddress);
+			GridData.PlacedPawn->TranslatePawnOnGrid(GridAddress);
 			
 			GridData.PlacedPawn->TurnPawnState(EPawnState::Wait);
 		}

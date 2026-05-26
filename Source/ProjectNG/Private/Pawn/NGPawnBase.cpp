@@ -9,7 +9,7 @@
 #include "Components/NGPathFindingComponent.h"
 #include "Components/NGPocketComponent.h"
 #include "Components/WidgetComponent.h"
-#include "Core/NGPoolableComponent.h"
+#include "Core/NGDeveloperSettings.h"
 #include "GameModes/NGInGameMode.h"
 #include "Net/UnrealNetwork.h"
 #include "Player/NGPlayerController.h"
@@ -21,24 +21,27 @@ ANGPawnBase::ANGPawnBase() : RotationInterpSpeed(10.f), SpeedScale(100.f)
 	PrimaryActorTick.bCanEverTick = true;
 	
 	bReplicates = true;		//네트워크 복제 활성화
-	NetUpdateFrequency =66.f;
-	// SetReplicatingMovement(true);	//위치 속도 복제 활성화
+	SetNetUpdateFrequency(66.f);
+
 	AActor::SetReplicateMovement(true);
 	
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
 	
-	PoolController = CreateDefaultSubobject<UNGPoolableComponent>(FName("PoolController"));
-	
 	CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CollisionComp"));
+
 	CapsuleComponent->SetupAttachment(RootComponent);
     
 	CapsuleComponent->InitCapsuleSize(40.f, 80.f);
 	CapsuleComponent->SetCollisionProfileName(TEXT("Pawn"));
 	
+	CapsuleComponent->SetCollisionObjectType(ECC_Pawn);
+	CapsuleComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	CapsuleComponent->SetCollisionResponseToChannel(ECC_SelectableUnit, ECR_Block);
+
 	FVector CapsuleLocation = CapsuleComponent->GetRelativeLocation();
 	CapsuleLocation.Z += GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 	CapsuleComponent->SetRelativeLocation(CapsuleLocation);
-	
+
 	UnitMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("UnitMesh"));
 	UnitMesh->SetupAttachment(CapsuleComponent);
     
@@ -50,15 +53,13 @@ ANGPawnBase::ANGPawnBase() : RotationInterpSpeed(10.f), SpeedScale(100.f)
 
 	AttributeSet = CreateDefaultSubobject<UNGAttributeSet>(TEXT("AttributeSet"));
 	
+	PathFindingComponent = CreateDefaultSubobject<UNGPathFindingComponent>(TEXT("PathFindingComp"));
+	
 	HPBarComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("HPBarComponent"));
 	HPBarComponent->SetupAttachment(CapsuleComponent);
 	HPBarComponent->SetRelativeLocation(FVector(0.f, -5.f, 10.f) + GetCapsuleComponent()->GetScaledCapsuleHalfHeight());
 	HPBarComponent->SetWidgetSpace(EWidgetSpace::Screen);
 	HPBarComponent->SetDrawSize(FVector2D(100.f, 20.f));
-	
-	GetCapsuleComponent()->SetCollisionObjectType(ECC_Pawn);
-	
-	PathFindingComponent = CreateDefaultSubobject<UNGPathFindingComponent>(TEXT("PathFindingComp"));
 }
 
 UAbilitySystemComponent* ANGPawnBase::GetAbilitySystemComponent() const
@@ -189,22 +190,28 @@ void ANGPawnBase::Tick(float DeltaTime)
 		if (PawnState == EPawnState::Following)
 		{
 			VisualizeFollowing(DeltaTime);
-		}else if (PawnState == EPawnState::Combat)
+		}
+		else if (PawnState == EPawnState::Combat)
 		{
-			if (CurrentTarget)
-			{
-				FVector Direction = CurrentTarget->GetActorLocation() - GetActorLocation();
-				FRotator TargetRotation = Direction.Rotation();
-			
-				//Yaw만 사용
-				TargetRotation.Pitch = 0.f;
-				TargetRotation.Roll = 0.f;
-			
-				FRotator NewRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, RotationInterpSpeed);
-				SetActorRotation(NewRotation);
-			}
+			LookAtTarget(CurrentTarget, DeltaTime);
 		}
 	}
+}
+
+void ANGPawnBase::LookAtTarget(ANGPawnBase* Target, float DeltaTime)
+{
+	if (Target)
+	{
+		FVector Direction = Target->GetActorLocation() - GetActorLocation();
+		FRotator TargetRotation = Direction.Rotation();
+			
+		//Yaw만 사용
+		TargetRotation.Pitch = 0.f;
+		TargetRotation.Roll = 0.f;
+			
+		FRotator NewRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, RotationInterpSpeed);
+		SetActorRotation(NewRotation);
+	}	
 }
 
 void ANGPawnBase::CheckCombatState()
@@ -252,7 +259,7 @@ void ANGPawnBase::OnReachedNextGrid()
 	
 	FGridAddress NextGridAddress = CurrentGridAddress;
 	NextGridAddress.GridIndex = NextGridPoint;
-	MovePawnOnGrid(NextGridAddress);
+	TranslatePawnOnGrid(NextGridAddress);
 	
 	//적에게 도착시 전투상태로 이전
 	int32 AttackRange = AttributeSet ? AttributeSet->GetAttackRange() : 1;
@@ -572,7 +579,7 @@ bool ANGPawnBase::CanAddUnitOnCombatGrid(EGridType NewGridType)
 	return true;
 }
 
-void ANGPawnBase::MoveTo(const FVector& TargetLocation)
+void ANGPawnBase::TryMoveTo(const FVector& TargetLocation)
 {
 	// Client에서만 불려야함
 	if (HasAuthority())	return;
@@ -601,40 +608,32 @@ void ANGPawnBase::MoveTo(const FVector& TargetLocation)
 		{
 			return;
 		}
-		UpdatePlacedGridInfo(NewGridAddress);
+		UpdateCurrentGridAddress(NewGridAddress);
 
-		Server_MoveGrid(TargetLocation, NewGridAddress);
-	}else
-	{
-		UE_LOG(LogTemp, Error, TEXT("ANGPawnBase::MoveTo Cannot Find GridMap!"));
+		Server_TryMoveGrid(TargetLocation, NewGridAddress);
 	}
 }
 
-void ANGPawnBase::UpdatePlacedGridInfo(FGridAddress NewGridAddress)
+void ANGPawnBase::UpdateCurrentGridAddress(FGridAddress NewGridAddress)
 {
 	PreGridAddress = CurrentGridAddress;
 	
 	CurrentGridAddress = NewGridAddress;
+	
+	UpdatePawnCurrentLocation(CurrentGridAddress);
+}
+
+void ANGPawnBase::UpdatePawnCurrentLocation(const FGridAddress& GridAddress)
+{
+	FVector Location = UGridMapHelper::GetWorldLocation(GridAddress);
+	SetActorLocation(Location);
 }
 
 void ANGPawnBase::Client_RejectMove_Implementation()
 {		
 	CurrentGridAddress = PreGridAddress;
 	
-	
-	// 나중에 이동하는거 드래그앤 드랍했을때로 바꾸면 이것도 손보기
-	/*
-	if (ANGPlayerController* PC = GetOwner<ANGPlayerController>())
-	{
-		if (ANGPlayerState* PS = PC->GetPlayerState<ANGPlayerState>())
-		{
-			FVector Location = UGridMapHelper::GetWorldLocation(
-				UGridMapHelper::GetGridMap(PS, PlacedGridType), 
-				PlacedGridIndex, PlacedGridType);
-			SetActorLocation(Location + LocationOffset);
-		}
-	}
-	*/
+	UpdatePawnCurrentLocation(CurrentGridAddress);
 }
 
 EGridType ANGPawnBase::GetCurrentGridType(const FVector& TargetLocation) const
@@ -667,12 +666,62 @@ EGridType ANGPawnBase::GetCurrentGridType(const FVector& TargetLocation) const
 	return EGridType::None;
 }
 
+void ANGPawnBase::NotifyActorBeginCursorOver()
+{
+	Super::NotifyActorBeginCursorOver();
+
+	GrantHoverState();
+}
+
+void ANGPawnBase::NotifyActorEndCursorOver()
+{
+	Super::NotifyActorEndCursorOver();
+	
+	RemoveHoverState();
+}
+
+void ANGPawnBase::GrantHoverState()
+{
+	//폰 하이라이트 -> 롤체는 파란색 아웃라이너
+	if (ANGPlayerController* PC = GetOwner<ANGPlayerController>())
+	{
+		PC->SetHoveringUnit(this);
+	}
+	
+	if (const UNGDeveloperSettings* Settings = GetDefault<UNGDeveloperSettings>())
+	{
+		if (Settings->HoverOverlayMaterial.IsValid())
+		{
+			UMaterialInterface* HoverOverlayMaterial = Settings->HoverOverlayMaterial.LoadSynchronous();
+			
+			if (HoverOverlayMaterial && UnitMesh)
+			{
+				UnitMesh->SetOverlayMaterial(HoverOverlayMaterial);
+			}
+		}
+	}
+}
+
+void ANGPawnBase::RemoveHoverState() const
+{
+	//폰 하이라이트 해제
+	if (ANGPlayerController* PC = GetOwner<ANGPlayerController>())
+	{
+		PC->SetHoveringUnit(nullptr);
+	}
+	
+	if (UnitMesh)
+	{
+		UnitMesh->SetOverlayMaterial(nullptr);
+	}
+}
+
 bool ANGPawnBase::CanPlaceUnit(FGridMapBase& GridMap, FIntVector2 GridIndex)
 {
 	return GridMap.IsGridIndexEmpty(GridIndex) && GridMap.IsValidIndex(GridIndex);
 }
 
-void ANGPawnBase::Server_MoveGrid_Implementation(const FVector& TargetLocation, FGridAddress GridAddress)
+void ANGPawnBase::Server_TryMoveGrid_Implementation(const FVector& TargetLocation, FGridAddress GridAddress)
 {
 	if (FGridMapBase* GridMap = UGridMapHelper::GetGridMap(GridAddress))
 	{
@@ -685,11 +734,11 @@ void ANGPawnBase::Server_MoveGrid_Implementation(const FVector& TargetLocation, 
 			return;
 		}
 		
-		MovePawnOnGrid(GridAddress);
+		TranslatePawnOnGrid(GridAddress);
 	}
 }
 
-void ANGPawnBase::MovePawnOnGrid(const FGridAddress& GridAddress)
+void ANGPawnBase::TranslatePawnOnGrid(const FGridAddress& GridAddress)
 {
 	UnSetPawnOnGrid(CurrentGridAddress);
 	SetPawnOnGrid(GridAddress);
@@ -704,7 +753,7 @@ void ANGPawnBase::SetPawnOnGrid(const FGridAddress& GridAddress)
 		FGridData GridData;
 		GridData.PlacedPawn = this;
 
-		UpdatePlacedGridInfo(GridAddress);
+		UpdateCurrentGridAddress(GridAddress);
 		GridMap->SetGridData(GridAddress.GridIndex, GridData);
 	}
 }
@@ -732,8 +781,8 @@ void ANGPawnBase::CheckAttackCondition()
 
 void ANGPawnBase::OnRep_CurrentGridAddress()
 {
-	FVector Location = UGridMapHelper::GetWorldLocation(CurrentGridAddress);
-	SetActorLocation(Location);
+	// FVector Location = UGridMapHelper::GetWorldLocation(CurrentGridAddress);
+	// SetActorLocation(Location);
 }
 
 void ANGPawnBase::ExecuteAttack()

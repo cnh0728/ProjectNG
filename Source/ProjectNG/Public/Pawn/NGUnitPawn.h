@@ -21,43 +21,34 @@ public:
 	
 	virtual void OnSelected_Implementation() override;
 	virtual void OnDeselected_Implementation() override;
-	void ShowRangeIndicator(bool bVisible) const;
+	void ShowRangeIndicator(bool bVisible, FGridAddress PivotAddress) const;
 
 	virtual void OnDrag_Implementation() override;
 	virtual void OnUndrag_Implementation() override;
-	
-	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
-	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
 	
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
 	virtual void OnRep_PlayerState() override;
 
-	virtual void UpdatePlacedGridInfo(FGridAddress NewGridAddress) override;
-
-	void UpdateDecalRange();
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	virtual void InitializeAttributes() override;
-	
+
+private:
 	UFUNCTION()
 	void EquipWeapon(UNGWeaponData* NewWeaponData);
-private:
+	
 	virtual void InitAbilityActorInfo() override;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Drag Drop")
 	float DragInterpSpeed = 15.0f;
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Drag Drop")
 	float AcceptanceRadius;
 	
 	uint8 bIsGrabbed : 1;
 	uint8 bIsSelected : 1;
-	
-	UPROPERTY(Replicated)
-	uint8 bIsDragMoving : 1;
 
 };

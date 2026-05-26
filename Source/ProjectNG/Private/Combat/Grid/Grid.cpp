@@ -184,8 +184,16 @@ FIntVector2 UGridMapHelper::GetCellIndex(EGridType GridType, const FVector& Loca
 
 void UGridMapHelper::GetHexNeighborIndexAtExactRange(FIntVector2 MidIndex, int32 Range, TArray<FIntVector2>& OutRingNodes)
 {
-    if (Range <= 0) return;
-
+    if (Range <= 0)
+    {
+        //0인 경우는 자기위치
+        if (Range == 0)
+        {
+            OutRingNodes.Add(MidIndex);
+        }
+        return;
+    }
+    
     // 링 테두리의 총 타일 개수는 언제나 정확히 (6 * Range)개
     int32 ExpectedSize = 6 * Range;
     OutRingNodes.Empty(ExpectedSize);
@@ -223,10 +231,11 @@ void UGridMapHelper::GetHexNeighborIndexInRange(FIntVector2 MidIndex, int32 Rang
 {
     int32 ExpectedSize = 1 + 3 * Range * (Range + 1);
     OutNeighborNodes.Empty(ExpectedSize);
-
+    
     TArray<FIntVector2> TempRingNodes;
 
-    for (int32 i = 1; i <= Range; ++i)
+    //0부터 한다는거는 자기자신 포함
+    for (int32 i = 0; i <= Range; ++i)
     {
         GetHexNeighborIndexAtExactRange(MidIndex, i, TempRingNodes);
         

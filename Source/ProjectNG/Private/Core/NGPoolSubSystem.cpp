@@ -93,7 +93,6 @@ void UNGPoolSubSystem::ReleaseDefaultSetting(AActor* InActor)
 
 void UNGPoolSubSystem::ReleaseSegment(ANGPawnBase* Pawn)
 {
-	//TODO: release는 굉장히 유사해서 Template으로 하고 싶었는데 Pool을 통일해버리면 드롭리스트가 전부나와서 지저분해져서 걍 분리 
 	if (!Pawn)	return;
 	
 	ReleaseDefaultSetting(Pawn);
