@@ -2,7 +2,8 @@
 
 #include "Player/NGPlayerState.h"
 
-#include "Combat/GridMapManager.h"
+#include "Combat/Grid/Arena.h"
+#include "Combat/Grid/ArenaManager.h"
 #include "Components/NGPocketComponent.h"
 #include "Core/NGDeveloperSettings.h"
 #include "Game/NGGameState.h"
@@ -32,7 +33,7 @@ void ANGPlayerState::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>&
 	DOREPLIFETIME(ANGPlayerState, WaitGridMap);
 	DOREPLIFETIME(ANGPlayerState, EnemyWaitGridMap);
 	DOREPLIFETIME(ANGPlayerState, PlayerPocket);
-	DOREPLIFETIME(ANGPlayerState, GridManager);
+	DOREPLIFETIME(ANGPlayerState, HomeArena);
 	DOREPLIFETIME(ANGPlayerState, PlayerLevel);
 }
 
@@ -50,19 +51,31 @@ void ANGPlayerState::SpawnGridMapManager()
 		SpawnTransform.AddToTranslation(Margin);
 	}
 	
-	TSoftClassPtr<AGridMapManager> GridMapClass = GetDefault<UNGDeveloperSettings>()->GridMapClass;
+	TSoftClassPtr<AArena> GridMapClass = GetDefault<UNGDeveloperSettings>()->ArenaClass;
 	if (GridMapClass.IsValid())
 	{
+		//TODO: 이것저것 바꿔서 결국 BP말고 기본형으로 소환해도 되지 않음?
 		if (UClass* GridMapManagerBPClass = GridMapClass.LoadSynchronous())
 		{
 			FActorSpawnParameters SpawnParams;
 			SpawnParams.Owner = PC;
-			GridManager = GetWorld()->SpawnActor<AGridMapManager>(GridMapManagerBPClass, SpawnTransform, SpawnParams);
+			HomeArena = GetWorld()->SpawnActor<AArena>(GridMapManagerBPClass, SpawnTransform, SpawnParams);
 			
-			if (GridManager)
+			if (HomeArena)
 			{
 				FGridBuildData BuildData(8, 8, 100.f, 1, 9, 150.f);
-				GridManager->Initialize(BuildData, PC->GetPlayerState<ANGPlayerState>());
+				HomeArena->Initialize(BuildData, PC->GetPlayerState<ANGPlayerState>());
+			}
+			
+			FActorSpawnParameters ArenaSpawnParams;
+			ArenaSpawnParams.Owner = PC ? PC->GetPlayerState<ANGPlayerState>() : nullptr;
+			
+			ArenaManager = GetWorld()->SpawnActor<AArenaManager>(AArenaManager::StaticClass(), SpawnTransform, ArenaSpawnParams);
+			
+			if (ArenaManager)
+			{
+				FArenaAddress ArenaAddress(HomeArena, EPossessArenaIdentification::Home);
+				ArenaManager->PossessArena(ArenaAddress);
 			}
 		}
 	}

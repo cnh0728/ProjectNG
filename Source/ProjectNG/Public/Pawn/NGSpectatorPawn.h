@@ -7,7 +7,7 @@
 #include "Player/NGPlayerState.h"
 #include "NGSpectatorPawn.generated.h"
 
-class AGridMapManager;
+class AArena;
 class USpringArmComponent;
 class UCameraComponent;
 

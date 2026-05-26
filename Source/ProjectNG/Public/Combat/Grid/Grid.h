@@ -122,8 +122,8 @@ public:
 	static FVector GetWorldLocation(FGridAddress GridAddress);
 	static FIntVector2 GetCellIndex(EGridType GridType, const FVector& Location, ANGPlayerState* PS);
 	
-	static void GetHexNeighborNodesInRange(FIntVector2 MidIndex, int32 Range, TArray<FIntVector2>& OutNeighborNodes);
-	static void GetHexNeighborNodesAtExactRange(FIntVector2 MidIndex, int32 Range, TArray<FIntVector2>& OutRingNodes);
+	static void GetHexNeighborIndexInRange(FIntVector2 MidIndex, int32 Range, TArray<FIntVector2>& OutNeighborNodes);
+	static void GetHexNeighborIndexAtExactRange(FIntVector2 MidIndex, int32 Range, TArray<FIntVector2>& OutRingNodes);
 	
 	static FGridMapBase* GetGridMap(FGridAddress GridAddress);
 

@@ -442,7 +442,7 @@ void ANGPawnBase::CollectInRangeUnits(TArray<ANGPawnBase*>& OutEnemies)
 	uint32 AttackRange = AttributeSet ? AttributeSet->GetAttackRange() : 1;
 	
 	TArray<FIntVector2> Neighbors;
-	UGridMapHelper::GetHexNeighborNodesInRange(CurrentGridAddress.GridIndex, AttackRange, Neighbors);
+	UGridMapHelper::GetHexNeighborIndexInRange(CurrentGridAddress.GridIndex, AttackRange, Neighbors);
 	
 	//Neighbors 순회하면서 
 	if (FGridMapBase* GridMap = UGridMapHelper::GetGridMap(CurrentGridAddress))

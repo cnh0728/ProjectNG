@@ -6,7 +6,7 @@
 #include "Engine/DeveloperSettings.h"
 #include "NGDeveloperSettings.generated.h"
 
-class AGridMapManager;
+class AArena;
 class ANGPawnBase;
 class ANGProjectile;
 /**
@@ -29,6 +29,6 @@ public:
 	TMap<TSubclassOf<ANGPawnBase>, TSoftClassPtr<ANGPawnBase>> PawnClass;
 
 	UPROPERTY(Config, EditAnywhere, Category = "NG Pool Settings")
-	TSoftClassPtr<AGridMapManager> GridMapClass;
+	TSoftClassPtr<AArena> ArenaClass;
 
 };

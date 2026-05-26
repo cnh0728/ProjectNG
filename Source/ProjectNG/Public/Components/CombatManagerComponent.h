@@ -9,7 +9,7 @@ class ANGPlayerState;
 struct FWaveData;
 struct FCombatSettingData;
 class ANGPawnBase;
-class AGridMapManager;
+class AArena;
 
 UCLASS()
 class PROJECTNG_API UCombatManagerComponent : public UActorComponent
@@ -34,25 +34,16 @@ public:
 	void FinishCombat();
 
 	void ResetGrid();
-	
-	void TranslationSpectatorPawn(FTransform DestinationGridTransform, ANGPlayerState* SpecPawnOwner);
+
 protected:
-	
 	void SetupCombat(FCombatSettingData& SettingData);
-	void TranslationAwayUnits(FCombatSettingData& SettingData);
 
 	int32 CurrentEnemyCount = 0;
 	int32 TargetKillCount = 10;
 	
 	UPROPERTY(Transient)
 	TObjectPtr<APlayerController> RequestingPlayerControllerCache;
-	
-	UPROPERTY()
-	TObjectPtr<ANGPlayerState> HomePS;
-	
-	UPROPERTY()
-	TObjectPtr<ANGPlayerState> AwayPS;
-	
+
 	UPROPERTY()
 	TArray<FCombatSettingData> CombatDatas;
 	

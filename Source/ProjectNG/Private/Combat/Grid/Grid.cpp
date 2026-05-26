@@ -182,7 +182,7 @@ FIntVector2 UGridMapHelper::GetCellIndex(EGridType GridType, const FVector& Loca
     return FIntVector2::ZeroValue;
 }
 
-void UGridMapHelper::GetHexNeighborNodesAtExactRange(FIntVector2 MidIndex, int32 Range, TArray<FIntVector2>& OutRingNodes)
+void UGridMapHelper::GetHexNeighborIndexAtExactRange(FIntVector2 MidIndex, int32 Range, TArray<FIntVector2>& OutRingNodes)
 {
     if (Range <= 0) return;
 
@@ -219,7 +219,7 @@ void UGridMapHelper::GetHexNeighborNodesAtExactRange(FIntVector2 MidIndex, int32
     }
 }
 
-void UGridMapHelper::GetHexNeighborNodesInRange(FIntVector2 MidIndex, int32 Range, TArray<FIntVector2>& OutNeighborNodes)
+void UGridMapHelper::GetHexNeighborIndexInRange(FIntVector2 MidIndex, int32 Range, TArray<FIntVector2>& OutNeighborNodes)
 {
     int32 ExpectedSize = 1 + 3 * Range * (Range + 1);
     OutNeighborNodes.Empty(ExpectedSize);
@@ -228,7 +228,7 @@ void UGridMapHelper::GetHexNeighborNodesInRange(FIntVector2 MidIndex, int32 Rang
 
     for (int32 i = 1; i <= Range; ++i)
     {
-        GetHexNeighborNodesAtExactRange(MidIndex, i, TempRingNodes);
+        GetHexNeighborIndexAtExactRange(MidIndex, i, TempRingNodes);
         
         OutNeighborNodes.Append(TempRingNodes);
     }

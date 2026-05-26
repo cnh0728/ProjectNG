@@ -9,7 +9,8 @@
 #include "GameFramework/PlayerState.h"
 #include "NGPlayerState.generated.h"
 
-class AGridMapManager;
+class AArenaManager;
+class AArena;
 class UNGPocketComponent;
 /**
  * In-Game에서의 플레이어의 상태 정보를 저장하는 클래스
@@ -32,8 +33,6 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
 	UNGAbilitySystemComponent* GetNGAbilitySystemComponent() const { return AbilitySystemComponent; }
-
-	AGridMapManager* GetGridManager() const { return GridManager; }
 	
 	void InitializePostLogin();
 
@@ -69,9 +68,11 @@ protected:
 	/*************************************/
 public:
 	FHexGridMap& GetCombatGridMap() { return CombatGridMap; }
-	
 	FQuadGridMap& GetEnemyWaitGridMap() { return EnemyWaitGridMap; }
 	FQuadGridMap& GetWaitGridMap() { return WaitGridMap; }
+	
+	AArena* GetHomeArena() const { return HomeArena; }
+	AArenaManager* GetArenaManager() const { return ArenaManager; }
 	
 	UFUNCTION()
 	void RestoreInitialGrid();
@@ -93,5 +94,8 @@ protected:
 	
 	//그리드 맵의 실체를 담당(각 유저당 하나임)
 	UPROPERTY(Replicated)
-	TObjectPtr<AGridMapManager> GridManager;	
+	TObjectPtr<AArena> HomeArena;	
+	
+	UPROPERTY()
+	TObjectPtr<AArenaManager> ArenaManager;
 };

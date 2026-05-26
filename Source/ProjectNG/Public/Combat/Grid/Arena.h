@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Player/NGPlayerController.h"
-#include "GridMapManager.generated.h"
+#include "Arena.generated.h"
 
 class ANGPlayerState;
 
@@ -32,12 +32,12 @@ class USplineComponent;
  * 
  */
 UCLASS()
-class PROJECTNG_API AGridMapManager : public AActor
+class PROJECTNG_API AArena : public AActor
 {
 	GENERATED_BODY()
 
 public:
-	AGridMapManager();
+	AArena();
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
@@ -56,6 +56,8 @@ public:
 	void BuildGridVisual(ANGPlayerState* PS);
 
 	void Initialize(const FGridBuildData& BuildData, ANGPlayerState* InPS);
+	
+	ANGPlayerState* GetOwnerPS() {return OwnerPS;}
 	
 	const FTransform& GetHomeCameraTransform() const { return HomeCameraTransform; }
 	const FTransform& GetAwayCameraTransform() const { return AwayCameraTransform; }

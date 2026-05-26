@@ -1,7 +1,7 @@
 // Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 
-#include "Combat/GridMapManager.h"
+#include "Combat/Grid/Arena.h"
 
 #include "Combat/Grid/Grid.h"
 #include "Components/InstancedStaticMeshComponent.h"
@@ -11,7 +11,7 @@
 #include "ProjectNG/ProjectNG.h"
 
 
-AGridMapManager::AGridMapManager() : WaitGridOffsetLocation(200.f), CameraPitchAngle(-60.f), CameraOffset(FVector(-350.f, 700.f, 1200.f))
+AArena::AArena() : WaitGridOffsetLocation(200.f), CameraPitchAngle(-60.f), CameraOffset(FVector(-350.f, 700.f, 1200.f))
 {
 	bReplicates = true;
 	
@@ -29,30 +29,30 @@ AGridMapManager::AGridMapManager() : WaitGridOffsetLocation(200.f), CameraPitchA
 	QuadGridVisualComponent->SetupAttachment(Root);
 }
 
-void AGridMapManager::Initialize(const FGridBuildData& BuildData, ANGPlayerState* InPS)
+void AArena::Initialize(const FGridBuildData& BuildData, ANGPlayerState* InPS)
 {
 	OwnerPS = InPS;
 	
 	InitGridMap(BuildData);
 }
 
-void AGridMapManager::BeginPlay()
+void AArena::BeginPlay()
 {
 	Super::BeginPlay();
 	
 }
 
-void AGridMapManager::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+void AArena::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
-	DOREPLIFETIME(AGridMapManager, GridBuildData);
-	DOREPLIFETIME(AGridMapManager, HomeCameraTransform);
-	DOREPLIFETIME(AGridMapManager, AwayCameraTransform);
+	DOREPLIFETIME(AArena, GridBuildData);
+	DOREPLIFETIME(AArena, HomeCameraTransform);
+	DOREPLIFETIME(AArena, AwayCameraTransform);
 	
 }
 
-void AGridMapManager::InitGridMap(const FGridBuildData& BuildData)
+void AArena::InitGridMap(const FGridBuildData& BuildData)
 {
 	const FVector MyLocation = GetActorLocation();
 	
@@ -83,7 +83,7 @@ void AGridMapManager::InitGridMap(const FGridBuildData& BuildData)
 
 }
 
-void AGridMapManager::OnRep_BuildGridVisual()
+void AArena::OnRep_BuildGridVisual()
 {	
 	BuildMyGrid();
 	
@@ -91,7 +91,7 @@ void AGridMapManager::OnRep_BuildGridVisual()
 	SetNetDormancy(DORM_Initial);
 }
 
-void AGridMapManager::BuildMyGrid()
+void AArena::BuildMyGrid()
 {
 	if (++RetryCount > 10)
 	{
@@ -103,7 +103,7 @@ void AGridMapManager::BuildMyGrid()
 	if (!OwnerPS)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Retry BuildGrid PS is NULL"));
-		GetWorldTimerManager().SetTimer(RetryTimerHandle, this, &AGridMapManager::BuildMyGrid, 0.1f, false);
+		GetWorldTimerManager().SetTimer(RetryTimerHandle, this, &AArena::BuildMyGrid, 0.1f, false);
 		return;		
 	}
 	
@@ -114,13 +114,13 @@ void AGridMapManager::BuildMyGrid()
 	BuildGridVisual(OwnerPS);
 }
 
-void AGridMapManager::Server_UpdateCameraTransform_Implementation(const FTransform& HomeCam, const FTransform& AwayCam)
+void AArena::Server_UpdateCameraTransform_Implementation(const FTransform& HomeCam, const FTransform& AwayCam)
 {
 	HomeCameraTransform = HomeCam;
 	AwayCameraTransform = AwayCam;
 }
 
-void AGridMapManager::BuildGridVisual(ANGPlayerState* PS)
+void AArena::BuildGridVisual(ANGPlayerState* PS)
 {
 	if (!HexGridVisualComponent || !QuadGridVisualComponent)	return;
 	

@@ -7,7 +7,7 @@
 #include "NGGameState.generated.h"
 
 class ANGPlayerState;
-class AGridMapManager;
+class AArena;
 class UCombatManagerComponent;
 /**
  * 

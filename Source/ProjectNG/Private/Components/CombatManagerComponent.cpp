@@ -3,7 +3,8 @@
 
 #include "Components/CombatManagerComponent.h"
 
-#include "Combat/GridMapManager.h"
+#include "Combat/Grid/Arena.h"
+#include "Combat/Grid/ArenaManager.h"
 #include "Pawn/NGEnemyPawn.h"
 #include "Pawn/NGUnitPawn.h"
 #include "Components/NGPocketComponent.h"
@@ -63,12 +64,12 @@ void UCombatManagerComponent::ReturnSpectatorHome()
 	{
 		if (ANGPlayerState* AwayPlayer = Data.PlayerB)
 		{
-			if (AGridMapManager* GridMapManager = AwayPlayer->GetGridManager())
+			if (AArenaManager* ArenaManager = AwayPlayer->GetArenaManager())
 			{
-				FTransform HomeCameraTransform = GridMapManager->GetHomeCameraTransform();
-				UE_LOG(LogTemp, Log, TEXT("UCombatManagerComponent::ReturnSpectatorHome %s, PS %p"), *HomeCameraTransform.ToString(), AwayPlayer);
-				TranslationSpectatorPawn(HomeCameraTransform, AwayPlayer);
+				FArenaAddress HomeArena(AwayPlayer->GetHomeArena(), ::EPossessArenaIdentification::Home);
+				ArenaManager->PossessArena(HomeArena);
 			}
+
 		}
 	}
 }
@@ -115,6 +116,9 @@ void UCombatManagerComponent::PawnDied(ANGPawnBase* DeadPawn)
 
 void UCombatManagerComponent::SetupCombat(FCombatSettingData& SettingData)
 {
+	if (!SettingData.PlayerA)	return;
+	if (!SettingData.PlayerB)	return;
+
 	ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>();
 	if (!GS)	return;
 	
@@ -130,53 +134,13 @@ void UCombatManagerComponent::SetupCombat(FCombatSettingData& SettingData)
 	CurrentEnemyCount = 0;
 	TargetKillCount = SettingData.EnemyCount;
 	
-	if (SettingData.PlayerA)
+	if (AArenaManager* ArenaManager = SettingData.PlayerB->GetArenaManager())
 	{
-		HomePS = SettingData.PlayerA;
-
+		FArenaAddress AwayArenaAddress(SettingData.PlayerA->GetHomeArena(), EPossessArenaIdentification::Away);
+		ArenaManager->PossessArena(AwayArenaAddress);
 	}
-	
-	if (SettingData.PlayerB)
-	{
-		AwayPS = SettingData.PlayerB;
-	}
-	
-	if (AGridMapManager* GridMapManager = SettingData.PlayerA->GetGridManager())
-	{
-		FTransform AwayCameraTransform = GridMapManager->GetAwayCameraTransform();
-		TranslationSpectatorPawn(AwayCameraTransform, SettingData.PlayerB);
-	}
-	//지금 여기서 Away랑 Combat이랑 전부 보내는데, PlayerB의 WaitGrid의 주소를 바꿔끼워야할듯
-	TranslationAwayUnits(SettingData);
 	
 	CombatDatas.Emplace(MoveTemp(SettingData));
-}
-
-void UCombatManagerComponent::TranslationAwayUnits(FCombatSettingData& SettingData)
-{
-	if (SettingData.PlayerB)
-	{
-		UNGPocketComponent* PocketComponentB = SettingData.PlayerB->GetPlayerPocket();
-		for (TWeakObjectPtr<ANGUnitPawn> Unit : PocketComponentB->GetOwnedUnitPocket())
-		{
-			FGridAddress GridAddress = Unit->GetGridAddress();
-			FIntVector2 MirroredIdx = UGridMapHelper::GetMirroredIndex(*UGridMapHelper::GetGridMap(GridAddress), GridAddress.GridIndex);
-			
-			FGridAddress EnemyCombatGridAddress(MirroredIdx, 
-				GridAddress.GridType == EGridType::Combat ? EGridType::Combat : EGridType::EnemyWait, SettingData.PlayerA);
-
-			Unit->SetPawnOnGrid(EnemyCombatGridAddress);
-		}
-	}
-}
-
-void UCombatManagerComponent::TranslationSpectatorPawn(FTransform DestinationGridTransform, ANGPlayerState* SpecPawnOwner)
-{
-	//waitGrid 이전하고 카메라 이전
-	if (ANGSpectatorPawn* SpecPawn = SpecPawnOwner->GetPawn<ANGSpectatorPawn>())
-	{
-		SpecPawn->PossessCamera(DestinationGridTransform, SpecPawnOwner);
-	}
 }
 
 void UCombatManagerComponent::ResetGrid()

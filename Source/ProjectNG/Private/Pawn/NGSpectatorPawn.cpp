@@ -5,7 +5,7 @@
 
 #include "AbilitySystem/NGAbilitySystemComponent.h"
 #include "Camera/CameraComponent.h"
-#include "Combat/GridMapManager.h"
+#include "Combat/Grid/Arena.h"
 #include "Components/SphereComponent.h"
 #include "Player/NGPlayerController.h"
 #include "Player/NGPlayerState.h"
@@ -94,7 +94,7 @@ void ANGSpectatorPawn::FocusOnMyGrid()
 		if (HasLocalNetOwner())
 		{
 			ANGPlayerState* PS = PC->GetPlayerState<ANGPlayerState>();
-			if (AGridMapManager* GridMapManager = PS ? PS->GetGridManager() : nullptr)
+			if (AArena* GridMapManager = PS ? PS->GetHomeArena() : nullptr)
 			{
 				UE_LOG(LogTemp, Log, TEXT("FocusOnMyGrid PS: %p"), PS);
 				PossessCamera(GridMapManager->GetHomeCameraTransform(), PS);

@@ -73,7 +73,7 @@ void UNGPathFindingComponent::FindPath(const FGridAddress& StartAddress,
 
         // 4. 인접한 이웃 노드(6방향) 검사
         TArray<FIntVector2> Neighbors;
-        UGridMapHelper::GetHexNeighborNodesInRange(CurrentIdx, 1, Neighbors);
+        UGridMapHelper::GetHexNeighborIndexInRange(CurrentIdx, 1, Neighbors);
 
         for (const FIntVector2& Neighbor : Neighbors)
         {
@@ -139,7 +139,7 @@ ANGPawnBase* UNGPathFindingComponent::FindPathToClosestEnemy(const FGridAddress&
         }
         
         TArray<FIntVector2> Neighbors;
-        UGridMapHelper::GetHexNeighborNodesInRange(CurrentIdx, 1, Neighbors);
+        UGridMapHelper::GetHexNeighborIndexInRange(CurrentIdx, 1, Neighbors);
         
         for (const FIntVector2& Neighbor : Neighbors)
         {
