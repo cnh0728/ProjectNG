@@ -6,6 +6,7 @@
 #include "Components/NGPocketComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Blueprint/UserWidget.h"
+#include "Combat/Grid/Arena.h"
 #include "Components/CombatManagerComponent.h"
 #include "Pawn/NGUnitPawn.h"
 #include "Pawn/SelectableInterface.h"
@@ -127,9 +128,7 @@ void ANGPlayerController::PerformDragUpdate(float DeltaTime)
 			FHitResult HitResult;
 			
 			if (GetHitResultUnderCursor(ECC_Map, false, HitResult))
-			{
-				//TODO: HitResult 그리드 하이라이트
-				
+			{				
 				FVector CurrentLocation = DraggingUnit->GetActorLocation();
 				
 				FVector TargetLocation = HitResult.Location;
@@ -138,7 +137,64 @@ void ANGPlayerController::PerformDragUpdate(float DeltaTime)
 				FVector SmoothedLocation = FMath::VInterpTo(CurrentLocation, TargetLocation, DeltaTime, DragInterpSpeed);
 				
 				DraggingUnit->SetActorLocation(SmoothedLocation);
+
+				if (AArena* Arena = Cast<AArena>(HitResult.GetActor()))
+				{
+					
+					HighLightGrid(TargetLocation, Arena);
+				}
+			}else
+			{
+				ResetHighlight();
 			}
+		}
+	}
+}
+
+void ANGPlayerController::ResetHighlight()
+{
+	if (PreHighlightGridAddress.IsSet())
+	{
+		const FGridAddress& GridAddress = PreHighlightGridAddress.GetValue();
+		if (AArena* Arena = GridAddress.GridOwnerPS ? GridAddress.GridOwnerPS->GetHomeArena() : nullptr)
+		{
+			Arena->HighlightSpecificGrid(GridAddress, 0.f, true);
+		}
+	}
+	
+	PreHighlightGridAddress.Reset();
+}
+
+void ANGPlayerController::HighLightGrid(const FVector& TargetLocation, AArena* Arena)
+{
+	if (Arena)
+	{
+		if (ANGPlayerState* PS = Arena->GetOwnerPS())
+		{
+			EGridType GridType = UGridMapHelper::GetGridType(TargetLocation, PS);
+			FIntVector2 GridIndex = UGridMapHelper::GetCellIndex(GridType, TargetLocation, PS);
+						
+			FGridAddress HighlightGridAddress(GridIndex, GridType, PS);
+			
+			if (PreHighlightGridAddress.IsSet())
+			{
+				if (HighlightGridAddress == PreHighlightGridAddress.GetValue())
+				{
+					return;
+				}
+					
+				ResetHighlight();
+			}
+			
+			// 범위표시도 하려했는데 요구자원 많아서 굳이..? 싶은 만드려면 Range표시한자리 지나갔을때 치워주는것도 만들어야함
+			// if (DraggingUnit.IsValid())
+			// {
+			// 	DraggingUnit->HighlightRangeIndicator(HighlightGridAddress);
+			// }
+			
+			Arena->HighlightSpecificGrid(HighlightGridAddress, 1.f, true);
+		
+			PreHighlightGridAddress = HighlightGridAddress;
 		}
 	}
 }
@@ -184,6 +240,9 @@ void ANGPlayerController::HandleClickReleased(const FInputActionValue& Value)
 			SetSelectedUnit(DraggingUnit.Get());
 		}
 		
+		//원래 위치로 reject
+		DraggingUnit->UpdatePawnCurrentLocation(DraggingUnit->GetGridAddress());
+		ResetHighlight();
 		ResetDragUnit();
 	}
 }

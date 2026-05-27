@@ -53,7 +53,7 @@ void ANGPlayerState::SpawnGridMapManager()
 	TSoftClassPtr<AArena> GridMapClass = GetDefault<UNGDeveloperSettings>()->ArenaClass;
 	if (GridMapClass.IsValid())
 	{
-		//TODO: 이것저것 바꿔서 결국 BP말고 기본형으로 소환해도 되지 않음?
+		//SM들을 배정해둬서 BP로 가져와야함
 		if (UClass* GridMapManagerBPClass = GridMapClass.LoadSynchronous())
 		{
 			FActorSpawnParameters SpawnParams;
@@ -77,6 +77,9 @@ void ANGPlayerState::SpawnGridMapManager()
 				ArenaManager->PossessArena(ArenaAddress);
 			}
 		}
+	}else
+	{
+		UE_LOG(LogTemp, Error, TEXT("NGDeveloperSettings - Invalid ArenaClass!"));
 	}
 }
 

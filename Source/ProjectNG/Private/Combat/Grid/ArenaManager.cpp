@@ -24,6 +24,7 @@ void AArenaManager::PossessArena(const FArenaAddress& NewArenaAddress)
 	PossessArenaAddress = NewArenaAddress;
 	
 	MigrationUnits(NewArenaAddress);
+	
 	PossessSpecPawn(NewArenaAddress);
 }
 
@@ -67,17 +68,20 @@ void AArenaManager::MigrationUnits(const FArenaAddress& NewAddress) const
 }
 
 void AArenaManager::PossessSpecPawn(const FArenaAddress& ArenaAddress) const
-{
+{	
 	if (ANGPlayerState* PS = GetOwner<ANGPlayerState>())
 	{
 		if (ANGSpectatorPawn* SpecPawn = PS->GetPawn<ANGSpectatorPawn>())
 		{
+			//이떄 아레나 Camera들 Transform이 안만들어져있음
 			FTransform CameraTransform = 
 				ArenaAddress.PossessArenaIdentification == EPossessArenaIdentification::Home 
 			? ArenaAddress.Arena->GetHomeCameraTransform() 
 			: ArenaAddress.Arena->GetAwayCameraTransform();
 			
-			SpecPawn->PossessCamera(CameraTransform, PS);
+			
+			//여기는 지금 서버에서 들어와서 Client로 RPC해야함
+			SpecPawn->Client_PossessCamera(CameraTransform);
 		}
 	}
 }

@@ -182,8 +182,40 @@ FIntVector2 UGridMapHelper::GetCellIndex(EGridType GridType, const FVector& Loca
     return FIntVector2::ZeroValue;
 }
 
-void UGridMapHelper::GetHexNeighborIndexAtExactRange(FIntVector2 MidIndex, int32 Range, TArray<FIntVector2>& OutRingNodes)
+EGridType UGridMapHelper::GetGridType(const FVector& GridLocation, ANGPlayerState* PS)
 {
+    if (PS)
+    {
+        const FIntVector2 CombatGridIndex = GetCellIndex(EGridType::Combat, GridLocation, PS);
+        FHexGridMap& CombatGridMap = PS->GetCombatGridMap();
+        if (CombatGridMap.IsValidIndex(CombatGridIndex))
+        {
+            return EGridType::Combat;
+        }
+			
+        FQuadGridMap& WaitGridMap = PS->GetWaitGridMap();
+        const FIntVector2 WaitGridIndex = GetCellIndex(EGridType::Wait, GridLocation, PS);
+        if (WaitGridMap.IsValidIndex(WaitGridIndex))
+        {
+            return EGridType::Wait;
+        }
+		
+        FQuadGridMap& EnemyWaitGridMap = PS->GetEnemyWaitGridMap();
+        const FIntVector2 EnemyWaitGridIndex = GetCellIndex(EGridType::EnemyWait, GridLocation, PS);
+        if (EnemyWaitGridMap.IsValidIndex(EnemyWaitGridIndex))
+        {
+            return EGridType::EnemyWait;
+        }
+    }
+	
+    return EGridType::None;
+    
+}
+
+void UGridMapHelper::GetHexNeighborIndexAtExactRange(FIntVector2 MidIndex, int32 Range, TArray<FIntVector2>& OutRingNodes, FGridMapBase* GridMap)
+{
+    if (!GridMap)   return;
+    
     if (Range <= 0)
     {
         //0인 경우는 자기위치
@@ -216,19 +248,21 @@ void UGridMapHelper::GetHexNeighborIndexAtExactRange(FIntVector2 MidIndex, int32
 
             FIntVector2 NeighborCoord(FinalX, FinalY);
 
-            // 맵 최대 경계 유효성 검사 (필요 시 주석 해제)
-            // if (IsValidIndex(NeighborCoord)) 
-
-            OutRingNodes.Add(NeighborCoord);
-
+            if (GridMap->IsValidIndex(NeighborCoord))
+            {
+                OutRingNodes.Add(NeighborCoord);
+            }
+            
             CurrentQ += DirQ[i];
             CurrentR += DirR[i];
         }
     }
 }
 
-void UGridMapHelper::GetHexNeighborIndexInRange(FIntVector2 MidIndex, int32 Range, TArray<FIntVector2>& OutNeighborNodes)
+void UGridMapHelper::GetHexNeighborIndexInRange(FIntVector2 MidIndex, int32 Range, TArray<FIntVector2>& OutNeighborNodes, FGridMapBase* GridMap)
 {
+    if (!GridMap)   return;
+    
     int32 ExpectedSize = 1 + 3 * Range * (Range + 1);
     OutNeighborNodes.Empty(ExpectedSize);
     
@@ -237,7 +271,7 @@ void UGridMapHelper::GetHexNeighborIndexInRange(FIntVector2 MidIndex, int32 Rang
     //0부터 한다는거는 자기자신 포함
     for (int32 i = 0; i <= Range; ++i)
     {
-        GetHexNeighborIndexAtExactRange(MidIndex, i, TempRingNodes);
+        GetHexNeighborIndexAtExactRange(MidIndex, i, TempRingNodes, GridMap);
         
         OutNeighborNodes.Append(TempRingNodes);
     }

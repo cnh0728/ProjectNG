@@ -5,6 +5,7 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystem/NGAbilitySystemComponent.h"
 #include "AbilitySystem/NGAttributeSet.h"
+#include "Combat/Grid/Arena.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/NGPathFindingComponent.h"
 #include "Components/NGPocketComponent.h"
@@ -16,7 +17,7 @@
 #include "ProjectNG/ProjectNG.h"
 #include "UI/NGWidgetInterface.h"
 
-ANGPawnBase::ANGPawnBase() : RotationInterpSpeed(10.f), SpeedScale(100.f)
+ANGPawnBase::ANGPawnBase() : SpeedScale(100.f), RotationInterpSpeed(10.f)
 {
 	PrimaryActorTick.bCanEverTick = true;
 	
@@ -446,14 +447,14 @@ bool ANGPawnBase::IsCurrentTargetInRange() const
 void ANGPawnBase::CollectInRangeUnits(TArray<ANGPawnBase*>& OutEnemies)
 {
 	//TODO: 나중에 여러명 한번에 때리는거 있으면 이거 쓰기
-	uint32 AttackRange = AttributeSet ? AttributeSet->GetAttackRange() : 1;
 	
-	TArray<FIntVector2> Neighbors;
-	UGridMapHelper::GetHexNeighborIndexInRange(CurrentGridAddress.GridIndex, AttackRange, Neighbors);
-	
-	//Neighbors 순회하면서 
 	if (FGridMapBase* GridMap = UGridMapHelper::GetGridMap(CurrentGridAddress))
 	{
+		uint32 AttackRange = AttributeSet ? AttributeSet->GetAttackRange() : 1;
+
+		TArray<FIntVector2> Neighbors;
+		UGridMapHelper::GetHexNeighborIndexInRange(CurrentGridAddress.GridIndex, AttackRange, Neighbors, GridMap);
+		
 		for (FIntVector2 NeighborIndex : Neighbors)
 		{
 			if (!GridMap->IsValidIndex(NeighborIndex))	continue;
@@ -584,16 +585,10 @@ void ANGPawnBase::TryMoveTo(const FVector& TargetLocation)
 	// Client에서만 불려야함
 	if (HasAuthority())	return;
 	
-	ANGPlayerController* PC = GetOwner<ANGPlayerController>();
-	if (!PC)	return;
-	
-	ANGPlayerState* PS = PC->GetPlayerState<ANGPlayerState>();
-	if (!PS)	return;
-	
 	//Client에서 미리 움직이고 서버에서 못간다 판단하면 reject
-	EGridType NewGridType = GetCurrentGridType(TargetLocation);
-	FIntVector2 NewIndex = UGridMapHelper::GetCellIndex(NewGridType, TargetLocation, PS);
-	FGridAddress NewGridAddress(NewIndex, NewGridType, PS);
+	EGridType NewGridType = UGridMapHelper::GetGridType(TargetLocation, CurrentGridAddress.GridOwnerPS);
+	FIntVector2 NewIndex = UGridMapHelper::GetCellIndex(NewGridType, TargetLocation, CurrentGridAddress.GridOwnerPS);
+	FGridAddress NewGridAddress(NewIndex, NewGridType, CurrentGridAddress.GridOwnerPS);
 	
 	if (!CanAddUnitOnCombatGrid(NewGridAddress.GridType))
 	{
@@ -636,36 +631,6 @@ void ANGPawnBase::Client_RejectMove_Implementation()
 	UpdatePawnCurrentLocation(CurrentGridAddress);
 }
 
-EGridType ANGPawnBase::GetCurrentGridType(const FVector& TargetLocation) const
-{
-	if (CurrentGridAddress.GridOwnerPS)
-	{
-		const FIntVector2 CombatGridIndex = UGridMapHelper::GetCellIndex(EGridType::Combat, TargetLocation, CurrentGridAddress.GridOwnerPS);
-		FHexGridMap& CombatGridMap = CurrentGridAddress.GridOwnerPS->GetCombatGridMap();
-		bool bCombatValidGrid = CombatGridMap.IsValidIndex(CombatGridIndex);
-			
-		FQuadGridMap& WaitGridMap = CurrentGridAddress.GridOwnerPS->GetWaitGridMap();
-		const FIntVector2 WaitGridIndex = UGridMapHelper::GetCellIndex(EGridType::Wait, TargetLocation, CurrentGridAddress.GridOwnerPS);
-		bool bWaitValidGrid = WaitGridMap.IsValidIndex(WaitGridIndex);
-		
-		if (!bWaitValidGrid && !bCombatValidGrid)
-		{
-			UE_LOG(LogTemp, Error, TEXT("GridType is None, CombatIndex: %s, WaitIndex: %s"), *CombatGridIndex.ToString(), *WaitGridIndex.ToString());
-		}
-		
-		if (bCombatValidGrid)
-		{
-			return EGridType::Combat;
-		} 
-		if (bWaitValidGrid)
-		{
-			return EGridType::Wait;
-		}
-	}
-	
-	return EGridType::None;
-}
-
 void ANGPawnBase::NotifyActorBeginCursorOver()
 {
 	Super::NotifyActorBeginCursorOver();
@@ -690,10 +655,10 @@ void ANGPawnBase::GrantHoverState()
 	
 	if (const UNGDeveloperSettings* Settings = GetDefault<UNGDeveloperSettings>())
 	{
-		if (Settings->HoverOverlayMaterial.IsValid())
+		if (!Settings->HoverOverlayMaterial.IsNull())
 		{
 			UMaterialInterface* HoverOverlayMaterial = Settings->HoverOverlayMaterial.LoadSynchronous();
-			
+   
 			if (HoverOverlayMaterial && UnitMesh)
 			{
 				UnitMesh->SetOverlayMaterial(HoverOverlayMaterial);
@@ -781,8 +746,8 @@ void ANGPawnBase::CheckAttackCondition()
 
 void ANGPawnBase::OnRep_CurrentGridAddress()
 {
-	// FVector Location = UGridMapHelper::GetWorldLocation(CurrentGridAddress);
-	// SetActorLocation(Location);
+	FVector Location = UGridMapHelper::GetWorldLocation(CurrentGridAddress);
+	SetActorLocation(Location);
 }
 
 void ANGPawnBase::ExecuteAttack()
@@ -820,5 +785,20 @@ void ANGPawnBase::VisualizePath()
 				2.0f                    // 선 두께
 			);
 		}
+	}
+}
+
+void ANGPawnBase::HighlightRangeIndicator(FGridAddress PivotAddress) const
+{
+	//대기석은 ㄴㄴ
+	if (PivotAddress.GridType != EGridType::Combat)
+	{
+		return;
+	}
+	
+	if (AArena* CombatArena = PivotAddress.GridOwnerPS->GetHomeArena())
+	{
+		int32 HighlightRange = AttributeSet ? AttributeSet->GetAttackRange() : 1;
+		CombatArena->HighlightAttackRange(PivotAddress, HighlightRange);
 	}
 }

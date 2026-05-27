@@ -6,9 +6,7 @@
 #include "AbilitySystem/NGAbilitySystemComponent.h"
 #include "AbilitySystem/NGAttributeSet.h"
 #include "AbilitySystem/NGGameplayAbility.h"
-#include "Combat/Grid/Arena.h"
 #include "Combat/Weapon/NGWeaponData.h"
-#include "Core/NGDeveloperSettings.h"
 #include "Player/NGPlayerController.h"
 #include "ProjectNG/ProjectNG.h"
 
@@ -67,37 +65,6 @@ void ANGUnitPawn::OnDeselected_Implementation()
 	// ShowRangeIndicator(false, TODO);
 	
 	bIsSelected = false;
-}
-
-void ANGUnitPawn::ShowRangeIndicator(bool bVisible, FGridAddress PivotAddress) const
-{
-	UE_LOG(LogTemp, Warning, TEXT("Decal bVisible %s"), bVisible ? TEXT("On") : TEXT("Off"));
-	
-	
-	int32 HighlightRange = AttributeSet ? AttributeSet->GetAttackRange() : 1;
-	//대기석은 자기위치만
-	if (PivotAddress.GridType != EGridType::Combat)
-	{
-		HighlightRange = 0;
-	}
-	
-	TArray<FIntVector2> Neighbors;
-	UGridMapHelper::GetHexNeighborIndexInRange(PivotAddress.GridIndex, HighlightRange, Neighbors);
-	
-	//이 유닛이 현재 있는 그리드에서 근처 노드를 가져온 다음에, 그 노드들 인덱스에 맞게 Arena에 있는 것들 GridVisualComponent 켜주기
-	if (AArena* CombatArena = PivotAddress.GridOwnerPS->GetHomeArena())
-	{
-		if (FGridMapBase* GridMap = UGridMapHelper::GetGridMap(PivotAddress))
-		{
-			for (FIntVector2 Neighbor : Neighbors)
-			{
-				if (GridMap->IsValidIndex(Neighbor))
-				{
-					CombatArena->HighlightSpecificGrid(PivotAddress, true);
-				}
-			}
-		}
-	}
 }
 
 void ANGUnitPawn::OnDrag_Implementation()

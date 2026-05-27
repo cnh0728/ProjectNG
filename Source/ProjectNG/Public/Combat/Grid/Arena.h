@@ -2,10 +2,11 @@
 
 #pragma once
 
+#include "GameFramework/Actor.h"
 #include "CoreMinimal.h"
-#include "Player/NGPlayerController.h"
 #include "Arena.generated.h"
 
+struct FGridAddress;
 class ANGPlayerState;
 
 USTRUCT()
@@ -50,11 +51,10 @@ public:
 	void OnRep_BuildGridVisual();
 	void BuildMyGrid();
 	
-	UFUNCTION(Server, Reliable)
-	void Server_UpdateCameraTransform(const FTransform& HomeCam, const FTransform& AwayCam);
-	
 	void BuildGridVisual(ANGPlayerState* PS);
-	void HighlightSpecificGrid(const FGridAddress& GridAddress, bool bHighlight) const;
+	void HighlightAttackRange(const FGridAddress& GridAddress,
+	                          int32 AttackRange) const;
+	void HighlightSpecificGrid(const FGridAddress& GridAddress, float HighlightFactor, bool bMarkRenderStateDirty) const;
 
 	void Initialize(const FGridBuildData& BuildData, ANGPlayerState* InPS);
 	

@@ -16,7 +16,6 @@ ANGProjectile::ANGProjectile()
 	PrimaryActorTick.bCanEverTick = true;
 	
 	bReplicates = true;		//네트워크 복제 활성화
-	SetReplicatingMovement(true);	//위치 속도 복제 활성화
 	
 	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComp"));
 	RootComponent = SphereComponent;
@@ -26,7 +25,6 @@ ANGProjectile::ANGProjectile()
 	ProjectileMesh->SetupAttachment(RootComponent);
 	
 	ProjectileMesh->SetCollisionProfileName(TEXT("NoCollision"));
-	
 }
 
 // Called when the game starts or when spawned

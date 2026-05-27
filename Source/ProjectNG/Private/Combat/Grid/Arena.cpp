@@ -22,10 +22,12 @@ AArena::AArena() : WaitGridOffsetLocation(200.f), CameraPitchAngle(-60.f), Camer
 	
 	HexGridVisualComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("HexGridVisual"));
 	HexGridVisualComponent->SetStaticMesh(HexMeshAsset);
+	HexGridVisualComponent->NumCustomDataFloats = 1;
 	HexGridVisualComponent->SetupAttachment(Root);
 	
 	QuadGridVisualComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("QuadGridVisual"));
 	QuadGridVisualComponent->SetStaticMesh(QuadMeshAsset);
+	QuadGridVisualComponent->NumCustomDataFloats = 1;
 	QuadGridVisualComponent->SetupAttachment(Root);
 }
 
@@ -75,6 +77,17 @@ void AArena::InitGridMap(const FGridBuildData& BuildData)
 			FVector HighWaitLocation = FVector(UGridMapHelper::GetRelativeLocation(CombatHighOffsetAddress));
 			
 			EnemyWaitGridMap.InitializeMap(BuildData.QuadSizeX, BuildData.QuadSizeY, BuildData.QuadCellSize, MyLocation + FVector(HighWaitLocation.X + WaitGridOffsetLocation - WaitGridMap.Offset, 0.f, 0.f));
+			
+			FVector HomeSpecPawnLocation = FVector(UGridMapHelper::GetWorldLocation(CombatLowOffsetAddress));
+			FVector AwaySpecPawnLocation = FVector(UGridMapHelper::GetWorldLocation(CombatHighOffsetAddress));
+	
+			UE_LOG(LogTemp, Log, TEXT("SetCameraTransform"));
+			
+			HomeCameraTransform.SetLocation(HomeSpecPawnLocation + CameraOffset);
+			HomeCameraTransform.SetRotation(FRotator(CameraPitchAngle, 0.f, 0.f).Quaternion());
+	
+			AwayCameraTransform.SetLocation(AwaySpecPawnLocation + FVector(-CameraOffset.X, -CameraOffset.Y, CameraOffset.Z));
+			AwayCameraTransform.SetRotation(FRotator(CameraPitchAngle, 180.f, 0.f).Quaternion());
 		}
 		
 		//OnRep_BuildGridVisual
@@ -112,12 +125,6 @@ void AArena::BuildMyGrid()
 	
 	//그리드는 모두에게 보여야하기에 전부 생성
 	BuildGridVisual(OwnerPS);
-}
-
-void AArena::Server_UpdateCameraTransform_Implementation(const FTransform& HomeCam, const FTransform& AwayCam)
-{
-	HomeCameraTransform = HomeCam;
-	AwayCameraTransform = AwayCam;
 }
 
 void AArena::BuildGridVisual(ANGPlayerState* PS)
@@ -168,20 +175,6 @@ void AArena::BuildGridVisual(ANGPlayerState* PS)
 	
 	FGridAddress LowOffsetAddress(FIntVector2(0, 0), EGridType::Combat, PS);
 	FGridAddress HighOffsetAddress(FIntVector2(CombatGridMap.Width-1, CombatGridMap.Height-1), EGridType::Combat, PS);
-
-	FVector HomeSpecPawnLocation = FVector(UGridMapHelper::GetWorldLocation(LowOffsetAddress));
-	FVector AwaySpecPawnLocation = FVector(UGridMapHelper::GetWorldLocation(HighOffsetAddress));
-	
-	//RPC로 서버에 알려주고 Rep
-	HomeCameraTransform.SetLocation(HomeSpecPawnLocation + CameraOffset);
-	HomeCameraTransform.SetRotation(FRotator(CameraPitchAngle, 0.f, 0.f).Quaternion());
-	
-	AwayCameraTransform.SetLocation(AwaySpecPawnLocation + FVector(-CameraOffset.X, -CameraOffset.Y, CameraOffset.Z));
-	AwayCameraTransform.SetRotation(FRotator(CameraPitchAngle, 180.f, 0.f).Quaternion());
-	
-	UE_LOG(LogTemp, Log, TEXT("AwayCamTransform %s Loc %s"), *AwayCameraTransform.ToString(), *AwaySpecPawnLocation.ToString());
-	
-	Server_UpdateCameraTransform(HomeCameraTransform, AwayCameraTransform);
 	
 	FVector LowWaitLocationOffset = FVector(UGridMapHelper::GetRelativeLocation(LowOffsetAddress));
 	FVector HighWaitLocationOffset = FVector(UGridMapHelper::GetRelativeLocation(HighOffsetAddress));
@@ -203,21 +196,46 @@ void AArena::BuildGridVisual(ANGPlayerState* PS)
 	SetISMCCollision(QuadGridVisualComponent);
 }
 
-void AArena::HighlightSpecificGrid(const FGridAddress& GridAddress, bool bHighlight) const
+void AArena::HighlightAttackRange(const FGridAddress& PivotAddress, int32 AttackRange) const
 {
-	float HighlightFactor = bHighlight ? 1.f : 0.f;
-	int32 GridIndex = UGridMapHelper::GetGridMap(GridAddress)->ConvertPointToIndex(GridAddress.GridIndex);
+	if (FGridMapBase* GridMap = UGridMapHelper::GetGridMap(PivotAddress))
+	{
+		TArray<FIntVector2> Neighbors;
+		UGridMapHelper::GetHexNeighborIndexInRange(PivotAddress.GridIndex, AttackRange, Neighbors, GridMap);
+
+		FGridAddress RangeAddress = PivotAddress;
+		
+		for (FIntVector2 Neighbor : Neighbors)
+		{
+			if (GridMap->IsValidIndex(Neighbor))
+			{
+				RangeAddress.GridIndex = Neighbor;
+				HighlightSpecificGrid(RangeAddress, 0.1f, false);
+			}
+		}
+	}
 	
-	if (GridAddress.GridType == EGridType::Combat)
+	HexGridVisualComponent->MarkRenderStateDirty();
+}
+
+void AArena::HighlightSpecificGrid(const FGridAddress& GridAddress, float HighlightFactor, bool bMarkRenderStateDirty) const
+{
+	if (FGridMapBase* GridMap = UGridMapHelper::GetGridMap(GridAddress))
 	{
-		HexGridVisualComponent->SetCustomDataValue(GridIndex, 0, HighlightFactor, true);
-	}
-	else if (GridAddress.GridType == EGridType::Wait){
-		//아군꺼 만들고 적군꺼 만들고 반복해서 했기때문에 아군은 *2, 적군은 *2+1하면 됨
-		HexGridVisualComponent->SetCustomDataValue(GridIndex * 2, 0, HighlightFactor, true);
-	}
-	else if (GridAddress.GridType == EGridType::EnemyWait)
-	{
-		HexGridVisualComponent->SetCustomDataValue(GridIndex * 2 + 1, 0, HighlightFactor, true);
+		int32 GridIndex = GridMap->ConvertPointToIndex(GridAddress.GridIndex);
+		// UE_LOG(LogTemp, Log, TEXT("Highlight %s %f"), *GridAddress.GridIndex.ToString(), HighlightFactor);
+
+		if (GridAddress.GridType == EGridType::Combat)
+		{
+			HexGridVisualComponent->SetCustomDataValue(GridIndex, 0, HighlightFactor, bMarkRenderStateDirty);
+		}
+		else if (GridAddress.GridType == EGridType::Wait){
+			//아군꺼 만들고 적군꺼 만들고 반복해서 했기때문에 아군은 *2, 적군은 *2+1하면 됨
+			QuadGridVisualComponent->SetCustomDataValue(GridIndex * 2, 0, HighlightFactor, bMarkRenderStateDirty);
+		}
+		else if (GridAddress.GridType == EGridType::EnemyWait)
+		{
+			QuadGridVisualComponent->SetCustomDataValue(GridIndex * 2 + 1, 0, HighlightFactor, bMarkRenderStateDirty);
+		}
 	}
 }

@@ -52,6 +52,9 @@ public:
 	
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
+	void HighlightRangeIndicator(FGridAddress PivotAddress) const;
+	
+	
 protected:
 	/** 파생 클래스에서 GAS 초기화를 위한 로직을 작성 */
 	virtual void InitAbilityActorInfo()	PURE_VIRTUAL(ANGPawnBase::InitAbilityActorInfo);
@@ -215,7 +218,6 @@ public:
 	void UpdatePawnCurrentLocation(const FGridAddress& GridAddress);
 
 	bool CanPlaceUnit(FGridMapBase& GridMap, FIntVector2 GridIndex);
-	EGridType GetCurrentGridType(const FVector& TargetLocation) const;
 	const FGridAddress& GetGridAddress() const { return CurrentGridAddress; };
 	
 	void ExecuteAttack();

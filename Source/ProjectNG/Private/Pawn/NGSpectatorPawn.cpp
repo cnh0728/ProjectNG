@@ -5,25 +5,20 @@
 
 #include "AbilitySystem/NGAbilitySystemComponent.h"
 #include "Camera/CameraComponent.h"
-#include "Combat/Grid/Arena.h"
 #include "Components/SphereComponent.h"
 #include "Player/NGPlayerController.h"
 #include "Player/NGPlayerState.h"
 #include "UI/HUD/NGHUD.h"
 
-class ANGPlayerState;
 // Sets default values
 ANGSpectatorPawn::ANGSpectatorPawn()
 {
 	SetReplicates(true);
 	PrimaryActorTick.bCanEverTick = true;
     
-	bUseControllerRotationPitch = true;
-	bUseControllerRotationYaw = true;
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
-	// bUseControllerRotationPitch = false;
-	// bUseControllerRotationYaw = false;
-	// bUseControllerRotationRoll = false;
 	
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
 	if (GetCollisionComponent())
@@ -48,12 +43,6 @@ ANGSpectatorPawn::ANGSpectatorPawn()
 	bFindCameraComponentWhenViewTarget = true;
 }
 
-void ANGSpectatorPawn::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	
-}
-
 void ANGSpectatorPawn::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
@@ -70,71 +59,19 @@ void ANGSpectatorPawn::PossessedBy(AController* NewController)
 	}
 }
 
-void ANGSpectatorPawn::OnRep_GridManager()
-{
-}
-
 void ANGSpectatorPawn::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
 	
 	InitHUD();
 	
-	FocusOnMyGrid();
-}
-
-void ANGSpectatorPawn::FocusOnMyGrid()
-{
-	if (++RetryCount > 10)
-	{
-		RetryCount = 0;
-		UE_LOG(LogTemp, Error, TEXT("ANGSpectatorPawn::FocusOnGrid TimeOut"));
-		return;
-	}
-	
-	if (ANGPlayerController* PC = Cast<ANGPlayerController>(GetController()))
-	{
-		if (HasLocalNetOwner())
-		{
-			ANGPlayerState* PS = PC->GetPlayerState<ANGPlayerState>();
-			if (AArena* GridMapManager = PS ? PS->GetHomeArena() : nullptr)
-			{
-				UE_LOG(LogTemp, Log, TEXT("FocusOnMyGrid PS: %p"), PS);
-				PossessCamera(GridMapManager->GetHomeCameraTransform(), PS);
-				RetryCount = 0;
-			}else
-			{
-				UE_LOG(LogTemp, Warning, TEXT("ANGSpectatorPawn::FocusOnGrid GridMap is not Prepare retry function..."));
-				GetWorldTimerManager().SetTimer(RetryTimerHandle, this, &ANGSpectatorPawn::FocusOnMyGrid, 0.1f, false);
-				return;	
-			}
-		}
-	}
-}
-
-// Called when the game starts or when spawned
-void ANGSpectatorPawn::BeginPlay()
-{
-	Super::BeginPlay();
-}
-
-// Called every frame
-void ANGSpectatorPawn::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
+	// FocusOnMyGrid();
 }
 
 void ANGSpectatorPawn::OnRep_Controller()
 {
 	Super::OnRep_Controller();
 	
-}
-
-// Called to bind functionality to input
-void ANGSpectatorPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
 
 void ANGSpectatorPawn::InitHUD()
@@ -157,18 +94,16 @@ void ANGSpectatorPawn::InitHUD()
 	}
 }
 
-void ANGSpectatorPawn::PossessCamera(const FTransform& CameraTransform, const ANGPlayerState* PS)
+void ANGSpectatorPawn::PossessCamera(const FTransform& CameraTransform)
 {
-	if (ANGPlayerController* PC = Cast<ANGPlayerController>(PS->GetOwner()))
-	{
-		UE_LOG(LogTemp, Log, TEXT("PossessCamera Transform: %s"), *CameraTransform.ToString());
-		
-		FVector TargetLoc = CameraTransform.GetLocation();
-		FRotator TargetRot = CameraTransform.GetRotation().Rotator();
-		
-		// SetActorTransform(CameraTransform);
-		PC->ClientSetLocation(TargetLoc, TargetRot);
-		PC->SetControlRotation(TargetRot);
-	}
+	//Client함수
+	if (HasAuthority())	return;
+	
+	SetActorTransform(CameraTransform);
+}
+
+void ANGSpectatorPawn::Client_PossessCamera_Implementation(const FTransform& CameraTransform)
+{
+	PossessCamera(CameraTransform);
 }
 

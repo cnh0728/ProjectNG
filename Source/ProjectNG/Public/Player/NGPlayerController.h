@@ -49,6 +49,8 @@ public:
 	
 	virtual void OnPossess(APawn* InPawn) override;
 	void PerformDragUpdate(float DeltaTime);
+	void ResetHighlight();
+	void HighLightGrid(const FVector& TargetLocation, AArena* Arena);
 
 	void SetHoveringUnit(ANGPawnBase* InHoveringPawn);
 	ANGPawnBase* GetHoveringUnit() const; 
@@ -99,7 +101,8 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Selection")
 	TObjectPtr<ANGPawnBase> SelectedUnit;
 	
-			
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Selection")
+	TOptional<FGridAddress> PreHighlightGridAddress;
 /*************************************/
 /*				리롤 관련			 */
 /*************************************/

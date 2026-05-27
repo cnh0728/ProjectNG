@@ -33,6 +33,11 @@ struct FGridAddress
 	
 	UPROPERTY()
 	TObjectPtr<ANGPlayerState> GridOwnerPS;
+	
+	bool operator==(const FGridAddress& Other) const
+	{
+		return GridIndex == Other.GridIndex && GridType == Other.GridType && GridOwnerPS == Other.GridOwnerPS;
+	}
 };
 
 USTRUCT(BlueprintType)
@@ -121,9 +126,10 @@ public:
 	static FVector GetRelativeLocation(FGridAddress GridAddress);
 	static FVector GetWorldLocation(FGridAddress GridAddress);
 	static FIntVector2 GetCellIndex(EGridType GridType, const FVector& Location, ANGPlayerState* PS);
+	static EGridType GetGridType(const FVector& GridLocation, ANGPlayerState* PS);
 	
-	static void GetHexNeighborIndexInRange(FIntVector2 MidIndex, int32 Range, TArray<FIntVector2>& OutNeighborNodes);
-	static void GetHexNeighborIndexAtExactRange(FIntVector2 MidIndex, int32 Range, TArray<FIntVector2>& OutRingNodes);
+	static void GetHexNeighborIndexInRange(FIntVector2 MidIndex, int32 Range, TArray<FIntVector2>& OutNeighborNodes, FGridMapBase* GridMap);
+	static void GetHexNeighborIndexAtExactRange(FIntVector2 MidIndex, int32 Range, TArray<FIntVector2>& OutRingNodes, FGridMapBase* GridMap);
 	
 	static FGridMapBase* GetGridMap(FGridAddress GridAddress);
 

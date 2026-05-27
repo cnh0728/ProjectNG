@@ -21,7 +21,6 @@ public:
 	
 	virtual void OnSelected_Implementation() override;
 	virtual void OnDeselected_Implementation() override;
-	void ShowRangeIndicator(bool bVisible, FGridAddress PivotAddress) const;
 
 	virtual void OnDrag_Implementation() override;
 	virtual void OnUndrag_Implementation() override;
