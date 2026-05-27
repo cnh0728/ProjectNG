@@ -89,9 +89,9 @@ void UNGPocketComponent::UpdateRollUnit()
 	}
 }
 
-void UNGPocketComponent::GetPlacedUnits(TArray<ANGUnitPawn*>& OutUnits)
+void UNGPocketComponent::GetPlacedUnits(TArray<ANGPawnBase*>& OutUnits)
 {
-	for (ANGUnitPawn* Unit : OwnedUnitPocket)
+	for (ANGPawnBase* Unit : OwnedUnitPocket)
 	{
 		if (Unit->GetGridAddress().GridType == EGridType::Combat)
 		{
@@ -100,14 +100,24 @@ void UNGPocketComponent::GetPlacedUnits(TArray<ANGUnitPawn*>& OutUnits)
 	}
 }
 
-void UNGPocketComponent::ControlPocketSpawning(ANGUnitPawn* NewPawn)
+void UNGPocketComponent::ControlPocketSpawning(ANGPawnBase* NewPawn)
+{
+	AddUnitFromPocket(NewPawn);
+}
+
+void UNGPocketComponent::ControlPocketSelling(ANGPawnBase* NewPawn)
+{
+	RemoveUnitFromPocket(NewPawn);
+}
+
+void UNGPocketComponent::AddUnitFromPocket(ANGPawnBase* NewPawn)
 {
 	OwnedUnitPocket.AddUnique(NewPawn);
 }
 
-void UNGPocketComponent::ControlPocketSelling(ANGUnitPawn* NewPawn)
+void UNGPocketComponent::RemoveUnitFromPocket(ANGPawnBase* Unit)
 {
-	OwnedUnitPocket.Remove(NewPawn);
+	OwnedUnitPocket.Remove(Unit);
 }
 
 void UNGPocketComponent::Server_RequestRoll_Implementation()

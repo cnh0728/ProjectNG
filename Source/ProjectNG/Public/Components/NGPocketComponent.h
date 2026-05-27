@@ -6,7 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "NGPocketComponent.generated.h"
 
-class ANGUnitPawn;
+class ANGPawnBase;
 
 UENUM(BlueprintType)
 enum class EShopActionType : uint8
@@ -60,19 +60,20 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Game|Shop")
 	TObjectPtr<UDataTable> ProbabilityTable;
 
-
 public:
-	TArray<ANGUnitPawn*> GetOwnedUnits() { return OwnedUnitPocket; };
-	void GetPlacedUnits(TArray<ANGUnitPawn*>& OutUnits);
+	void GetPlacedUnits(TArray<ANGPawnBase*>& OutUnits);
 	
-	void ControlPocketSpawning(ANGUnitPawn* NewPawn);
-	void ControlPocketSelling(ANGUnitPawn* NewPawn);
+	void ControlPocketSpawning(ANGPawnBase* NewPawn);
+	void ControlPocketSelling(ANGPawnBase* NewPawn);
+	void AddUnitFromPocket(ANGPawnBase* NewPawn);
+
+	void RemoveUnitFromPocket(ANGPawnBase* Unit);
 	
-	TArray<ANGUnitPawn*> GetOwnedUnitPocket()	{return OwnedUnitPocket; }
+	TArray<ANGPawnBase*>& GetOwnedUnitPocket()	{ return OwnedUnitPocket; }
 	
 private:
 	UPROPERTY(Replicated, VisibleAnywhere, Category = "Game|Unit")
-	TArray<ANGUnitPawn*> OwnedUnitPocket;
+	TArray<ANGPawnBase*> OwnedUnitPocket;
 	
 /*************************************/
 /*				Debug용				 */

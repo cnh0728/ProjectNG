@@ -219,14 +219,28 @@ void ANGPawnBase::CheckCombatState()
 {
 	if (!HasAuthority())	return;
 	
+	if (CurrentTarget ? CurrentTarget->IsDead() : false)
+	{
+		TransitionToState(EPawnState::Wait);
+		CurrentTarget = nullptr;
+	}
+	
 	if (PawnState == EPawnState::Combat)
 	{
-		//싸우다가 적이 범위를 벗어나거나 죽으면 Wait 
-		if (!IsCurrentTargetInRange() || CurrentTarget->IsDead())
+		//싸우다가 적이 범위를 벗어나면 다시찾기
+		if (!IsCurrentTargetInRange())
 		{
 			TransitionToState(EPawnState::Wait);
 		}
-	}else if (PawnState == EPawnState::Wait)
+	}
+	else if (PawnState == EPawnState::Following)
+	{
+		if (IsCurrentTargetInRange())
+		{
+			TransitionToState(EPawnState::Combat);
+		}
+	}
+	else if (PawnState == EPawnState::Wait)
 	{
 		FindNewTarget();
 	}
@@ -367,6 +381,7 @@ void ANGPawnBase::OnEnterNewState(EPawnState EnteringState)
 {
 	if (EnteringState == EPawnState::Combat)
 	{
+		GetWorld()->GetTimerManager().ClearTimer(PredictGridReachingTimerHandle);
 		GetWorld()->GetTimerManager().SetTimer(AttackCheckTimerHandle, this, &ANGUnitPawn::CheckAttackCondition, 0.2f, true);
 	}else if (EnteringState == EPawnState::HardCrowdControl)
 	{
@@ -434,6 +449,8 @@ bool ANGPawnBase::IsCurrentTargetInRange() const
 		
 	int32 Distance = UGridMapHelper::GetDistance(CurrentGridAddress.GridIndex, CurrentTarget->CurrentGridAddress.GridIndex);
 	int32 AttackRange = AttributeSet ? AttributeSet->GetAttackRange() : 1;
+	
+	// UE_LOG(LogTemp, Log, TEXT("Distance %d, AttackRange %d"), Distance, AttackRange);
 	
 	if (Distance > AttackRange)
 	{
@@ -508,6 +525,14 @@ void ANGPawnBase::Die()
 	
 	if (GetAbilitySystemComponent()->HasMatchingGameplayTag(DeadTag))	return;
 	
+	//PocketComponent가져와서 거기에 있는 OwnedPocket에서 자기자신 Remove
+	ANGPlayerController* PC = GetOwner<ANGPlayerController>();
+	ANGPlayerState* PS = PC ? PC->GetPlayerState<ANGPlayerState>() : nullptr;
+	if (UNGPocketComponent* Pocket = PS->GetPlayerPocket())
+	{
+		Pocket->RemoveUnitFromPocket(this);
+	}
+	
 	UnSetPawnOnGrid(CurrentGridAddress);
 	
 	// AddLooseGameplayTag는 메모리 상에서만 일시적 태그를 붙일 때 유용
@@ -565,11 +590,11 @@ void ANGPawnBase::UpdateHPBar()
 	}
 }
 
-bool ANGPawnBase::CanAddUnitOnCombatGrid(EGridType NewGridType)
+bool ANGPawnBase::CanAddUnitOnCombatGrid(EGridType NewGridType) const
 {
 	if (CurrentGridAddress.GridType == EGridType::Wait && NewGridType == EGridType::Combat)
 	{
-		TArray<ANGUnitPawn*> PlacedUnitPocket;
+		TArray<ANGPawnBase*> PlacedUnitPocket;
 		CurrentGridAddress.GridOwnerPS->GetPlayerPocket()->GetPlacedUnits(PlacedUnitPocket);
 
 		if (PlacedUnitPocket.Num() >= CurrentGridAddress.GridOwnerPS->GetPlayerLevel())

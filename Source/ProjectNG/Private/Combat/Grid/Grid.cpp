@@ -325,9 +325,13 @@ FIntVector2 UGridMapHelper::RectToAxial(int32 Col, int32 Row)
     return FIntVector2(q, r);
 }
 
-FIntVector UGridMapHelper::GetCubeIndex(const FIntVector2 AxialIndex)
+FIntVector UGridMapHelper::GetCubeIndex(FIntVector2 GridIndex)
 {
-    return FIntVector(AxialIndex.X, AxialIndex.Y, -AxialIndex.X - AxialIndex.Y);
+    int32 X = GridIndex.X - (GridIndex.Y - (GridIndex.Y & 1)) / 2;
+    int32 Z = GridIndex.Y;
+    int32 Y = -X - Z;
+
+    return FIntVector(X, Y, Z);
 }
 
 void UGridMapHelper::DrawDebugGrid(const UObject* WorldContextObject, FGridAddress GridAddress)

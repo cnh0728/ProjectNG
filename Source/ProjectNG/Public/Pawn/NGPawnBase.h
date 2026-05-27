@@ -190,7 +190,7 @@ public:
 	
 private:
 	void UpdateHPBar();
-	bool CanAddUnitOnCombatGrid(EGridType NewGridType);
+	bool CanAddUnitOnCombatGrid(EGridType NewGridType) const;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")

@@ -38,7 +38,7 @@ void AArenaManager::MigrationUnits(const FArenaAddress& NewAddress) const
 		if (PocketOwnerPS)
 		{
 			UNGPocketComponent* PocketComponent = PocketOwnerPS->GetPlayerPocket();
-			for (TObjectPtr<ANGUnitPawn> Unit : PocketComponent->GetOwnedUnitPocket())
+			for (ANGPawnBase* Unit : PocketComponent->GetOwnedUnitPocket())
 			{
 				FGridAddress GridAddress = Unit->GetGridAddress();
 				FIntVector2 MirroredIdx = UGridMapHelper::GetMirroredIndex(*UGridMapHelper::GetGridMap(GridAddress), GridAddress.GridIndex);
