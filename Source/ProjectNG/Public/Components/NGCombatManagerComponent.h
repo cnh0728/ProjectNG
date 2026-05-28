@@ -28,14 +28,14 @@ protected:
 public:
 	void StartCombat(FCombatSettingData& SettingData, APlayerController* PC);
 	void StartFight();
-	void ReturnSpectatorHome();
+	void ReturnSpectatorHome(ANGPlayerState* AwayPlayer);
 
 	void PawnDied(ANGPawnBase* DeadPawn);
 
 	void FinishCombat();
 	void TransitionCombatPlayerGameStates(EGameState GameState);
 
-	void ResetGrid();
+	void ResetGrid(ANGPlayerState* PS);
 
 protected:
 	void SetupCombat(FCombatSettingData& SettingData);

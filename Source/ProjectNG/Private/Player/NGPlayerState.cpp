@@ -117,11 +117,10 @@ void ANGPlayerState::RestoreInitialGrid()
 		{
 			FIntVector2 OriginalIndex = CombatGridMapSnapShot.ConvertIndexToPoint(i);
 
-			FGridAddress GridAddress(OriginalIndex, EGridType::Combat, this);
+			FGridAddress GridAddress(OriginalIndex, EGridType::Combat, this, GridData.PlacedPawn->GetGridAddress().DirtyFlag);
 			
+			GridData.PlacedPawn->RestoreStates();
 			GridData.PlacedPawn->TranslatePawnOnGrid(GridAddress);
-			
-			GridData.PlacedPawn->TurnPawnState(EPawnState::Wait);
 		}
 	}
 	

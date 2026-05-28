@@ -183,7 +183,8 @@ public:
 	bool IsDead();
 	
 	ANGPawnBase* GetCurrentTarget();
-	
+	void RestoreStates();
+
 	void TurnPawnState(EPawnState InPawnState);
 	
 	bool IsSameTeam(uint32 OtherOwnerIndex) const { return OwnerIndex == OtherOwnerIndex; }

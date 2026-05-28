@@ -568,6 +568,16 @@ ANGPawnBase* ANGPawnBase::GetCurrentTarget()
 	return CurrentTarget;
 }
 
+void ANGPawnBase::RestoreStates()
+{
+	CurrentTarget = nullptr;
+	
+	GetWorld()->GetTimerManager().ClearTimer(AttackCheckTimerHandle);
+	GetWorld()->GetTimerManager().ClearTimer(PredictGridReachingTimerHandle);
+	
+	TurnPawnState(EPawnState::None);
+}
+
 void ANGPawnBase::TurnPawnState(EPawnState InPawnState)
 {
 	PawnState = InPawnState;
@@ -613,7 +623,7 @@ void ANGPawnBase::TryMoveTo(const FVector& TargetLocation)
 	//Client에서 미리 움직이고 서버에서 못간다 판단하면 reject
 	EGridType NewGridType = UGridMapHelper::GetGridType(TargetLocation, CurrentGridAddress.GridOwnerPS);
 	FIntVector2 NewIndex = UGridMapHelper::GetCellIndex(NewGridType, TargetLocation, CurrentGridAddress.GridOwnerPS);
-	FGridAddress NewGridAddress(NewIndex, NewGridType, CurrentGridAddress.GridOwnerPS);
+	FGridAddress NewGridAddress(NewIndex, NewGridType, CurrentGridAddress.GridOwnerPS, CurrentGridAddress.DirtyFlag);
 	
 	if (!CanAddUnitOnCombatGrid(NewGridAddress.GridType))
 	{
@@ -639,8 +649,7 @@ void ANGPawnBase::UpdateCurrentGridAddress(FGridAddress NewGridAddress)
 	PreGridAddress = CurrentGridAddress;
 	
 	CurrentGridAddress = NewGridAddress;
-	
-	UpdatePawnCurrentLocation(CurrentGridAddress);
+	++CurrentGridAddress.DirtyFlag;
 }
 
 void ANGPawnBase::UpdatePawnCurrentLocation(const FGridAddress& GridAddress)
@@ -652,6 +661,7 @@ void ANGPawnBase::UpdatePawnCurrentLocation(const FGridAddress& GridAddress)
 void ANGPawnBase::Client_RejectMove_Implementation()
 {		
 	CurrentGridAddress = PreGridAddress;
+	++CurrentGridAddress.DirtyFlag;
 	
 	UpdatePawnCurrentLocation(CurrentGridAddress);
 }
@@ -771,8 +781,8 @@ void ANGPawnBase::CheckAttackCondition()
 
 void ANGPawnBase::OnRep_CurrentGridAddress()
 {
-	FVector Location = UGridMapHelper::GetWorldLocation(CurrentGridAddress);
-	SetActorLocation(Location);
+	UE_LOG(LogTemp, Log, TEXT("OnRep_CurrentGridAddress %p"), this);
+	UpdatePawnCurrentLocation(CurrentGridAddress);
 }
 
 void ANGPawnBase::LookAt(ANGPawnBase* Target)
@@ -811,7 +821,7 @@ void ANGPawnBase::VisualizePath()
 		PathFindingComponent->FindPathToClosestEnemy(CurrentGridAddress, OwnerIndex, Path);
 		for (FIntVector2 PathIndex : Path)
 		{
-			FGridAddress NodeAddress(PathIndex, CurrentGridAddress.GridType, CurrentGridAddress.GridOwnerPS);
+			FGridAddress NodeAddress(PathIndex, CurrentGridAddress.GridType, CurrentGridAddress.GridOwnerPS, 0);
 			FVector WorldLocation = UGridMapHelper::GetWorldLocation(NodeAddress) + FVector(0.f, 0.f, 50.f);
 			DrawDebugSphere(
 				GetWorld(),             // 월드 컨텍스트

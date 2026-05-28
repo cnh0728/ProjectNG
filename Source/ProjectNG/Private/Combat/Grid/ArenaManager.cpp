@@ -43,7 +43,7 @@ void AArenaManager::MigrationUnits(const FArenaAddress& NewAddress) const
 				FGridAddress GridAddress = Unit->GetGridAddress();
 				FIntVector2 MirroredIdx = UGridMapHelper::GetMirroredIndex(*UGridMapHelper::GetGridMap(GridAddress), GridAddress.GridIndex);
 				
-				FGridAddress NewGridAddress(MirroredIdx, EGridType::Combat, NewPS);
+				FGridAddress NewGridAddress(MirroredIdx, EGridType::Combat, NewPS, GridAddress.DirtyFlag);
 				// 돌아올때는 그리드 리셋을 시키기 때문에 Wait만 
 				
 				if (NewAddress.PossessArenaIdentification == EPossessArenaIdentification::Home && GridAddress.GridType == EGridType::Combat)

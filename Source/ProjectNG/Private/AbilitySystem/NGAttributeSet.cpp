@@ -45,6 +45,7 @@ DEFAULT_REPLICATION_IMPLEMENTATION(UNGAttributeSet, AttackSpeed)
 DEFAULT_REPLICATION_IMPLEMENTATION(UNGAttributeSet, TargetCount)
 DEFAULT_REPLICATION_IMPLEMENTATION(UNGAttributeSet, Income)
 DEFAULT_REPLICATION_IMPLEMENTATION(UNGAttributeSet, MoveSpeed)
+DEFAULT_REPLICATION_IMPLEMENTATION(UNGAttributeSet, Star)
 
 void UNGAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
 {

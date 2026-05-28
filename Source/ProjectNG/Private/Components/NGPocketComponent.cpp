@@ -93,9 +93,12 @@ void UNGPocketComponent::GetPlacedUnits(TArray<ANGPawnBase*>& OutUnits)
 {
 	for (ANGPawnBase* Unit : OwnedUnitPocket)
 	{
-		if (Unit->GetGridAddress().GridType == EGridType::Combat)
+		if (Unit)
 		{
-			OutUnits.Add(Unit);
+			if (Unit->GetGridAddress().GridType == EGridType::Combat)
+			{
+				OutUnits.Add(Unit);
+			}
 		}
 	}
 }

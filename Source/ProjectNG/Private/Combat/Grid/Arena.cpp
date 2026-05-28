@@ -66,13 +66,13 @@ void AArena::InitGridMap(const FGridBuildData& BuildData)
 			FHexGridMap& CombatGridMap = PS->GetCombatGridMap();
 			CombatGridMap.InitializeMap(BuildData.HexSizeX, BuildData.HexSizeY, BuildData.HexCellSize, MyLocation);
 			
-			FGridAddress CombatLowOffsetAddress(FIntVector2(0, 0), EGridType::Combat, PS);
+			FGridAddress CombatLowOffsetAddress(FIntVector2(0, 0), EGridType::Combat, PS, 0);
 			FQuadGridMap& WaitGridMap = PS->GetWaitGridMap();
 			FVector LowWaitLocation = FVector(UGridMapHelper::GetRelativeLocation(CombatLowOffsetAddress));
 					
 			WaitGridMap.InitializeMap(BuildData.QuadSizeX, BuildData.QuadSizeY, BuildData.QuadCellSize, MyLocation + FVector(LowWaitLocation.X - WaitGridOffsetLocation - WaitGridMap.Offset, 0.f, 0.f));
 
-			FGridAddress CombatHighOffsetAddress(FIntVector2(CombatGridMap.Width - 1, CombatGridMap.Height - 1), EGridType::Combat, PS);
+			FGridAddress CombatHighOffsetAddress(FIntVector2(CombatGridMap.Width - 1, CombatGridMap.Height - 1), EGridType::Combat, PS, 0);
 			FQuadGridMap& EnemyWaitGridMap = PS->GetEnemyWaitGridMap();
 			FVector HighWaitLocation = FVector(UGridMapHelper::GetRelativeLocation(CombatHighOffsetAddress));
 			
@@ -154,7 +154,7 @@ void AArena::BuildGridVisual(ANGPlayerState* PS)
 	{
 		for (int32 x=0; x<GridBuildData.HexSizeX; ++x)
 		{
-			FGridAddress CombatGridAddress(FIntVector2(x, y), EGridType::Combat, PS);
+			FGridAddress CombatGridAddress(FIntVector2(x, y), EGridType::Combat, PS, 0);
 			FVector RelativeLoc = UGridMapHelper::GetRelativeLocation(CombatGridAddress);
 			FTransform HexInstanceTransform = FTransform(FRotator::ZeroRotator, RelativeLoc, FVector::OneVector);
 					
@@ -173,8 +173,8 @@ void AArena::BuildGridVisual(ANGPlayerState* PS)
 	
 	QuadGridVisualComponent->ClearInstances();
 	
-	FGridAddress LowOffsetAddress(FIntVector2(0, 0), EGridType::Combat, PS);
-	FGridAddress HighOffsetAddress(FIntVector2(CombatGridMap.Width-1, CombatGridMap.Height-1), EGridType::Combat, PS);
+	FGridAddress LowOffsetAddress(FIntVector2(0, 0), EGridType::Combat, PS, 0);
+	FGridAddress HighOffsetAddress(FIntVector2(CombatGridMap.Width-1, CombatGridMap.Height-1), EGridType::Combat, PS, 0);
 	
 	FVector LowWaitLocationOffset = FVector(UGridMapHelper::GetRelativeLocation(LowOffsetAddress));
 	FVector HighWaitLocationOffset = FVector(UGridMapHelper::GetRelativeLocation(HighOffsetAddress));
@@ -184,11 +184,11 @@ void AArena::BuildGridVisual(ANGPlayerState* PS)
 		for (int32 x=0; x<GridBuildData.QuadSizeX; ++x)
 		{			
 			FQuadGridMap& WaitGridMap = PS->GetWaitGridMap();
-			FGridAddress LowWaitGridAddress = FGridAddress(FIntVector2(x, y), EGridType::Wait, PS);
+			FGridAddress LowWaitGridAddress = FGridAddress(FIntVector2(x, y), EGridType::Wait, PS, 0);
 			AddGridInstance(QuadGridVisualComponent, LowWaitGridAddress, FVector(LowWaitLocationOffset.X - WaitGridOffsetLocation - WaitGridMap.Offset, 0.f, 0.f));
 					
 			FQuadGridMap& EnemyWaitGridMap = PS->GetEnemyWaitGridMap();
-			FGridAddress HighWaitGridAddress = FGridAddress(FIntVector2(x, y), EGridType::Wait, PS);
+			FGridAddress HighWaitGridAddress = FGridAddress(FIntVector2(x, y), EGridType::Wait, PS, 0);
 			AddGridInstance(QuadGridVisualComponent, HighWaitGridAddress, FVector(HighWaitLocationOffset.X + WaitGridOffsetLocation - EnemyWaitGridMap.Offset, 0.f, 0.f));
 		}
 	}

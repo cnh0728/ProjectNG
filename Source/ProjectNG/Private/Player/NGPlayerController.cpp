@@ -99,9 +99,9 @@ void ANGPlayerController::Tick(float DeltaTime)
 	{
 		if (ANGPlayerState* PS = GetPlayerState<ANGPlayerState>())
 		{
-			FGridAddress CombatGridAddress(FIntVector2::ZeroValue, EGridType::Combat, PS);
+			FGridAddress CombatGridAddress(FIntVector2::ZeroValue, EGridType::Combat, PS, 0);
 			UGridMapHelper::DrawDebugGrid(this, CombatGridAddress);
-			FGridAddress WaitGridAddress(FIntVector2::ZeroValue, EGridType::Wait, PS);
+			FGridAddress WaitGridAddress(FIntVector2::ZeroValue, EGridType::Wait, PS, 0);
 			UGridMapHelper::DrawDebugGrid(this, WaitGridAddress);
 		}
 	}
@@ -174,7 +174,7 @@ void ANGPlayerController::HighLightGrid(const FVector& TargetLocation, AArena* A
 			EGridType GridType = UGridMapHelper::GetGridType(TargetLocation, PS);
 			FIntVector2 GridIndex = UGridMapHelper::GetCellIndex(GridType, TargetLocation, PS);
 						
-			FGridAddress HighlightGridAddress(GridIndex, GridType, PS);
+			FGridAddress HighlightGridAddress(GridIndex, GridType, PS, 0);
 			
 			if (PreHighlightGridAddress.IsSet())
 			{

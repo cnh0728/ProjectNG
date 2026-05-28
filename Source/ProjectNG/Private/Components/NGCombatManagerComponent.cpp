@@ -3,14 +3,11 @@
 
 #include "Components/CombatManagerComponent.h"
 
-#include "Combat/Grid/Arena.h"
 #include "Combat/Grid/ArenaManager.h"
 #include "Pawn/NGEnemyPawn.h"
 #include "Pawn/NGUnitPawn.h"
-#include "Components/NGPocketComponent.h"
 #include "Game/NGGameState.h"
 #include "GameModes/NGInGameMode.h"
-#include "Pawn/NGSpectatorPawn.h"
 #include "Player/NGPlayerState.h"
 
 // Sets default values
@@ -58,19 +55,12 @@ void UCombatManagerComponent::StartFight()
 	}
 }
 
-void UCombatManagerComponent::ReturnSpectatorHome()
+void UCombatManagerComponent::ReturnSpectatorHome(ANGPlayerState* AwayPlayer)
 {
-	for (FCombatSettingData Data : CombatDatas)
+	if (AArenaManager* ArenaManager = AwayPlayer->GetArenaManager())
 	{
-		if (ANGPlayerState* AwayPlayer = Data.PlayerB)
-		{
-			if (AArenaManager* ArenaManager = AwayPlayer->GetArenaManager())
-			{
-				FArenaAddress HomeArena(AwayPlayer->GetHomeArena(), ::EPossessArenaIdentification::Home);
-				ArenaManager->PossessArena(HomeArena);
-			}
-
-		}
+		FArenaAddress HomeArena(AwayPlayer->GetHomeArena(), ::EPossessArenaIdentification::Home);
+		ArenaManager->PossessArena(HomeArena);
 	}
 }
 
@@ -82,11 +72,21 @@ void UCombatManagerComponent::FinishCombat()
 	
 	TransitionCombatPlayerGameStates(EGameState::Exploration);
 	
-	//Grid원래상태로 초기화
-	ResetGrid();
+	for (FCombatSettingData Data : CombatDatas)
+	{
+		if (Data.PlayerA)
+		{
+			ResetGrid(Data.PlayerA);
+		}
+		
+		if (Data.PlayerB)
+		{
+			ResetGrid(Data.PlayerB);
+			ReturnSpectatorHome(Data.PlayerB);
+		}
+	}
 	
 	//카메라 위치 원래자리로
-	ReturnSpectatorHome();
 	
 	if (ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>())
 	{
@@ -161,21 +161,12 @@ void UCombatManagerComponent::SetupCombat(FCombatSettingData& SettingData)
 	CombatDatas.Emplace(MoveTemp(SettingData));
 }
 
-void UCombatManagerComponent::ResetGrid()
+void UCombatManagerComponent::ResetGrid(ANGPlayerState* PS)
 {
 	if (!GetOwner()->HasAuthority())	return;
 	
-	ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>();
-	if (GS)
+	if (PS)
 	{
-		for (APlayerState* RawPS : GS->PlayerArray)
-		{
-			//TODO: 현재 플레이어가 살아있는 상태에서만 Restore
-			if (ANGPlayerState* PS = Cast<ANGPlayerState>(RawPS))
-			{
-				PS->RestoreInitialGrid();
-			}
-		}
-	}	
-	
+		PS->RestoreInitialGrid();
+	}
 }

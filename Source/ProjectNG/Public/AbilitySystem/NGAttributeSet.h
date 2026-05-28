@@ -132,4 +132,10 @@ public:
     ATTRIBUTE_ACCESSORS(UNGAttributeSet, MoveSpeed)
     UFUNCTION()
     void OnRep_MoveSpeed(const FGameplayAttributeData& OldValue);
+    
+    UPROPERTY(BlueprintReadOnly, Category = "Attributes|Combat", ReplicatedUsing = OnRep_Star)
+    FGameplayAttributeData Star;
+    ATTRIBUTE_ACCESSORS(UNGAttributeSet, Star)
+    UFUNCTION()
+    void OnRep_Star(const FGameplayAttributeData& OldValue);
 };

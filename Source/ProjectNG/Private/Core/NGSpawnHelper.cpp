@@ -33,7 +33,7 @@ bool UNGSpawnHelper::SpawnUnitPawn(ANGPlayerController* OwnerController, FName U
 	
 	TSubclassOf<ANGPawnBase> UnitClass = GM->GetUnitClass(UnitName);
 	
-	FGridAddress SpawnGridAddress(EmptyGridIndex.GetValue(), EGridType::Wait, PS);
+	FGridAddress SpawnGridAddress(EmptyGridIndex.GetValue(), EGridType::Wait, PS, 0);
 	
 	FVector SpawnLoc = UGridMapHelper::GetWorldLocation(SpawnGridAddress);
 	FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLoc);

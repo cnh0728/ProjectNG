@@ -34,6 +34,23 @@ struct FGridAddress
 	UPROPERTY()
 	TObjectPtr<ANGPlayerState> GridOwnerPS;
 	
+	UPROPERTY()
+	uint8 DirtyFlag;
+	
+	FGridAddress()
+		: GridIndex(FIntVector2::ZeroValue)
+		, GridType(EGridType::Combat)
+		, GridOwnerPS(nullptr)
+		, DirtyFlag(0) // 기본값 0 세팅
+	{}
+
+	FGridAddress(FIntVector2 InGridIndex, EGridType InGridType, ANGPlayerState* InOwnerPS, uint8 InDirtyFlag)
+		: GridIndex(InGridIndex)
+		, GridType(InGridType)
+		, GridOwnerPS(InOwnerPS)
+		, DirtyFlag(InDirtyFlag)
+	{}
+	
 	bool operator==(const FGridAddress& Other) const
 	{
 		return GridIndex == Other.GridIndex && GridType == Other.GridType && GridOwnerPS == Other.GridOwnerPS;

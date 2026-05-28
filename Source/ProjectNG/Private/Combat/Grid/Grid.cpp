@@ -140,7 +140,7 @@ FVector UGridMapHelper::GetWorldLocation(FGridAddress GridAddress)
 
 FIntVector2 UGridMapHelper::GetCellIndex(EGridType GridType, const FVector& Location, ANGPlayerState* PS)
 {
-    FGridAddress GridAddress(FIntVector2::ZeroValue, GridType, PS);
+    FGridAddress GridAddress(FIntVector2::ZeroValue, GridType, PS, 0);
     if (FGridMapBase* GridMap = GetGridMap(GridAddress))
     {
         switch (GridType)
