@@ -16,8 +16,6 @@ void ANGInGameMode::RequestStartCombat(APlayerController* PC)
 	
 	ANGGameState* GS = GetGameState<ANGGameState>();
 	
-	CurrentState = EGameState::Combat;
-	
 	// 테스트용
 	if (GS)
 	{
@@ -27,7 +25,6 @@ void ANGInGameMode::RequestStartCombat(APlayerController* PC)
 		if (GS->PlayerArray.Num() > 0)
 		{
 			SettingData.PlayerA = Cast<ANGPlayerState>(GS->PlayerArray[0]);
-			
 		}
 		if (GS->PlayerArray.Num() > 1)
 		{
@@ -41,15 +38,9 @@ void ANGInGameMode::RequestStartCombat(APlayerController* PC)
 
 void ANGInGameMode::OnCombatFinished(const FCombatResultData& ResultData)
 {
-	// if (CurrentState != EGameState::Combat)	return;
-	
 	UE_LOG(LogTemp, Log, TEXT("Combat Finished"));
-	
-	//Combat은 모험중이 아니면 들어갈 수 없음
-	CurrentState = EGameState::Exploration;
-	
+		
 	//ResultData로 점수나 그런거 반영하기
-
 	
 }
 
@@ -71,10 +62,6 @@ void ANGInGameMode::BeginPlay()
 	InitializeUnitPool();
 }
 
-void ANGInGameMode::ChangeState(const EGameState NewState)
-{
-	CurrentState = NewState;
-}
 
 
 int32 ANGInGameMode::GrabUnitFromPool(FName UnitRowName)

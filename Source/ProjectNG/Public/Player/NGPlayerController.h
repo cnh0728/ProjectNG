@@ -51,8 +51,10 @@ public:
 	void PerformDragUpdate(float DeltaTime);
 	void ResetHighlight();
 	void HighLightGrid(const FVector& TargetLocation, AArena* Arena);
+	bool CanHighlight(const FGridAddress& GridAddress) const;
 
 	void SetHoveringUnit(ANGPawnBase* InHoveringPawn);
+	void ClearHoveringUnit();
 	ANGPawnBase* GetHoveringUnit() const; 
 	
 protected:
@@ -67,6 +69,7 @@ protected:
 	
 	void PerformDrag();
 	void ResetDragUnit();
+	void ResetHoveringUnit();
 
 	// Enhanced Input 관련
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
@@ -92,6 +95,8 @@ protected:
 	FVector2D ClickStartLocation;
 	FVector2D CurrentMouseLocation;
 
+	FVector CurrentHighlightLocation;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Selection")
 	TWeakObjectPtr<ANGPawnBase> HoveringUnit;
 	

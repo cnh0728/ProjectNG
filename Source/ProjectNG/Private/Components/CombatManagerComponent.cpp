@@ -76,7 +76,11 @@ void UCombatManagerComponent::ReturnSpectatorHome()
 
 void UCombatManagerComponent::FinishCombat()
 {
+	if (!GetOwner()->HasAuthority())	return;
+	
 	FCombatResultData CombatResult = {};
+	
+	TransitionCombatPlayerGameStates(EGameState::Exploration);
 	
 	//Grid원래상태로 초기화
 	ResetGrid();
@@ -84,11 +88,27 @@ void UCombatManagerComponent::FinishCombat()
 	//카메라 위치 원래자리로
 	ReturnSpectatorHome();
 	
-	//결과창 띄우기하고 확인 후 값 반환해야할 수 있음
-	//게임 전체 매니저에 FCombatResultData를 주는 식으로 함수호출을 해야겠는데?
 	if (ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>())
 	{
 		GM->OnCombatFinished(CombatResult);
+	}
+	
+	CombatDatas.Empty();
+}
+
+void UCombatManagerComponent::TransitionCombatPlayerGameStates(EGameState GameState)
+{
+	for (FCombatSettingData Data : CombatDatas)
+	{
+		if (Data.PlayerA)
+		{
+			Data.PlayerA->SetGameState(GameState);
+		}
+		
+		if (Data.PlayerB)
+		{
+			Data.PlayerB->SetGameState(GameState);
+		}
 	}
 }
 
@@ -118,18 +138,16 @@ void UCombatManagerComponent::SetupCombat(FCombatSettingData& SettingData)
 {
 	if (!SettingData.PlayerA)	return;
 	if (!SettingData.PlayerB)	return;
-
-	ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>();
-	if (!GS)	return;
 	
 	//전투 시작 전 그리드 상태 복구용 스냅샷
-	for (APlayerState* RawPlayerState : GS->PlayerArray)
-	{
-		if (ANGPlayerState* PlayerState = Cast<ANGPlayerState>(RawPlayerState))
-		{
-			PlayerState->CaptureSnapShot();
-		}
-	}
+	
+	//TODO: SettingData를 Array로 바꿔서 순환하면서 ㄱㄱ
+	
+	SettingData.PlayerA->CaptureSnapShot();
+	SettingData.PlayerA->SetGameState(EGameState::Combat);
+
+	SettingData.PlayerB->CaptureSnapShot();
+	SettingData.PlayerB->SetGameState(EGameState::Combat);
 	
 	CurrentEnemyCount = 0;
 	TargetKillCount = SettingData.EnemyCount;

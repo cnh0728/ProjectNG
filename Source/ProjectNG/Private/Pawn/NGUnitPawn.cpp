@@ -51,7 +51,7 @@ void ANGUnitPawn::OnSelected_Implementation()
 	ISelectableInterface::OnSelected_Implementation();
 	UE_LOG(LogTemp, Log, TEXT("OnSelected"));
 	
-	//TODO: GridAddress 인자 받아와서 RangeIndicator 마저 완성하기
+	// RangeIndicator 만들거면 GridAddress 인자 받아와서 완성하기
 	// ShowRangeIndicator(true, );
 	
 	bIsSelected = true;
@@ -60,7 +60,7 @@ void ANGUnitPawn::OnSelected_Implementation()
 void ANGUnitPawn::OnDeselected_Implementation()
 {
 	ISelectableInterface::OnDeselected_Implementation();
-	UE_LOG(LogTemp, Log, TEXT("OnDeselected"));
+	// UE_LOG(LogTemp, Log, TEXT("OnDeselected"));
 	
 	// ShowRangeIndicator(false, TODO);
 	
@@ -71,7 +71,7 @@ void ANGUnitPawn::OnDrag_Implementation()
 {
 	ISelectableInterface::OnDrag_Implementation();
 
-	UE_LOG(LogTemp, Log, TEXT("OnDrag"));
+	// UE_LOG(LogTemp, Log, TEXT("OnDrag"));
 	//잡힌 모션 -> 레그돌화 해도 ㄱㅊ을듯
 	bIsGrabbed = true;
 }
@@ -80,7 +80,7 @@ void ANGUnitPawn::OnUndrag_Implementation()
 {
 	ISelectableInterface::OnUndrag_Implementation();
 
-	UE_LOG(LogTemp, Log, TEXT("OnUndrag"));
+	// UE_LOG(LogTemp, Log, TEXT("OnUndrag"));
 	
 	bIsGrabbed = false;
 }

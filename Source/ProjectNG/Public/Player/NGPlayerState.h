@@ -12,6 +12,17 @@
 class AArenaManager;
 class AArena;
 class UNGPocketComponent;
+
+UENUM(BlueprintType)
+enum class EGameState : uint8
+{
+	None,
+	Maintaining,
+	Combat,
+	Exploration,
+	GameOver
+};
+
 /**
  * In-Game에서의 플레이어의 상태 정보를 저장하는 클래스
  *
@@ -44,6 +55,19 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UNGAbilitySystemComponent> AbilitySystemComponent;
 
+/*************************************/
+/*				전투 상태 관련		 */
+/*************************************/
+	
+public:
+	void SetGameState(EGameState NewState) { CurrentState = NewState; }
+	EGameState GetGameState() const { return CurrentState; }
+	
+protected:
+	
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite)
+	EGameState CurrentState;
+	
 /*************************************/
 /*				Pocket 관련			 */
 /*************************************/

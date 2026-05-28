@@ -194,12 +194,12 @@ void ANGPawnBase::Tick(float DeltaTime)
 		}
 		else if (PawnState == EPawnState::Combat)
 		{
-			LookAtTarget(CurrentTarget, DeltaTime);
+			LookAtInterp(CurrentTarget, DeltaTime);
 		}
 	}
 }
 
-void ANGPawnBase::LookAtTarget(ANGPawnBase* Target, float DeltaTime)
+void ANGPawnBase::LookAtInterp(ANGPawnBase* Target, float DeltaTime)
 {
 	if (Target)
 	{
@@ -697,7 +697,7 @@ void ANGPawnBase::RemoveHoverState() const
 	//폰 하이라이트 해제
 	if (ANGPlayerController* PC = GetOwner<ANGPlayerController>())
 	{
-		PC->SetHoveringUnit(nullptr);
+		PC->ClearHoveringUnit();
 	}
 	
 	if (UnitMesh)
@@ -775,10 +775,25 @@ void ANGPawnBase::OnRep_CurrentGridAddress()
 	SetActorLocation(Location);
 }
 
+void ANGPawnBase::LookAt(ANGPawnBase* Target)
+{
+	FVector MyLocation = GetActorLocation();
+	FVector TargetLocation = Target->GetActorLocation();
+	FVector Direction = TargetLocation - MyLocation;
+	FRotator Rotation = Direction.Rotation();
+
+	Rotation.Pitch = 0.f;
+	Rotation.Roll = 0.f;
+	
+	SetActorRotation(Rotation);
+}
+
 void ANGPawnBase::ExecuteAttack()
 {
-	if (IsValid(CurrentTarget.Get()) && GetAbilitySystemComponent())
+	if (CurrentTarget.Get() && GetAbilitySystemComponent())
 	{
+		LookAt(CurrentTarget.Get());
+		
 		FGameplayEventData Payload;
 		Payload.Instigator = this;
 		Payload.Target = CurrentTarget;

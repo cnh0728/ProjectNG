@@ -140,7 +140,7 @@ void ANGPlayerController::PerformDragUpdate(float DeltaTime)
 
 				if (AArena* Arena = Cast<AArena>(HitResult.GetActor()))
 				{
-					
+					//TODO: 여기서 갈 수 있는곳인지 체크
 					HighLightGrid(TargetLocation, Arena);
 				}
 			}else
@@ -192,16 +192,57 @@ void ANGPlayerController::HighLightGrid(const FVector& TargetLocation, AArena* A
 			// 	DraggingUnit->HighlightRangeIndicator(HighlightGridAddress);
 			// }
 			
-			Arena->HighlightSpecificGrid(HighlightGridAddress, 1.f, true);
-		
-			PreHighlightGridAddress = HighlightGridAddress;
+			if (CanHighlight(HighlightGridAddress))
+			{				
+				CurrentHighlightLocation = TargetLocation;
+				
+				Arena->HighlightSpecificGrid(HighlightGridAddress, 1.f, true);
+			
+				PreHighlightGridAddress = HighlightGridAddress;
+			}
 		}
 	}
 }
 
+bool ANGPlayerController::CanHighlight(const FGridAddress& GridAddress) const
+{	
+	ANGPlayerState* PS = GetPlayerState<ANGPlayerState>();
+	
+	EGameState GameState = PS ? PS->GetGameState() : EGameState::None;
+	
+	if (GameState == EGameState::Combat || GameState == EGameState::Maintaining)
+	{
+		if (GridAddress.GridType == EGridType::Wait)
+		{
+			return true;
+		}
+		
+		if (GameState == EGameState::Maintaining)
+		{
+			if (GridAddress.GridType == EGridType::Combat)
+			{
+				return 0 <= GridAddress.GridIndex.Y && GridAddress.GridIndex.Y < PS->GetCombatGridMap().Height / 2;
+			}
+		}
+	}
+	
+	return false;
+}
+
 void ANGPlayerController::SetHoveringUnit(ANGPawnBase* InHoveringPawn)
 {
-	HoveringUnit = InHoveringPawn;
+	if (InHoveringPawn)
+	{
+		if (CanHighlight(InHoveringPawn->GetGridAddress()))
+		{
+			HoveringUnit = InHoveringPawn;
+		}
+	}
+}
+
+void ANGPlayerController::ClearHoveringUnit()
+{
+	HoveringUnit = nullptr;
 }
 
 ANGPawnBase* ANGPlayerController::GetHoveringUnit() const
@@ -224,17 +265,7 @@ void ANGPlayerController::HandleClickReleased(const FInputActionValue& Value)
 	
 		if (MouseDelta > DragThreshold)
 		{
-			//많이움직여서 옮긴판정
-			FHitResult HitResult;
-				
-			if (GetHitResultUnderCursor(ECC_Map, false, HitResult))
-			{			
-				ANGPawnBase* Unit = DraggingUnit.Get();
-				
-				FVector TargetLocation = HitResult.Location;
-				
-				Unit->TryMoveTo(TargetLocation);
-			}
+			DraggingUnit->TryMoveTo(CurrentHighlightLocation);
 		}else
 		{
 			SetSelectedUnit(DraggingUnit.Get());
@@ -244,6 +275,7 @@ void ANGPlayerController::HandleClickReleased(const FInputActionValue& Value)
 		DraggingUnit->UpdatePawnCurrentLocation(DraggingUnit->GetGridAddress());
 		ResetHighlight();
 		ResetDragUnit();
+		ResetHoveringUnit();
 	}
 }
 
@@ -339,6 +371,14 @@ void ANGPlayerController::ResetDragUnit()
 		}
 	
 		DraggingUnit.Reset();
+	}
+}
+
+void ANGPlayerController::ResetHoveringUnit()
+{
+	if (HoveringUnit.IsValid())
+	{	
+		HoveringUnit.Reset();
 	}
 }
 

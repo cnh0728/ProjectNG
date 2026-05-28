@@ -80,7 +80,7 @@ protected:
 	virtual void BeginPlay() override;
 	
 	virtual void Tick(float DeltaTime) override;
-	void LookAtTarget(ANGPawnBase* Target, float DeltaTime);
+	void LookAtInterp(ANGPawnBase* Target, float DeltaTime);
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
 	TObjectPtr<UWidgetComponent> HPBarComponent; 
@@ -227,7 +227,8 @@ protected:
 
 	UFUNCTION()
 	void OnRep_CurrentGridAddress();
-	
+	void LookAt(ANGPawnBase* Target);
+
 	//클라이언트 reject용
 	UPROPERTY(EditDefaultsOnly, Category = "GridIndex", meta = (AllowPrivateAccess = "true"))
 	FGridAddress PreGridAddress;

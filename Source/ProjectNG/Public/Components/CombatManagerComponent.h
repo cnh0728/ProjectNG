@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Player/NGPlayerState.h"
 #include "CombatManagerComponent.generated.h"
 
 class ANGPlayerState;
@@ -32,6 +33,7 @@ public:
 	void PawnDied(ANGPawnBase* DeadPawn);
 
 	void FinishCombat();
+	void TransitionCombatPlayerGameStates(EGameState GameState);
 
 	void ResetGrid();
 
