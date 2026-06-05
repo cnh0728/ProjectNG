@@ -7,7 +7,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "Blueprint/UserWidget.h"
 #include "Combat/Grid/Arena.h"
-#include "Components/CombatManagerComponent.h"
+#include "Components/NGCombatManagerComponent.h"
 #include "Pawn/NGUnitPawn.h"
 #include "Pawn/SelectableInterface.h"
 #include "Core/NGSpawnHelper.h"
@@ -210,14 +210,15 @@ bool ANGPlayerController::CanHighlight(const FGridAddress& GridAddress) const
 	
 	EGameState GameState = PS ? PS->GetGameState() : EGameState::None;
 	
-	if (GameState == EGameState::Combat || GameState == EGameState::Maintaining)
+	//TODO: 디버깅용으로 Exploration, 나중에 빼기
+	if (GameState == EGameState::Combat || GameState == EGameState::Maintaining || GameState == EGameState::Exploration)
 	{
 		if (GridAddress.GridType == EGridType::Wait)
 		{
 			return true;
 		}
 		
-		if (GameState == EGameState::Maintaining)
+		if (GameState == EGameState::Maintaining || GameState == EGameState::Exploration)
 		{
 			if (GridAddress.GridType == EGridType::Combat)
 			{
@@ -353,7 +354,7 @@ void ANGPlayerController::PerformDrag()
 
 		if (HoveringUnit->Implements<USelectableInterface>())
 		{
-			// UE_LOG(LogTemp, Warning, TEXT("Hit Actor: %s"), *HitActor->GetName());
+			UE_LOG(LogTemp, Warning, TEXT("Hit Actor: %s"), *HoveringUnit->GetName());
 			
 			DraggingUnit = Cast<ANGPawnBase>(HoveringUnit);
 			ISelectableInterface::Execute_OnDrag(HoveringUnit.Get());
@@ -432,7 +433,7 @@ void ANGPlayerController::Server_RequestStopCombat_Implementation()
 	{
 		if (ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>())
 		{
-			if (UCombatManagerComponent* CMC = GS->GetCombatManagerComponent())
+			if (UNGCombatManagerComponent* CMC = GS->GetCombatManagerComponent())
 			{
 				CMC->FinishCombat();
 			}

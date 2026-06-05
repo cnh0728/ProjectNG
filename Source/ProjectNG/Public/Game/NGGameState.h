@@ -8,7 +8,7 @@
 
 class ANGPlayerState;
 class AArena;
-class UCombatManagerComponent;
+class UNGCombatManagerComponent;
 /**
  * 
  */
@@ -28,10 +28,10 @@ public:
 	
 	float GridMargin;
 	
-	UCombatManagerComponent* GetCombatManagerComponent() { return CombatManagerComponent; };	
+	UNGCombatManagerComponent* GetCombatManagerComponent() { return CombatManagerComponent; };	
 
 protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Managers")
-	TObjectPtr<UCombatManagerComponent> CombatManagerComponent;
+	TObjectPtr<UNGCombatManagerComponent> CombatManagerComponent;
 };

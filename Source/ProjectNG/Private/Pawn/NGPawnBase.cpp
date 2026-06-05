@@ -7,6 +7,7 @@
 #include "AbilitySystem/NGAttributeSet.h"
 #include "Combat/Grid/Arena.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/NGHPBarWidgetComponent.h"
 #include "Components/NGPathFindingComponent.h"
 #include "Components/NGPocketComponent.h"
 #include "Components/WidgetComponent.h"
@@ -56,9 +57,10 @@ ANGPawnBase::ANGPawnBase() : SpeedScale(100.f), RotationInterpSpeed(10.f)
 	
 	PathFindingComponent = CreateDefaultSubobject<UNGPathFindingComponent>(TEXT("PathFindingComp"));
 	
-	HPBarComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("HPBarComponent"));
+	HPBarComponent = CreateDefaultSubobject<UNGHPBarWidgetComponent>(TEXT("HPBarComponent"));
 	HPBarComponent->SetupAttachment(CapsuleComponent);
-	HPBarComponent->SetRelativeLocation(FVector(0.f, -5.f, 10.f) + GetCapsuleComponent()->GetScaledCapsuleHalfHeight());
+	FVector UIRelativeLocation = FVector(0.f, 0.f, GetCapsuleComponent()->GetScaledCapsuleHalfHeight());
+	HPBarComponent->SetRelativeLocation(UIRelativeLocation);
 	HPBarComponent->SetWidgetSpace(EWidgetSpace::Screen);
 	HPBarComponent->SetDrawSize(FVector2D(100.f, 20.f));
 }
@@ -327,6 +329,8 @@ void ANGPawnBase::FindNewTarget()
 
 void ANGPawnBase::InitializeFindNewPath()
 {
+	if (TargetPath.IsEmpty())	return;
+	
 	CurrentPathIndex = 0;
 	TargetLastIndex = CurrentTarget->CurrentGridAddress.GridIndex;
 	SetNextGridPoint(TargetPath[CurrentPathIndex]);
@@ -381,6 +385,7 @@ void ANGPawnBase::OnEnterNewState(EPawnState EnteringState)
 {
 	if (EnteringState == EPawnState::Combat)
 	{
+		UE_LOG(LogTemp, Log, TEXT("OnEnterCombatState"));
 		GetWorld()->GetTimerManager().ClearTimer(PredictGridReachingTimerHandle);
 		GetWorld()->GetTimerManager().SetTimer(AttackCheckTimerHandle, this, &ANGUnitPawn::CheckAttackCondition, 0.2f, true);
 	}else if (EnteringState == EPawnState::HardCrowdControl)
@@ -440,6 +445,8 @@ void ANGPawnBase::SetNextGridPoint(FIntVector2 NewNextGridPoint)
 
 	float TimeToReach = ActualDistance / MoveSpeed;
 
+	UE_LOG(LogTemp, Log, TEXT("Current: %s Next: %s TimeToReach: %f"), *CurrentLoc.ToString(), *NextGridLoc.ToString(), TimeToReach);
+	
 	GetWorldTimerManager().SetTimer(PredictGridReachingTimerHandle, this, &ANGPawnBase::OnReachedNextGrid, TimeToReach, false);
 }
 
@@ -572,6 +579,9 @@ void ANGPawnBase::RestoreStates()
 {
 	CurrentTarget = nullptr;
 	
+	UE_LOG(LogTemp, Log, TEXT("RestoreState"));
+	
+	
 	GetWorld()->GetTimerManager().ClearTimer(AttackCheckTimerHandle);
 	GetWorld()->GetTimerManager().ClearTimer(PredictGridReachingTimerHandle);
 	
@@ -682,6 +692,8 @@ void ANGPawnBase::NotifyActorEndCursorOver()
 
 void ANGPawnBase::GrantHoverState()
 {
+	if (bIsDrag)	return;
+	
 	//폰 하이라이트 -> 롤체는 파란색 아웃라이너
 	if (ANGPlayerController* PC = GetOwner<ANGPlayerController>())
 	{

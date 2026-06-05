@@ -1,24 +1,24 @@
 ﻿// Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 
-#include "UI/WidgetController/RollShopWidgetController.h"
+#include "UI/WidgetController/NGRollShopWidgetController.h"
 
 #include "Components/NGPocketComponent.h"
 #include "Player/NGPlayerController.h"
 
 class ANGGameState;
 
-void URollShopWidgetController::BroadcastInitialValues()
+void UNGRollShopWidgetController::BroadcastInitialValues()
 {
 	
 }
 
-void URollShopWidgetController::BindCallbacksToDependencies()
+void UNGRollShopWidgetController::BindCallbacksToDependencies()
 {
 	
 }
 
-void URollShopWidgetController::GetPlayerRollPocket(TArray<FName>& RollPockets) const
+void UNGRollShopWidgetController::GetPlayerRollPocket(TArray<FName>& RollPockets) const
 {
 	if (ANGPlayerController* NGP = Cast<ANGPlayerController>(PlayerController))
 	{
@@ -29,7 +29,7 @@ void URollShopWidgetController::GetPlayerRollPocket(TArray<FName>& RollPockets) 
 	}
 }
 
-void URollShopWidgetController::RequestPlayerRollPocket() const
+void UNGRollShopWidgetController::RequestPlayerRollPocket() const
 {
 	if (ANGPlayerController* NGP = Cast<ANGPlayerController>(PlayerController))
 	{
@@ -40,7 +40,7 @@ void URollShopWidgetController::RequestPlayerRollPocket() const
 	}
 }
 
-int32 URollShopWidgetController::GainPlayerLevel() const
+int32 UNGRollShopWidgetController::GainPlayerLevel() const
 {
 	if (ANGPlayerController* NGP = Cast<ANGPlayerController>(PlayerController))
 	{
@@ -55,7 +55,7 @@ int32 URollShopWidgetController::GainPlayerLevel() const
 	return 1;
 }
 
-void URollShopWidgetController::BuyUnitFromPocket(FName UnitName)
+void UNGRollShopWidgetController::BuyUnitFromPocket(FName UnitName)
 {
 	if (ANGPlayerController* NGP = Cast<ANGPlayerController>(PlayerController))
 	{

@@ -5,13 +5,13 @@
 
 #include "Blueprint/UserWidget.h"
 #include "UI/NGUserWidget.h"
-#include "UI/WidgetController/RollShopWidgetController.h"
+#include "UI/WidgetController/NGRollShopWidgetController.h"
 
-URollShopWidgetController* ANGHUD::GetRollShopWidgetController(const FWidgetParams& WidgetControllerParams)
+UNGRollShopWidgetController* ANGHUD::GetRollShopWidgetController(const FWidgetParams& WidgetControllerParams)
 {
 	if (RollShopWidgetController == nullptr)
 	{
-		RollShopWidgetController = NewObject<URollShopWidgetController>(this, RollShopWidgetControllerClass);
+		RollShopWidgetController = NewObject<UNGRollShopWidgetController>(this, RollShopWidgetControllerClass);
 		RollShopWidgetController->AssignWidgetControllerParams(WidgetControllerParams);
 		RollShopWidgetController->BindCallbacksToDependencies();
 	}
@@ -28,7 +28,7 @@ void ANGHUD::InitializeHUD(APlayerController* PC, APlayerState* PS, /*UAbilitySy
 	MainWidget = Cast<UNGUserWidget>(Widget);
 
 	const FWidgetParams WidgetParams(PC, PS, AS);
-	URollShopWidgetController* MainWidgetC = GetRollShopWidgetController(WidgetParams); // TODO. 테스트용 롤링샵 UI 출력중, 나중에 메인 위젯으로 다시 변경 필요.
+	UNGRollShopWidgetController* MainWidgetC = GetRollShopWidgetController(WidgetParams); // TODO. 테스트용 롤링샵 UI 출력중, 나중에 메인 위젯으로 다시 변경 필요.
 
 	// 위젯 컨트롤러 연결
 	MainWidget->ConnectWidgetController(MainWidgetC);

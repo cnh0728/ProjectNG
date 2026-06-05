@@ -3,7 +3,7 @@
 
 #include "GameModes/NGInGameMode.h"
 
-#include "Components/CombatManagerComponent.h"
+#include "Components/NGCombatManagerComponent.h"
 #include "Core/NGUnitData.h"
 #include "Game/NGGameState.h"
 #include "Player/NGPlayerState.h"

@@ -1,8 +1,7 @@
 // Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 
-#include "NGHPBarWidgetComponent.h"
-
+#include "Components/NGHPBarWidgetComponent.h"
 
 // Sets default values for this component's properties
 UNGHPBarWidgetComponent::UNGHPBarWidgetComponent()
@@ -14,23 +13,12 @@ UNGHPBarWidgetComponent::UNGHPBarWidgetComponent()
 	// ...
 }
 
-
-// Called when the game starts
-void UNGHPBarWidgetComponent::BeginPlay()
+FVector2D UNGHPBarWidgetComponent::ModifyProjectedLocalPosition(const FGeometry& ViewportGeometry,
+	const FVector2D& LocalPosition)
 {
-	Super::BeginPlay();
-
-	// ...
+	FVector2D FinalScreenPos = Super::ModifyProjectedLocalPosition(ViewportGeometry, LocalPosition);
 	
+	FinalScreenPos.Y -= 40.0f; 
+
+	return FinalScreenPos;
 }
-
-
-// Called every frame
-void UNGHPBarWidgetComponent::TickComponent(float DeltaTime, ELevelTick TickType,
-                                            FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	// ...
-}
-

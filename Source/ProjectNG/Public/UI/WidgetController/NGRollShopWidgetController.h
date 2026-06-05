@@ -4,13 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "UI/NGWidgetController.h"
-#include "RollShopWidgetController.generated.h"
+#include "NGRollShopWidgetController.generated.h"
 
 /**
  * 
  */
 UCLASS(BlueprintType, Blueprintable)
-class PROJECTNG_API URollShopWidgetController : public UNGWidgetController
+class PROJECTNG_API UNGRollShopWidgetController : public UNGWidgetController
 {
 	GENERATED_BODY()
 

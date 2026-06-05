@@ -10,11 +10,10 @@
 #include "Player/NGPlayerState.h"
 #include "NGPawnBase.generated.h"
 
+class UNGHPBarWidgetComponent;
 class UNGPathFindingComponent;
 class UCapsuleComponent;
 class UNGAttributeSet;
-class ANGEnemyPawn;
-class UWidgetComponent;
 class UNGAbilitySystemComponent;
 
 UENUM(BlueprintType)
@@ -83,7 +82,7 @@ protected:
 	void LookAtInterp(ANGPawnBase* Target, float DeltaTime);
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
-	TObjectPtr<UWidgetComponent> HPBarComponent; 
+	TObjectPtr<UNGHPBarWidgetComponent> HPBarComponent; 
 	
 	virtual void OnHealthChanged(const FOnAttributeChangeData& Data);
 	
@@ -204,6 +203,9 @@ protected:
 	virtual void NotifyActorEndCursorOver() override;
 	void GrantHoverState();
 	void RemoveHoverState() const;
+	
+	uint8 bIsDrag : 1;
+	uint8 bIsSelected : 1;
 	
 public:
 	UFUNCTION(Server, Reliable)

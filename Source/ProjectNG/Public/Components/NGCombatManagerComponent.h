@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Player/NGPlayerState.h"
-#include "CombatManagerComponent.generated.h"
+#include "NGCombatManagerComponent.generated.h"
 
 class ANGPlayerState;
 struct FWaveData;
@@ -13,13 +13,13 @@ class ANGPawnBase;
 class AArena;
 
 UCLASS()
-class PROJECTNG_API UCombatManagerComponent : public UActorComponent
+class PROJECTNG_API UNGCombatManagerComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this actor's properties
-	UCombatManagerComponent();
+	UNGCombatManagerComponent();
 
 protected:
 	// Called when the game starts or when spawned

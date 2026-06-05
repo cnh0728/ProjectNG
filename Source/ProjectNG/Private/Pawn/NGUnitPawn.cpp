@@ -11,7 +11,7 @@
 #include "ProjectNG/ProjectNG.h"
 
 // Sets default values
-ANGUnitPawn::ANGUnitPawn() : AcceptanceRadius(1.0f), bIsGrabbed(false), bIsSelected(false)
+ANGUnitPawn::ANGUnitPawn() : AcceptanceRadius(1.0f)
 {
 	PrimaryActorTick.bCanEverTick = true;
 
@@ -73,7 +73,7 @@ void ANGUnitPawn::OnDrag_Implementation()
 
 	// UE_LOG(LogTemp, Log, TEXT("OnDrag"));
 	//잡힌 모션 -> 레그돌화 해도 ㄱㅊ을듯
-	bIsGrabbed = true;
+	bIsDrag = true;
 }
 
 void ANGUnitPawn::OnUndrag_Implementation()
@@ -82,7 +82,7 @@ void ANGUnitPawn::OnUndrag_Implementation()
 
 	// UE_LOG(LogTemp, Log, TEXT("OnUndrag"));
 	
-	bIsGrabbed = false;
+	bIsDrag = false;
 }
 
 // Called when the game starts or when spawned

@@ -1,7 +1,7 @@
 // Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 
-#include "Components/CombatManagerComponent.h"
+#include "Components/NGCombatManagerComponent.h"
 
 #include "Combat/Grid/ArenaManager.h"
 #include "Pawn/NGEnemyPawn.h"
@@ -11,19 +11,19 @@
 #include "Player/NGPlayerState.h"
 
 // Sets default values
-UCombatManagerComponent::UCombatManagerComponent()
+UNGCombatManagerComponent::UNGCombatManagerComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 	SetIsReplicatedByDefault(true);
 }
 
 // Called when the game starts or when spawned
-void UCombatManagerComponent::BeginPlay()
+void UNGCombatManagerComponent::BeginPlay()
 {
 	Super::BeginPlay();
 }
 
-void UCombatManagerComponent::StartCombat(FCombatSettingData& SettingData, APlayerController* PC)
+void UNGCombatManagerComponent::StartCombat(FCombatSettingData& SettingData, APlayerController* PC)
 {
 	if (!GetOwner()->HasAuthority())	return;
 	
@@ -32,10 +32,10 @@ void UCombatManagerComponent::StartCombat(FCombatSettingData& SettingData, APlay
 	//화면띄우고 이것저것
 	
 	//TODO: 모든 플레이어가 Rep된거 확인하고 타이머시작이 더 좋을듯 -> GS에서 PS순회해서 nullptr없어야 고?
-	GetWorld()->GetTimerManager().SetTimer(FightStartTimerHandle, this, &UCombatManagerComponent::StartFight, 0.1f, false);	
+	GetWorld()->GetTimerManager().SetTimer(FightStartTimerHandle, this, &UNGCombatManagerComponent::StartFight, 0.1f, false);	
 }
 
-void UCombatManagerComponent::StartFight()
+void UNGCombatManagerComponent::StartFight()
 {
 	if (!GetOwner()->HasAuthority())	return;
 	
@@ -55,7 +55,7 @@ void UCombatManagerComponent::StartFight()
 	}
 }
 
-void UCombatManagerComponent::ReturnSpectatorHome(ANGPlayerState* AwayPlayer)
+void UNGCombatManagerComponent::ReturnSpectatorHome(ANGPlayerState* AwayPlayer)
 {
 	if (AArenaManager* ArenaManager = AwayPlayer->GetArenaManager())
 	{
@@ -64,7 +64,7 @@ void UCombatManagerComponent::ReturnSpectatorHome(ANGPlayerState* AwayPlayer)
 	}
 }
 
-void UCombatManagerComponent::FinishCombat()
+void UNGCombatManagerComponent::FinishCombat()
 {
 	if (!GetOwner()->HasAuthority())	return;
 	
@@ -96,7 +96,7 @@ void UCombatManagerComponent::FinishCombat()
 	CombatDatas.Empty();
 }
 
-void UCombatManagerComponent::TransitionCombatPlayerGameStates(EGameState GameState)
+void UNGCombatManagerComponent::TransitionCombatPlayerGameStates(EGameState GameState)
 {
 	for (FCombatSettingData Data : CombatDatas)
 	{
@@ -112,7 +112,7 @@ void UCombatManagerComponent::TransitionCombatPlayerGameStates(EGameState GameSt
 	}
 }
 
-void UCombatManagerComponent::PawnDied(ANGPawnBase* DeadPawn)
+void UNGCombatManagerComponent::PawnDied(ANGPawnBase* DeadPawn)
 {
 	if (!DeadPawn)	return;
 	
@@ -134,7 +134,7 @@ void UCombatManagerComponent::PawnDied(ANGPawnBase* DeadPawn)
 	}
 }
 
-void UCombatManagerComponent::SetupCombat(FCombatSettingData& SettingData)
+void UNGCombatManagerComponent::SetupCombat(FCombatSettingData& SettingData)
 {
 	if (!SettingData.PlayerA)	return;
 	if (!SettingData.PlayerB)	return;
@@ -161,7 +161,7 @@ void UCombatManagerComponent::SetupCombat(FCombatSettingData& SettingData)
 	CombatDatas.Emplace(MoveTemp(SettingData));
 }
 
-void UCombatManagerComponent::ResetGrid(ANGPlayerState* PS)
+void UNGCombatManagerComponent::ResetGrid(ANGPlayerState* PS)
 {
 	if (!GetOwner()->HasAuthority())	return;
 	

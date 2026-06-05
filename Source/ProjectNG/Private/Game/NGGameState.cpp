@@ -3,13 +3,13 @@
 
 #include "Game/NGGameState.h"
 
-#include "Components/CombatManagerComponent.h"
+#include "Components/NGCombatManagerComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Player/NGPlayerState.h"
 
 ANGGameState::ANGGameState() : GridMargin(3000.f)
 {
-	CombatManagerComponent = CreateDefaultSubobject<UCombatManagerComponent>(TEXT("CombatManager"));
+	CombatManagerComponent = CreateDefaultSubobject<UNGCombatManagerComponent>(TEXT("CombatManager"));
 }
 
 void ANGGameState::BeginPlay()

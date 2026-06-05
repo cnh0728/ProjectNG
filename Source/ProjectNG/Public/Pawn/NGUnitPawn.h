@@ -46,8 +46,6 @@ private:
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Drag Drop")
 	float AcceptanceRadius;
-	
-	uint8 bIsGrabbed : 1;
-	uint8 bIsSelected : 1;
+
 
 };
