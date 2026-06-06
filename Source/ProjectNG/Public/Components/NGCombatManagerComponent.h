@@ -6,11 +6,10 @@
 #include "Player/NGPlayerState.h"
 #include "NGCombatManagerComponent.generated.h"
 
-class ANGPlayerState;
-struct FWaveData;
-struct FCombatSettingData;
+class ANGPlayerController;
 class ANGPawnBase;
-class AArena;
+class ANGPlayerState;
+struct FCombatSettingData;
 
 UCLASS()
 class PROJECTNG_API UNGCombatManagerComponent : public UActorComponent
@@ -26,7 +25,6 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	void StartCombat(FCombatSettingData& SettingData, APlayerController* PC);
 	void StartFight();
 	void ReturnSpectatorHome(ANGPlayerState* AwayPlayer);
 
@@ -37,17 +35,21 @@ public:
 
 	void ResetGrid(ANGPlayerState* PS);
 
+	void EnqueueCombatPhase(ANGPlayerState* PS);
+	void StartCombat();
+
 protected:
+	//매개변수 의도된 복사
 	void SetupCombat(FCombatSettingData& SettingData);
-
-	int32 CurrentEnemyCount = 0;
-	int32 TargetKillCount = 10;
 	
-	UPROPERTY(Transient)
-	TObjectPtr<APlayerController> RequestingPlayerControllerCache;
-
+	UPROPERTY()
+	TArray<ANGPlayerState*> CombatPSQueue;
+	
 	UPROPERTY()
 	TArray<FCombatSettingData> CombatDatas;
+	
+	UPROPERTY(EditAnywhere, meta=(AllowPrivateAccess = "true"))
+	float FightWaitTime;
 	
 	FTimerHandle FightStartTimerHandle;
 };

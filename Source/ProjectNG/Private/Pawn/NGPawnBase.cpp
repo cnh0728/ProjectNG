@@ -14,6 +14,7 @@
 #include "Core/NGDeveloperSettings.h"
 #include "GameModes/NGInGameMode.h"
 #include "Net/UnrealNetwork.h"
+#include "Pawn/NGUnitPawn.h"
 #include "Player/NGPlayerController.h"
 #include "ProjectNG/ProjectNG.h"
 #include "UI/NGWidgetInterface.h"
@@ -24,8 +25,6 @@ ANGPawnBase::ANGPawnBase() : SpeedScale(100.f), RotationInterpSpeed(10.f)
 	
 	bReplicates = true;		//네트워크 복제 활성화
 	SetNetUpdateFrequency(66.f);
-
-	AActor::SetReplicateMovement(true);
 	
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
 	
@@ -268,7 +267,7 @@ void ANGPawnBase::ConsiderTransitionState()
 
 void ANGPawnBase::OnReachedNextGrid()
 {
-	UE_LOG(LogTemp, Log, TEXT("OnReach index: %s"), *NextGridPoint.ToString());
+	// UE_LOG(LogTemp, Log, TEXT("OnReach index: %s"), *NextGridPoint.ToString());
 	
 	//도착시 우선 그리드 업데이트 및 현재 길찾기 상황변동 파악
 	FGridMapBase* GridMap = UGridMapHelper::GetGridMap(CurrentGridAddress);
@@ -323,7 +322,9 @@ void ANGPawnBase::FindNewTarget()
 	if (ANGPawnBase* NewTarget = PathFindingComponent->FindPathToClosestEnemy(CurrentGridAddress, OwnerIndex, TargetPath))
 	{
 		CurrentTarget = NewTarget;
+		
 		InitializeFindNewPath();
+		ConsiderTransitionState();
 	}
 }
 
@@ -334,8 +335,6 @@ void ANGPawnBase::InitializeFindNewPath()
 	CurrentPathIndex = 0;
 	TargetLastIndex = CurrentTarget->CurrentGridAddress.GridIndex;
 	SetNextGridPoint(TargetPath[CurrentPathIndex]);
-		
-	ConsiderTransitionState();
 }
 
 void ANGPawnBase::ForceTransitionToState(EPawnState NewState)
@@ -432,6 +431,7 @@ void ANGPawnBase::SetNextGridPoint(FIntVector2 NewNextGridPoint)
 
 	NextGridPoint = NewNextGridPoint;
 	
+	// FVector CurrentLoc = UGridMapHelper::GetWorldLocation(CurrentGridAddress);
 	FVector CurrentLoc = GetActorLocation();
     
 	FGridAddress NextGridAddress = CurrentGridAddress;
@@ -445,7 +445,7 @@ void ANGPawnBase::SetNextGridPoint(FIntVector2 NewNextGridPoint)
 
 	float TimeToReach = ActualDistance / MoveSpeed;
 
-	UE_LOG(LogTemp, Log, TEXT("Current: %s Next: %s TimeToReach: %f"), *CurrentLoc.ToString(), *NextGridLoc.ToString(), TimeToReach);
+	// UE_LOG(LogTemp, Log, TEXT("Current: %s Next: %s TimeToReach: %f"), *CurrentLoc.ToString(), *NextGridLoc.ToString(), TimeToReach);
 	
 	GetWorldTimerManager().SetTimer(PredictGridReachingTimerHandle, this, &ANGPawnBase::OnReachedNextGrid, TimeToReach, false);
 }
@@ -660,6 +660,8 @@ void ANGPawnBase::UpdateCurrentGridAddress(FGridAddress NewGridAddress)
 	
 	CurrentGridAddress = NewGridAddress;
 	++CurrentGridAddress.DirtyFlag;
+	
+	SetActorLocation(UGridMapHelper::GetWorldLocation(NewGridAddress));
 }
 
 void ANGPawnBase::UpdatePawnCurrentLocation(const FGridAddress& GridAddress)
@@ -793,21 +795,27 @@ void ANGPawnBase::CheckAttackCondition()
 
 void ANGPawnBase::OnRep_CurrentGridAddress()
 {
-	UE_LOG(LogTemp, Log, TEXT("OnRep_CurrentGridAddress %p"), this);
+	// UE_LOG(LogTemp, Log, TEXT("OnRep_CurrentGridAddress %p"), this);
 	UpdatePawnCurrentLocation(CurrentGridAddress);
 }
 
 void ANGPawnBase::LookAt(ANGPawnBase* Target)
 {
+	if (!Target) return;
+
 	FVector MyLocation = GetActorLocation();
 	FVector TargetLocation = Target->GetActorLocation();
-	FVector Direction = TargetLocation - MyLocation;
-	FRotator Rotation = Direction.Rotation();
-
-	Rotation.Pitch = 0.f;
-	Rotation.Roll = 0.f;
 	
-	SetActorRotation(Rotation);
+	FVector Direction = TargetLocation - MyLocation;
+    
+	Direction.Z = 0.f; 
+
+	if (!Direction.IsNearlyZero())
+	{
+		FRotator Rotation = Direction.ToOrientationRotator();
+        
+		SetActorRotation(Rotation);
+	}
 }
 
 void ANGPawnBase::ExecuteAttack()

@@ -1,9 +1,9 @@
 // Copyright (c) 2025 TeamNG. All Rights Reserved.
 
-
-#include "Components/NGCombatManagerComponent.h"
+#include "Algo/RandomShuffle.h"
 
 #include "Combat/Grid/ArenaManager.h"
+#include "Components/NGCombatManagerComponent.h"
 #include "Pawn/NGEnemyPawn.h"
 #include "Pawn/NGUnitPawn.h"
 #include "Game/NGGameState.h"
@@ -11,7 +11,7 @@
 #include "Player/NGPlayerState.h"
 
 // Sets default values
-UNGCombatManagerComponent::UNGCombatManagerComponent()
+UNGCombatManagerComponent::UNGCombatManagerComponent() : FightWaitTime(0.1f)
 {
 	PrimaryComponentTick.bCanEverTick = false;
 	SetIsReplicatedByDefault(true);
@@ -23,16 +23,36 @@ void UNGCombatManagerComponent::BeginPlay()
 	Super::BeginPlay();
 }
 
-void UNGCombatManagerComponent::StartCombat(FCombatSettingData& SettingData, APlayerController* PC)
+void UNGCombatManagerComponent::EnqueueCombatPhase(ANGPlayerState* PS)
 {
-	if (!GetOwner()->HasAuthority())	return;
+	if (!PS)	return;
 	
-	SetupCombat(SettingData);
+	CombatPSQueue.Add(PS);
+}
 
-	//화면띄우고 이것저것
+void UNGCombatManagerComponent::StartCombat()
+{
+	Algo::RandomShuffle(CombatPSQueue);
 	
-	//TODO: 모든 플레이어가 Rep된거 확인하고 타이머시작이 더 좋을듯 -> GS에서 PS순회해서 nullptr없어야 고?
-	GetWorld()->GetTimerManager().SetTimer(FightStartTimerHandle, this, &UNGCombatManagerComponent::StartFight, 0.1f, false);	
+	uint8 Checker = 0;
+	
+	FCombatSettingData CombatSettingData;
+	
+	for (ANGPlayerState* PS : CombatPSQueue)
+	{
+		CombatSettingData.Players[Checker++] = PS;
+		
+		if (Checker > 1)
+		{
+			Checker = 0;
+			SetupCombat(CombatSettingData);
+			
+			CombatSettingData.Reset();
+		}
+	}
+	//TODO: 홀수일때 처리필요 (부전승)
+	
+	GetWorld()->GetTimerManager().SetTimer(FightStartTimerHandle, this, &UNGCombatManagerComponent::StartFight, FightWaitTime, false);	
 }
 
 void UNGCombatManagerComponent::StartFight()
@@ -42,15 +62,14 @@ void UNGCombatManagerComponent::StartFight()
 	ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>();
 	if (!GS)	return;
 	
+	UE_LOG(LogTemp, Log, TEXT("CombatDatas Num : %d"), CombatDatas.Num());
+	
 	//모든 유저 경기장 순회하면서 전투상태로 변경
-	for (APlayerState* RawPlayer : GS->PlayerArray)
+	for (FCombatSettingData Data : CombatDatas)
 	{
-		if (IsValid(RawPlayer))
+		for (ANGPlayerState* PS : Data.Players)
 		{
-			if (ANGPlayerState* Player = Cast<ANGPlayerState>(RawPlayer))
-			{
-				Player->PrepareStartCombat();
-			}
+			PS->PrepareStartCombat();
 		}
 	}
 }
@@ -74,15 +93,15 @@ void UNGCombatManagerComponent::FinishCombat()
 	
 	for (FCombatSettingData Data : CombatDatas)
 	{
-		if (Data.PlayerA)
+		if (Data.Players.Num() > 0)
 		{
-			ResetGrid(Data.PlayerA);
+			ResetGrid(Data.Players[0]);
 		}
 		
-		if (Data.PlayerB)
+		if (Data.Players.Num() > 1)
 		{
-			ResetGrid(Data.PlayerB);
-			ReturnSpectatorHome(Data.PlayerB);
+			ResetGrid(Data.Players[1]);
+			ReturnSpectatorHome(Data.Players[1]);
 		}
 	}
 	
@@ -100,14 +119,14 @@ void UNGCombatManagerComponent::TransitionCombatPlayerGameStates(EGameState Game
 {
 	for (FCombatSettingData Data : CombatDatas)
 	{
-		if (Data.PlayerA)
+		if (Data.Players.Num() > 0)
 		{
-			Data.PlayerA->SetGameState(GameState);
+			Data.Players[0]->SetGameState(GameState);
 		}
 		
-		if (Data.PlayerB)
+		if (Data.Players.Num() > 1)
 		{
-			Data.PlayerB->SetGameState(GameState);
+			Data.Players[1]->SetGameState(GameState);
 		}
 	}
 }
@@ -119,7 +138,8 @@ void UNGCombatManagerComponent::PawnDied(ANGPawnBase* DeadPawn)
 	if (DeadPawn->IsA(ANGEnemyPawn::StaticClass()))
 	{
 		UE_LOG(LogTemp, Log, TEXT("적 사망"));
-		++CurrentEnemyCount;
+		
+		//TODO: 사망할때마다 사망한 Pocket체크해서 아무것도 없는지 확인
 		//적 사망 이벤트
 		//적 사망 델리게이트 만들어서 구독시키게 하고 델리게이트 호출도 나쁘지 않을듯
 	}else if (DeadPawn->IsA(ANGUnitPawn::StaticClass()))
@@ -128,7 +148,8 @@ void UNGCombatManagerComponent::PawnDied(ANGPawnBase* DeadPawn)
 		//유닛 죽었을때 이벤트
 	}
 	
-	if (CurrentEnemyCount >= TargetKillCount)
+	//TODO: 사망할때마다 사망한 Pocket체크해서 아무것도 없는지 확인
+	// if (CheckPocket())
 	{
 		FinishCombat();
 	}
@@ -136,29 +157,23 @@ void UNGCombatManagerComponent::PawnDied(ANGPawnBase* DeadPawn)
 
 void UNGCombatManagerComponent::SetupCombat(FCombatSettingData& SettingData)
 {
-	if (!SettingData.PlayerA)	return;
-	if (!SettingData.PlayerB)	return;
+	if (!SettingData.Players[0])	return;
+	if (!SettingData.Players[1])	return;
 	
 	//전투 시작 전 그리드 상태 복구용 스냅샷
-	
-	//TODO: SettingData를 Array로 바꿔서 순환하면서 ㄱㄱ
-	
-	SettingData.PlayerA->CaptureSnapShot();
-	SettingData.PlayerA->SetGameState(EGameState::Combat);
-
-	SettingData.PlayerB->CaptureSnapShot();
-	SettingData.PlayerB->SetGameState(EGameState::Combat);
-	
-	CurrentEnemyCount = 0;
-	TargetKillCount = SettingData.EnemyCount;
-	
-	if (AArenaManager* ArenaManager = SettingData.PlayerB->GetArenaManager())
+	for (ANGPlayerState* Player : SettingData.Players)
 	{
-		FArenaAddress AwayArenaAddress(SettingData.PlayerA->GetHomeArena(), EPossessArenaIdentification::Away);
+		Player->CaptureSnapShot();
+		Player->SetGameState(EGameState::Combat);
+	}
+	
+	if (AArenaManager* ArenaManager = SettingData.Players[1]->GetArenaManager())
+	{
+		FArenaAddress AwayArenaAddress(SettingData.Players[0]->GetHomeArena(), EPossessArenaIdentification::Away);
 		ArenaManager->PossessArena(AwayArenaAddress);
 	}
 	
-	CombatDatas.Emplace(MoveTemp(SettingData));
+	CombatDatas.Add(SettingData);
 }
 
 void UNGCombatManagerComponent::ResetGrid(ANGPlayerState* PS)

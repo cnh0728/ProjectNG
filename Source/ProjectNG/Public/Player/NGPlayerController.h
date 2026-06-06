@@ -7,9 +7,9 @@
 #include "GameFramework/PlayerController.h"
 #include "NGPlayerController.generated.h"
 
+struct FInputActionValue;
 class UNGUnitInfoWidget;
 class ANGUnitPawn;
-struct FInputActionValue;
 class UInputMappingContext;
 class UInputAction;
 class UNGPocketComponent;
@@ -116,6 +116,14 @@ public:
 	void Server_RequestBuyUnit(FName UnitName);
 	
 	UNGPocketComponent* GetPlayerPocket() const;
+
+/*************************************/
+/*				전투					 */
+/*************************************/
+public:
+	UFUNCTION(Server, Reliable)
+	void Server_EnterPhase(EGamePhase Phase);
+	
 	
 /*************************************/
 /*				UI					 */
@@ -150,5 +158,11 @@ public:
 
 private:
 	bool bShowDebugGrid;
+	
+	
+/*************************************/
+/*					일반				 */
+/*************************************/
+	
 	
 };

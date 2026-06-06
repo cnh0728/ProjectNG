@@ -6,6 +6,7 @@
 #include "NGGameModeBase.h"
 #include "Combat/NGCombatData.h"
 #include "Core/NGUnitData.h"
+#include "Game/NGGameState.h"
 #include "NGInGameMode.generated.h"
 
 /**
@@ -21,6 +22,8 @@ class PROJECTNG_API ANGInGameMode : public ANGGameModeBase
 
 public:
 	void RequestStartCombat(APlayerController* PC);
+	void OnGameStart();
+	void NotifyGameStartToPlayer(ANGGameState* GS);
 	void OnCombatFinished(const FCombatResultData& ResultData);
 	void ReportPawnDeath(ANGPawnBase* DeadPawn);
 	

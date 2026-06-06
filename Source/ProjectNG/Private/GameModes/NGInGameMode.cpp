@@ -6,6 +6,7 @@
 #include "Components/NGCombatManagerComponent.h"
 #include "Core/NGUnitData.h"
 #include "Game/NGGameState.h"
+#include "Pawn/NGUnitPawn.h"
 #include "Player/NGPlayerState.h"
 
 
@@ -16,24 +17,40 @@ void ANGInGameMode::RequestStartCombat(APlayerController* PC)
 	
 	ANGGameState* GS = GetGameState<ANGGameState>();
 	
+	UNGCombatManagerComponent* CMC = GS->GetCombatManagerComponent();
+	
 	// 테스트용
 	if (GS)
 	{
-		FCombatSettingData SettingData;
-		SettingData.EnemyCount = 3;
-				
-		if (GS->PlayerArray.Num() > 0)
+		for (APlayerState* RawPS : GS->PlayerArray)
 		{
-			SettingData.PlayerA = Cast<ANGPlayerState>(GS->PlayerArray[0]);
-		}
-		if (GS->PlayerArray.Num() > 1)
-		{
-			SettingData.PlayerB = Cast<ANGPlayerState>(GS->PlayerArray[1]);
+			if (ANGPlayerState* PS = Cast<ANGPlayerState>(RawPS))
+			{
+				CMC->EnqueueCombatPhase(PS);
+			}
 		}
 		
-		GS->GetCombatManagerComponent()->StartCombat(SettingData, PC);
+		CMC->StartCombat();
 	}
+}
+
+void ANGInGameMode::OnGameStart()
+{
+	ANGGameState* GS = GetGameState<ANGGameState>();
+	NotifyGameStartToPlayer(GS);
+}
+
+void ANGInGameMode::NotifyGameStartToPlayer(ANGGameState* GS)
+{
+	if (!GS)	return;
 	
+	for (APlayerState* RawPS : GS->PlayerArray)
+	{
+		if (ANGPlayerState* PS = Cast<ANGPlayerState>(RawPS))
+		{
+			PS->SetGameState(EGameState::Exploration);
+		}
+	}	
 }
 
 void ANGInGameMode::OnCombatFinished(const FCombatResultData& ResultData)

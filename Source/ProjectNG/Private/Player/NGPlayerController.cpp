@@ -406,24 +406,32 @@ UNGPocketComponent* ANGPlayerController::GetPlayerPocket() const
 	return nullptr;
 }
 
+void ANGPlayerController::Server_EnterPhase_Implementation(EGamePhase Phase)
+{
+	ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>();
+	ANGPlayerState* PS = GetPlayerState<ANGPlayerState>();	
+	
+	if (UNGCombatManagerComponent* CMC = GS ? GS->GetCombatManagerComponent() : nullptr)
+	{
+		CMC->EnqueueCombatPhase(PS);
+	}
+}
+
 void ANGPlayerController::Server_RequestStartCombat_Implementation()
 {
-	if (HasAuthority())
+	if (ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>())
 	{
-		if (ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>())
-		{
-			GM->RequestStartCombat(this);
-            
-			// 확인용 로그
-			UE_LOG(LogTemp, Warning, TEXT("Cmd: Wave Started!"));
-            
-			// 화면에 디버그 메시지 띄우기 (선택사항)
-			if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Wave Started!"));
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("CombatManager가 GameState에 없습니다!"));
-		}
+		GM->RequestStartCombat(this);
+        
+		// 확인용 로그
+		UE_LOG(LogTemp, Warning, TEXT("Cmd: Wave Started!"));
+        
+		// 화면에 디버그 메시지 띄우기 (선택사항)
+		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Wave Started!"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("CombatManager가 GameState에 없습니다!"));
 	}
 }
 
