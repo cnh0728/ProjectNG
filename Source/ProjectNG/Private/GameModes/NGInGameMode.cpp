@@ -61,12 +61,12 @@ void ANGInGameMode::OnCombatFinished(const FCombatResultData& ResultData)
 	
 }
 
-void ANGInGameMode::ReportPawnDeath(ANGPawnBase* DeadPawn)
+void ANGInGameMode::ReportPawnDeath(ANGPawnBase* DeadPawn) const
 {
 	ANGGameState* GS = GetGameState<ANGGameState>();
-	if (GS)
+	if (UNGCombatManagerComponent* CMC = GS ? GS->GetCombatManagerComponent() : nullptr)
 	{
-		GS->GetCombatManagerComponent()->PawnDied(DeadPawn);
+		CMC->NotifyPawnDied(DeadPawn);
 	}
 	
 }

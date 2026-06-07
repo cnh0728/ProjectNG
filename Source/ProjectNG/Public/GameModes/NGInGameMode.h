@@ -25,7 +25,7 @@ public:
 	void OnGameStart();
 	void NotifyGameStartToPlayer(ANGGameState* GS);
 	void OnCombatFinished(const FCombatResultData& ResultData);
-	void ReportPawnDeath(ANGPawnBase* DeadPawn);
+	void ReportPawnDeath(ANGPawnBase* DeadPawn) const;
 	
 	virtual void BeginPlay() override;
 

@@ -52,7 +52,7 @@ void ANGPlayerState::SpawnGridMapManager()
 	}
 	
 	TSoftClassPtr<AArena> GridMapClass = GetDefault<UNGDeveloperSettings>()->ArenaClass;
-	if (GridMapClass.IsValid())
+	if (!GridMapClass.IsNull())
 	{
 		//SM들을 배정해둬서 BP로 가져와야함
 		if (UClass* GridMapManagerBPClass = GridMapClass.LoadSynchronous())
@@ -93,6 +93,26 @@ void ANGPlayerState::InitializePostLogin()
 void ANGPlayerState::CaptureSnapShot()
 {
 	CombatGridMapSnapShot = CombatGridMap;
+}
+
+void ANGPlayerState::OnCombatEnd(bool bIsWin)
+{
+	if (bIsWin)
+	{
+		OnCombatWin();
+	}
+	else
+	{
+		OnCombatLose();
+	}
+}
+
+void ANGPlayerState::OnCombatWin()
+{
+}
+
+void ANGPlayerState::OnCombatLose()
+{
 }
 
 int32 ANGPlayerState::GetUserIndex()

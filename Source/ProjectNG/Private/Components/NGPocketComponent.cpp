@@ -7,6 +7,7 @@
 #include "Core/NGUnitData.h"
 #include "GameModes/NGInGameMode.h"
 #include "Net/UnrealNetwork.h"
+#include "Pawn/NGPawnBase.h"
 #include "Player/NGPlayerController.h"
 
 
@@ -101,6 +102,22 @@ void UNGPocketComponent::GetPlacedUnits(TArray<ANGPawnBase*>& OutUnits)
 			}
 		}
 	}
+}
+
+bool UNGPocketComponent::IsAnnihilated()
+{
+	TArray<ANGPawnBase*> PlacedUnitPocket;
+	GetPlacedUnits(PlacedUnitPocket);
+	
+	for (ANGPawnBase* Unit : PlacedUnitPocket)
+	{
+		if (!Unit->IsDead())
+		{
+			return false;
+		}
+	}
+	
+	return true;
 }
 
 void UNGPocketComponent::ControlPocketSpawning(ANGPawnBase* NewPawn)

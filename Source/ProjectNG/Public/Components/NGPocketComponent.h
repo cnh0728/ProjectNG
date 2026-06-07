@@ -63,6 +63,8 @@ private:
 public:
 	void GetPlacedUnits(TArray<ANGPawnBase*>& OutUnits);
 	
+	bool IsAnnihilated();
+	
 	void ControlPocketSpawning(ANGPawnBase* NewPawn);
 	void ControlPocketSelling(ANGPawnBase* NewPawn);
 	void AddUnitFromPocket(ANGPawnBase* NewPawn);

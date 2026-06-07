@@ -11,6 +11,15 @@ class ANGPawnBase;
 class ANGPlayerState;
 struct FCombatSettingData;
 
+UENUM(BlueprintType)
+enum class ECombatResult : uint8
+{
+	None = 0,
+	Win = 1,
+	Lose = 2,
+	Draw = 3,
+};
+
 UCLASS()
 class PROJECTNG_API UNGCombatManagerComponent : public UActorComponent
 {
@@ -27,11 +36,12 @@ protected:
 public:
 	void StartFight();
 	void ReturnSpectatorHome(ANGPlayerState* AwayPlayer);
+	void NotifyEndCombat(const ANGPlayerState* LoseEndPlayer);
 
-	void PawnDied(ANGPawnBase* DeadPawn);
+	void NotifyPawnDied(ANGPawnBase* DeadPawn);
 
 	void FinishCombat();
-	void TransitionCombatPlayerGameStates(EGameState GameState);
+	void ClearCombatEndDatas();
 
 	void ResetGrid(ANGPlayerState* PS);
 
@@ -40,13 +50,19 @@ public:
 
 protected:
 	//매개변수 의도된 복사
-	void SetupCombat(FCombatSettingData& SettingData);
+	void SetupCombat(const FCombatSettingData& SettingData);
+	
+	UPROPERTY()
+	TArray<FCombatSettingData> CombatDatas;
 	
 	UPROPERTY()
 	TArray<ANGPlayerState*> CombatPSQueue;
 	
 	UPROPERTY()
-	TArray<FCombatSettingData> CombatDatas;
+	TMap<ANGPlayerState*, ECombatResult> CombatResultDictionary;
+	
+	UPROPERTY()
+	int32 FinishedCombatCount;
 	
 	UPROPERTY(EditAnywhere, meta=(AllowPrivateAccess = "true"))
 	float FightWaitTime;

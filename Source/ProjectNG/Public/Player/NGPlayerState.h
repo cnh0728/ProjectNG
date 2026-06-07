@@ -63,7 +63,12 @@ public:
 	void SetGameState(EGameState NewState) { CurrentState = NewState; }
 	EGameState GetGameState() const { return CurrentState; }
 	
+	void OnCombatEnd(bool bIsWin);
+	
 protected:
+	
+	void OnCombatWin();
+	void OnCombatLose();
 	
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite)
 	EGameState CurrentState;
