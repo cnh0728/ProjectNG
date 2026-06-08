@@ -31,14 +31,15 @@ void UNGUnitDataManager::Initialize(FSubsystemCollectionBase& Collection)
 	
 	if (UnitDataTable)
 	{
-		TArray<FUnitData*> AllRows;
-		UnitDataTable->GetAllRows<FUnitData>(TEXT("InitializeUnitDataMap"), AllRows);
-		
-		for (FUnitData* RowData : AllRows)
+		for (auto& Pair : UnitDataTable->GetRowMap())
 		{
+			FName RowName = Pair.Key;
+			FUnitData* RowData = (FUnitData*)Pair.Value;
+		
 			if (RowData && RowData->IdentificationTag.IsValid())
 			{
 				TagToUnitDataMap.Add(RowData->IdentificationTag, RowData);
+				TagToUnitNameDataMap.Add(RowData->IdentificationTag, RowName);
 			}
 		}
 		
@@ -70,4 +71,13 @@ const FUnitData* UNGUnitDataManager::GetUnitData(const FGameplayTag Identificati
 	
 	UE_LOG(LogTemp, Warning, TEXT("해당 태그(%s)를 가진 유닛 데이터가 없습니다!"), *IdentificationTag.ToString());
 	return nullptr;
+}
+
+FName UNGUnitDataManager::GetUnitName(const FGameplayTag IdentificationTag) const
+{
+	if (const FName* FoundRowName = TagToUnitNameDataMap.Find(IdentificationTag))
+	{
+		return *FoundRowName;
+	}
+	return NAME_None;
 }

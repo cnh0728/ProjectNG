@@ -19,9 +19,11 @@ class PROJECTNG_API UNGUnitDataManager : public UGameInstanceSubsystem
 public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	
-	const FUnitAbilityData* GetUnitAbilityData(FGameplayTag IdentificationTag);
+	const FUnitAbilityData* GetUnitAbilityData(const FGameplayTag IdentificationTag);
 	
-	const FUnitData* GetUnitData(FGameplayTag IdentificationTag);
+	const FUnitData* GetUnitData(const FGameplayTag IdentificationTag);
+	
+	FName GetUnitName(const FGameplayTag IdentificationTag) const;
 	
 	const UDataTable* GetUnitDataTable() { return UnitDataTable; };
 	
@@ -37,4 +39,6 @@ private:
 	TMap<FGameplayTag, FUnitAbilityData*> TagToUnitAbilityDataMap;
 	
 	TMap<FGameplayTag, FUnitData*> TagToUnitDataMap;
+	
+	TMap<FGameplayTag, FName> TagToUnitNameDataMap;
 };

@@ -3,9 +3,12 @@
 
 #include "Components/NGPocketComponent.h"
 
+#include "Core/NGPoolSubSystem.h"
 #include "Core/NGShopProbability.h"
+#include "Core/NGSpawnHelper.h"
 #include "Core/NGUnitData.h"
 #include "Game/NGGameState.h"
+#include "Game/NGUnitDataManager.h"
 #include "GameModes/NGInGameGameMode.h"
 #include "Net/UnrealNetwork.h"
 #include "Player/NGPlayerController.h"
@@ -89,10 +92,96 @@ void UNGPocketComponent::UpdateRollUnit()
 	}
 }
 
+void UNGPocketComponent::CheckAndMergeUnit(FGameplayTag IdentificationTag)
+{
+	
+	// 서버가 아니면 리턴
+	if (!GetOwner()->HasAuthority())
+	{
+		return;
+	}
+	
+	UNGUnitDataManager* DataManager = GetWorld()->GetGameInstance()->GetSubsystem<UNGUnitDataManager>();
+	if (!DataManager) return;
+	
+	
+	TArray<ANGUnitPawn*> SameUnits;
+	for (ANGUnitPawn* Unit : OwnedUnitPocket)
+	{
+		if (Unit && Unit->GetIdentificationTag() == IdentificationTag)
+		{
+			SameUnits.Add(Unit);
+		}
+	}
+	
+	if (SameUnits.Num() >= 3)
+	{
+		ANGUnitPawn* Mat1 = SameUnits[0]; // 조합의 중심이 될 유닛
+		ANGUnitPawn* Mat2 = SameUnits[1];
+		ANGUnitPawn* Mat3 = SameUnits[2];
+		
+		
+		const FUnitData* UnitData = DataManager->GetUnitData(IdentificationTag);
+		if (!UnitData || !UnitData->NextTierTag.IsValid()) return;
+		
+		FName NextUnitRowName = DataManager->GetUnitName(UnitData->NextTierTag);
+		if (NextUnitRowName.IsNone()) return;
+		
+		FVector MergeLocation = Mat1->GetActorLocation(); // 첫번째 유닛 위치
+
+		if (UNGPoolSubSystem* Pool = GetWorld()->GetSubsystem<UNGPoolSubSystem>())
+		{
+			if (ANGPlayerState* PS = GetOwner<ANGPlayerState>())
+			{
+				FHexGridMap& CombatGridMap = PS->GetCombatGridMap();
+				
+				CombatGridMap.EmptyGridMap(Mat1->GetPlacedGridIndex());
+				CombatGridMap.EmptyGridMap(Mat2->GetPlacedGridIndex());
+				CombatGridMap.EmptyGridMap(Mat3->GetPlacedGridIndex());
+			}
+			
+			ControlPocketSelling(Mat1);
+			ControlPocketSelling(Mat2);
+			ControlPocketSelling(Mat3);
+			
+			Pool->ReleaseSegment(Mat1);
+			Pool->ReleaseSegment(Mat2);
+			Pool->ReleaseSegment(Mat3);
+		}
+		
+		// 상위 등급 생성
+		if (ANGPlayerState* PS = GetOwner<ANGPlayerState>())
+		{
+			if (ANGPlayerController* PC = Cast<ANGPlayerController>(PS->GetPlayerController()))
+			{
+				// 이 스폰이 성공하면 다시 ControlPocketSpawning이 호출되며 연쇄 작용 일어남
+				bool bSpawned = UNGSpawnHelper::SpawnUnitPawn(PC, NextUnitRowName);
+				if (bSpawned)
+				{
+					// 클라이언트 RPC 연출 호출
+					const FUnitData* NextData = DataManager->GetUnitData(UnitData->NextTierTag);
+					if (NextData) Multicast_PlayMergeEffect(MergeLocation, NextData->Tier);
+				}
+			}
+		}
+	}
+}
+
+void UNGPocketComponent::Multicast_PlayMergeEffect_Implementation(FVector EffectLocation, EUnitTier UnitTier)
+{
+	// 이 함수는 서버에서 호출되더라도 모든 클라이언트(플레이어의 화면)에서 실행됩니다.
+	// 이 안에서 무거운 이펙트 생성, 파티클 폭발, 티어별 사운드 재생 등을 수행합니다.
+}
+
 void UNGPocketComponent::ControlPocketSpawning(ANGUnitPawn* NewPawn)
 {
 	OwnedUnitPocket.AddUnique(NewPawn);
 	WaitUnitPocket.AddUnique(NewPawn);
+	
+	if (NewPawn)
+	{
+		CheckAndMergeUnit(NewPawn->GetIdentificationTag());
+	}
 }
 
 void UNGPocketComponent::ControlPocketPlacing(ANGUnitPawn* NewPawn)

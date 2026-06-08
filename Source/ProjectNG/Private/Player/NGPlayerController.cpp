@@ -9,6 +9,7 @@
 #include "Pawn/NGUnitPawn.h"
 #include "Pawn/SelectableInterface.h"
 #include "Combat/GridMapManager.h"
+#include "Core/NGBlueprintLibrary.h"
 #include "Core/NGSpawnHelper.h"
 #include "Game/NGGameState.h"
 #include "GameModes/NGInGameGameMode.h"
@@ -18,6 +19,8 @@
 
 #include "ProjectNG/ProjectNG.h"
 #include "UI/NGUnitInfoWidget.h"
+#include "UI/HUD/NGHUD.h"
+#include "UI/WidgetController/UnitDetailsWidgetController.h"
 
 ANGPlayerController::ANGPlayerController() : bIsDragging(false)
 {
@@ -198,6 +201,11 @@ void ANGPlayerController::SetSelectedUnit(ANGUnitPawn* InSelectedUnit)
 		}
 		
 		UpdateUnitWidget(SelectedUnit);
+		
+		if (UUnitDetailsWidgetController* UnitDetailsWidgetController = UNGBlueprintLibrary::GetUnitDetailsWidgetController(this))
+		{
+			UnitDetailsWidgetController->SetTargetUnit(SelectedUnit.Get());
+		}
 	}
 }
 
@@ -214,6 +222,11 @@ void ANGPlayerController::ResetSelectUnit()
 		{
 			UnitInfoWidgetInstance->ClearTargetUnit();
 			UnitInfoWidgetInstance->SetVisibility(ESlateVisibility::Collapsed);
+		}
+		
+		if (UUnitDetailsWidgetController* UnitDetailsWidgetController = UNGBlueprintLibrary::GetUnitDetailsWidgetController(this))
+		{
+			UnitDetailsWidgetController->ClearTargetUnit();
 		}
 		
 		SelectedUnit = nullptr;

@@ -32,6 +32,12 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, DisplayName = "유닛 티어")
 	EUnitTier Tier = EUnitTier::Tier1;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, DisplayName = "다음 티어 태그", meta=(EditCondition = "Tier != EUnitTier::Tier3"))
+	FGameplayTag NextTierTag = FGameplayTag();
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, DisplayName = "베이스 유닛 이름")
+	FName BaseUnitName = FName();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, DisplayName = "생성 할 유닛 액터 클래스")
 	TSubclassOf<ANGUnitPawn> UnitClass;

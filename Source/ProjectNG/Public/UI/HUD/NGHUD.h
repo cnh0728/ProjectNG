@@ -6,6 +6,8 @@
 #include "GameFramework/HUD.h"
 #include "NGHUD.generated.h"
 
+class UUnitDetailsWidgetController;
+class UNGUnitAttributeInfoDataAsset;
 struct FWidgetParams;
 class URollShopWidgetController;
 class UNGUserWidget;
@@ -22,11 +24,16 @@ class PROJECTNG_API ANGHUD : public AHUD
 
 public:
 	URollShopWidgetController* GetRollShopWidgetController(const FWidgetParams& WidgetControllerParams);
+	
+	UUnitDetailsWidgetController* GetUnitDetailsWidgetController(const FWidgetParams& WidgetControllerParams);
 
-	void InitializeHUD(APlayerController* PC, APlayerState* PS, /*UAbilitySystemComponent* ASC,*/ UAttributeSet* AS);
+	void InitializeHUD(APlayerController* PC, APlayerState* PS);
 
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "WidgetData")
+	TObjectPtr<UNGUnitAttributeInfoDataAsset> AttributeInfo;
+	
 private:
-
 	//~ Begin Main Widget
 	UPROPERTY()
 	TObjectPtr<UNGUserWidget> MainWidget;
@@ -43,4 +50,13 @@ private:
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<URollShopWidgetController> RollShopWidgetControllerClass;
 	//~ End RollShop Widget
+	
+	// ~Begin UnitDetails WidgetController
+	UPROPERTY()
+	TObjectPtr<UUnitDetailsWidgetController> UnitDetailsWidgetController;
+	
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UUnitDetailsWidgetController> UnitDetailsWidgetControllerClass;
+	// ~End UnitDetails WidgetController
+	
 };

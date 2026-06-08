@@ -3,10 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "Components/ActorComponent.h"
 #include "NGPocketComponent.generated.h"
 
 
+enum class EUnitTier : uint8;
 class ANGUnitPawn;
 
 UENUM(BlueprintType)
@@ -47,6 +49,11 @@ protected:
 	
 	UFUNCTION()
 	void UpdateRollUnit();
+	
+	void CheckAndMergeUnit(FGameplayTag IdentificationTag);
+	
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multicast_PlayMergeEffect(FVector EffectLocation, EUnitTier UnitTier);
 
 	UPROPERTY(EditDefaultsOnly, Category = "Game|Shop")
 	int32 ShopSlotCount = 3;

@@ -7,6 +7,7 @@
 #include "GameFramework/PlayerController.h"
 #include "NGPlayerController.generated.h"
 
+class ANGHUD;
 class AGridMapManager;
 class UNGUnitInfoWidget;
 class ANGUnitPawn;
@@ -95,6 +96,9 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Selection")
 	TObjectPtr<ANGUnitPawn> SelectedUnit;
+	
+	UPROPERTY()
+	TObjectPtr<ANGHUD> NGHUD;
 	
 			
 /*************************************/

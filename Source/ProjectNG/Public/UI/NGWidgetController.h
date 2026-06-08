@@ -16,20 +16,14 @@ struct FWidgetParams
 
 	FWidgetParams() {}
 
-	FWidgetParams(APlayerController* PC, APlayerState* PS, /*UAbilitySystemComponent*, ASC*/ UAttributeSet* AS)
-	: PlayerController(PC), PlayerState(PS), /*AbilitySystemComponent(ASC),*/ AttributeSet(AS) { }
+	FWidgetParams(APlayerController* PC, APlayerState* PS)
+	: PlayerController(PC), PlayerState(PS) { }
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<APlayerController> PlayerController = nullptr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<APlayerState> PlayerState = nullptr;
-
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	// TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent = nullptr;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TObjectPtr<UAttributeSet> AttributeSet = nullptr;
 };
 
 
@@ -59,10 +53,4 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, Category = "WidgetController")
 	TObjectPtr<APlayerState> PlayerState;
-
-	// UPROPERTY(BlueprintReadOnly, Category = "WidgetController")
-	// TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
-
-	UPROPERTY(BlueprintReadOnly, Category = "WidgetController")
-	TObjectPtr<UAttributeSet> AttributeSet;
 };
