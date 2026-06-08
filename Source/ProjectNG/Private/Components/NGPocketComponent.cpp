@@ -9,8 +9,9 @@
 #include "Core/NGUnitData.h"
 #include "Game/NGGameState.h"
 #include "Game/NGUnitDataManager.h"
-#include "GameModes/NGInGameGameMode.h"
+#include "GameModes/NGInGameMode.h"
 #include "Net/UnrealNetwork.h"
+#include "Pawn/NGPawnBase.h"
 #include "Player/NGPlayerController.h"
 
 
@@ -23,6 +24,7 @@ void UNGPocketComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProper
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME_CONDITION(UNGPocketComponent, RollShopPocket, COND_OwnerOnly); //요청보낸 주인한테만 동기화
+	DOREPLIFETIME_CONDITION(UNGPocketComponent, LastShopAction, COND_OwnerOnly); 
 	DOREPLIFETIME(UNGPocketComponent, OwnedUnitPocket);
 }
 
@@ -78,7 +80,7 @@ void UNGPocketComponent::UpdateRollUnit()
 			
 			UE_LOG(LogTemp, Warning, TEXT("[OnRep] Pocket Addr: %p, Owner Addr: %p"), this, Owner);
 			
-			// 2. 델리게이트 바인딩 상태 확인 (중요)
+			// 델리게이트 바인딩 상태 확인
 			if (PC->OnUnitsUpdated.IsBound())
 			{
 				UE_LOG(LogTemp, Warning, TEXT("OnRep_RollChange: Delegate is Bound. Broadcaster Addr: %p"), &(PC->OnUnitsUpdated));
@@ -174,6 +176,47 @@ void UNGPocketComponent::Multicast_PlayMergeEffect_Implementation(FVector Effect
 }
 
 void UNGPocketComponent::ControlPocketSpawning(ANGUnitPawn* NewPawn)
+void UNGPocketComponent::GetPlacedUnits(TArray<ANGPawnBase*>& OutUnits)
+{
+	for (ANGPawnBase* Unit : OwnedUnitPocket)
+	{
+		if (Unit)
+		{
+			if (Unit->GetGridAddress().GridType == EGridType::Combat)
+			{
+				OutUnits.Add(Unit);
+			}
+		}
+	}
+}
+
+bool UNGPocketComponent::IsAnnihilated()
+{
+	TArray<ANGPawnBase*> PlacedUnitPocket;
+	GetPlacedUnits(PlacedUnitPocket);
+	
+	for (ANGPawnBase* Unit : PlacedUnitPocket)
+	{
+		if (!Unit->IsDead())
+		{
+			return false;
+		}
+	}
+	
+	return true;
+}
+
+void UNGPocketComponent::ControlPocketSpawning(ANGPawnBase* NewPawn)
+{
+	AddUnitFromPocket(NewPawn);
+}
+
+void UNGPocketComponent::ControlPocketSelling(ANGPawnBase* NewPawn)
+{
+	RemoveUnitFromPocket(NewPawn);
+}
+
+void UNGPocketComponent::AddUnitFromPocket(ANGPawnBase* NewPawn)
 {
 	OwnedUnitPocket.AddUnique(NewPawn);
 	WaitUnitPocket.AddUnique(NewPawn);
@@ -190,17 +233,9 @@ void UNGPocketComponent::ControlPocketPlacing(ANGUnitPawn* NewPawn)
 	WaitUnitPocket.Remove(NewPawn);
 }
 
-void UNGPocketComponent::ControlPocketUnPlacing(ANGUnitPawn* NewPawn)
+void UNGPocketComponent::RemoveUnitFromPocket(ANGPawnBase* Unit)
 {
-	PlacedUnitPocket.Remove(NewPawn);
-	WaitUnitPocket.AddUnique(NewPawn);
-}
-
-void UNGPocketComponent::ControlPocketSelling(ANGUnitPawn* NewPawn)
-{
-	OwnedUnitPocket.Remove(NewPawn);
-	PlacedUnitPocket.Remove(NewPawn);
-	WaitUnitPocket.Remove(NewPawn);
+	OwnedUnitPocket.Remove(Unit);
 }
 
 void UNGPocketComponent::Server_RequestRoll_Implementation()
@@ -211,11 +246,14 @@ void UNGPocketComponent::Server_RequestRoll_Implementation()
 	
 	if (!ProbabilityTable) return;
 
-	ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>();
+	ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>();
 	if (!GM) return;
 	
+	ANGPlayerState* PS = GetOwner<ANGPlayerState>();
+	if (!PS) return;
+	
 	// 레벨에 맞는 확률 데이터 가져오기
-	FString RowName = FString::FromInt(PlayerLevel);
+	FString RowName = FString::FromInt(PS->GetPlayerLevel());
 	FShopProbability* ProbabilityData = ProbabilityTable->FindRow<FShopProbability>(*RowName, TEXT(""));
 	
 	if (!ProbabilityData)

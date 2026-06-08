@@ -44,31 +44,24 @@ public:
     UPROPERTY(BlueprintReadOnly, Category = "Attributes|Vital", ReplicatedUsing = OnRep_Health)
     FGameplayAttributeData Health;
     ATTRIBUTE_ACCESSORS(UNGAttributeSet, Health)
-
     UFUNCTION()
     void OnRep_Health(const FGameplayAttributeData& OldValue);
-
-
+    
     UPROPERTY(BlueprintReadOnly, Category = "Attributes|Vital", ReplicatedUsing = OnRep_MaxHealth)
     FGameplayAttributeData MaxHealth;
     ATTRIBUTE_ACCESSORS(UNGAttributeSet, MaxHealth)
-
     UFUNCTION()
     void OnRep_MaxHealth(const FGameplayAttributeData& OldValue);
-
 
     UPROPERTY(BlueprintReadOnly, Category = "Attributes|Vital", ReplicatedUsing = OnRep_Mana)
     FGameplayAttributeData Mana;
     ATTRIBUTE_ACCESSORS(UNGAttributeSet, Mana)
-
     UFUNCTION()
     void OnRep_Mana(const FGameplayAttributeData& OldValue);
-
-
+    
     UPROPERTY(BlueprintReadOnly, Category = "Attributes|Vital", ReplicatedUsing = OnRep_MaxMana)
     FGameplayAttributeData MaxMana;
     ATTRIBUTE_ACCESSORS(UNGAttributeSet, MaxMana)
-
     UFUNCTION()
     void OnRep_MaxMana(const FGameplayAttributeData& OldValue);
 
@@ -79,23 +72,18 @@ public:
     UPROPERTY(BlueprintReadOnly, Category = "Attributes|Stats", ReplicatedUsing = OnRep_Strength)
     FGameplayAttributeData Strength;
     ATTRIBUTE_ACCESSORS(UNGAttributeSet, Strength)
-
     UFUNCTION()
     void OnRep_Strength(const FGameplayAttributeData& OldValue);
-
 
     UPROPERTY(BlueprintReadOnly, Category = "Attributes|Stats", ReplicatedUsing = OnRep_Intelligence)
     FGameplayAttributeData Intelligence;
     ATTRIBUTE_ACCESSORS(UNGAttributeSet, Intelligence)
-
     UFUNCTION()
     void OnRep_Intelligence(const FGameplayAttributeData& OldValue);
-
-
+    
     UPROPERTY(BlueprintReadOnly, Category = "Attributes|Stats", ReplicatedUsing = OnRep_Agility)
     FGameplayAttributeData Agility;
     ATTRIBUTE_ACCESSORS(UNGAttributeSet, Agility)
-
     UFUNCTION()
     void OnRep_Agility(const FGameplayAttributeData& OldValue);
     
@@ -118,15 +106,12 @@ public:
     UPROPERTY(BlueprintReadOnly, Category = "Attributes|Combat", ReplicatedUsing = OnRep_AttackRange)
     FGameplayAttributeData AttackRange;
     ATTRIBUTE_ACCESSORS(UNGAttributeSet, AttackRange)
-
     UFUNCTION()
     void OnRep_AttackRange(const FGameplayAttributeData& OldValue);
-
     
     UPROPERTY(BlueprintReadOnly, Category = "Attributes|Combat", ReplicatedUsing = OnRep_AttackSpeed)
     FGameplayAttributeData AttackSpeed;
     ATTRIBUTE_ACCESSORS(UNGAttributeSet, AttackSpeed)
-
     UFUNCTION()
     void OnRep_AttackSpeed(const FGameplayAttributeData& OldValue);
     
@@ -173,15 +158,24 @@ public:
     UPROPERTY(BlueprintReadOnly, Category = "Attributes|Combat", ReplicatedUsing = OnRep_TargetCount)
     FGameplayAttributeData TargetCount;
     ATTRIBUTE_ACCESSORS(UNGAttributeSet, TargetCount)
-
     UFUNCTION()
     void OnRep_TargetCount(const FGameplayAttributeData& OldValue);
-
     
     UPROPERTY(BlueprintReadOnly, Category = "Attributes|Combat", ReplicatedUsing = OnRep_Income)
     FGameplayAttributeData Income;
     ATTRIBUTE_ACCESSORS(UNGAttributeSet, Income)
-
     UFUNCTION()
     void OnRep_Income(const FGameplayAttributeData& OldValue);
+    
+    UPROPERTY(BlueprintReadOnly, Category = "Attributes|Combat", ReplicatedUsing = OnRep_MoveSpeed)
+    FGameplayAttributeData MoveSpeed;
+    ATTRIBUTE_ACCESSORS(UNGAttributeSet, MoveSpeed)
+    UFUNCTION()
+    void OnRep_MoveSpeed(const FGameplayAttributeData& OldValue);
+    
+    UPROPERTY(BlueprintReadOnly, Category = "Attributes|Combat", ReplicatedUsing = OnRep_Star)
+    FGameplayAttributeData Star;
+    ATTRIBUTE_ACCESSORS(UNGAttributeSet, Star)
+    UFUNCTION()
+    void OnRep_Star(const FGameplayAttributeData& OldValue);
 };

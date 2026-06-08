@@ -9,9 +9,9 @@
 
 class ANGHUD;
 class AGridMapManager;
+struct FInputActionValue;
 class UNGUnitInfoWidget;
 class ANGUnitPawn;
-struct FInputActionValue;
 class UInputMappingContext;
 class UInputAction;
 class UNGPocketComponent;
@@ -50,23 +50,28 @@ public:
 	virtual void OnRep_PlayerState() override;
 	
 	virtual void OnPossess(APawn* InPawn) override;
+	void PerformDragUpdate(float DeltaTime);
+	void ResetHighlight();
+	void HighLightGrid(const FVector& TargetLocation, AArena* Arena);
+	bool CanHighlight(const FGridAddress& GridAddress) const;
 
-	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	void SetHoveringUnit(ANGPawnBase* InHoveringPawn);
+	void ClearHoveringUnit();
+	ANGPawnBase* GetHoveringUnit() const; 
 	
 protected:
-	virtual void ProgressDragActor();
 
 	void HandleClickPressed(const FInputActionValue& Value);
-	void HandleClickTriggered(const FInputActionValue& Value);
 	void HandleClickReleased(const FInputActionValue& Value);
 	
-	void UpdateUnitWidget(ANGUnitPawn* NewUnit);
+	void UpdateUnitWidget(ANGPawnBase* NewUnit);
 
-	void SetSelectedUnit(ANGUnitPawn* InSelectedUnit);
+	void SetSelectedUnit(ANGPawnBase* InSelectedUnit);
 	void ResetSelectUnit();
 	
 	void PerformDrag();
 	void ResetDragUnit();
+	void ResetHoveringUnit();
 
 	// Enhanced Input 관련
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
@@ -78,29 +83,37 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> MousePositionInputAction;
 
-	//상태 관리 변수
-	uint8 bIsDragging : 1;
-	
 	uint8 GridMapIndex;
 	
-	const float DragThreshold = 10.f;
+	UPROPERTY(EditDefaultsOnly, Category = "Drag Drop", meta=(AllowPrivateAccess = "true"))
+	float DragThreshold;
 	
-	UPROPERTY(EditDefaultsOnly, Category = "Drag Drop")
-	float DragHeightOffset = 50.0f;
+	UPROPERTY(EditDefaultsOnly, Category = "Drag Drop", meta=(AllowPrivateAccess = "true"))
+	float DragHeightOffset;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Drag Drop", meta=(AllowPrivateAccess = "true"))
+	float DragInterpSpeed;
+	
 	FVector2D ClickStartLocation;
 	FVector2D CurrentMouseLocation;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Selection")
-	TWeakObjectPtr<ANGUnitPawn> DraggingUnit;
+	FVector CurrentHighlightLocation;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Selection")
-	TObjectPtr<ANGUnitPawn> SelectedUnit;
+	TWeakObjectPtr<ANGPawnBase> HoveringUnit;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Selection")
+	TWeakObjectPtr<ANGPawnBase> DraggingUnit;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Selection")
+	TObjectPtr<ANGPawnBase> SelectedUnit;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Selection")
+	TOptional<FGridAddress> PreHighlightGridAddress;
 	
 	UPROPERTY()
 	TObjectPtr<ANGHUD> NGHUD;
 	
-			
 /*************************************/
 /*				리롤 관련			 */
 /*************************************/
@@ -108,7 +121,15 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_RequestBuyUnit(FName UnitName);
 	
-	UNGPocketComponent* GetPlayerPocket();
+	UNGPocketComponent* GetPlayerPocket() const;
+
+/*************************************/
+/*				전투					 */
+/*************************************/
+public:
+	UFUNCTION(Server, Reliable)
+	void Server_EnterPhase(EGamePhase Phase);
+	
 	
 /*************************************/
 /*				UI					 */
@@ -127,9 +148,27 @@ protected:
 
 public:
 	UFUNCTION(Server, Reliable)
-	void Server_RequestStartWave();
+	void Server_RequestStartCombat();
+	
+	UFUNCTION(Server, Reliable)
+	void Server_RequestStopCombat();
 
 	UFUNCTION(Exec)
-	void Cmd_StartWave();
+	void Cmd_StartCombat();
+	
+	UFUNCTION(Exec)
+	void Cmd_FinishCombat();
+	
+	UFUNCTION(Exec)
+	void Cmd_ToggleDebugGrid();
+
+private:
+	bool bShowDebugGrid;
+	
+	
+/*************************************/
+/*					일반				 */
+/*************************************/
+	
 	
 };

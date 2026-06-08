@@ -10,6 +10,7 @@
 
 enum class EUnitTier : uint8;
 class ANGUnitPawn;
+class ANGPawnBase;
 
 UENUM(BlueprintType)
 enum class EShopActionType : uint8
@@ -68,27 +69,22 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Game|Shop")
 	TObjectPtr<UDataTable> ProbabilityTable;
 
-
 public:
-	TArray<ANGUnitPawn*> GetOwnedUnits() { return OwnedUnitPocket; };
-
-	void ControlPocketSpawning(ANGUnitPawn* NewPawn);
-	void ControlPocketPlacing(ANGUnitPawn* NewPawn);
-	void ControlPocketUnPlacing(ANGUnitPawn* NewPawn);
-	void ControlPocketSelling(ANGUnitPawn* NewPawn);
+	void GetPlacedUnits(TArray<ANGPawnBase*>& OutUnits);
 	
-	TArray<ANGUnitPawn*> GetOwnedUnitPocket()	{return OwnedUnitPocket; }
-	TArray<TWeakObjectPtr<ANGUnitPawn>> GetPlacedUnitPocket()	{return PlacedUnitPocket; }
+	bool IsAnnihilated();
+	
+	void ControlPocketSpawning(ANGPawnBase* NewPawn);
+	void ControlPocketSelling(ANGPawnBase* NewPawn);
+	void AddUnitFromPocket(ANGPawnBase* NewPawn);
+
+	void RemoveUnitFromPocket(ANGPawnBase* Unit);
+	
+	TArray<ANGPawnBase*>& GetOwnedUnitPocket()	{ return OwnedUnitPocket; }
 	
 private:
 	UPROPERTY(Replicated, VisibleAnywhere, Category = "Game|Unit")
-	TArray<ANGUnitPawn*> OwnedUnitPocket;
-	
-	UPROPERTY(VisibleAnywhere, Category = "Game|Unit")
-	TArray<TWeakObjectPtr<ANGUnitPawn>> PlacedUnitPocket;
-
-	UPROPERTY(VisibleAnywhere, Category = "Game|Unit")
-	TArray<TWeakObjectPtr<ANGUnitPawn>> WaitUnitPocket;
+	TArray<ANGPawnBase*> OwnedUnitPocket;
 	
 /*************************************/
 /*				Debug용				 */

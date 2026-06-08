@@ -37,20 +37,17 @@ struct FCombatSettingData
 {
 	GENERATED_BODY()
 	
-	FCombatSettingData() = default;
-	
-	FCombatSettingData(int InEnemyCount, ANGPlayerState* InPlayerA, ANGPlayerState* InPlayerB)
+	FCombatSettingData()
 	{
-		EnemyCount = InEnemyCount;
-		PlayerA = InPlayerA;
-		PlayerB = InPlayerB;
+		Players.SetNum(2);
 	}
 	
-	int EnemyCount;
-		
-	UPROPERTY()
-	TObjectPtr<ANGPlayerState> PlayerA;
+	void Reset()
+	{
+		Players.Reset();
+		Players.SetNum(2);
+	}
 	
 	UPROPERTY()
-	TObjectPtr<ANGPlayerState> PlayerB;
+	TArray<TObjectPtr<ANGPlayerState>> Players;
 };

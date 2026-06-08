@@ -9,8 +9,20 @@
 #include "GameFramework/PlayerState.h"
 #include "NGPlayerState.generated.h"
 
-class AGridMapManager;
+class AArenaManager;
+class AArena;
 class UNGPocketComponent;
+
+UENUM(BlueprintType)
+enum class EGameState : uint8
+{
+	None,
+	Maintaining,
+	Combat,
+	Exploration,
+	GameOver
+};
+
 /**
  * In-Game에서의 플레이어의 상태 정보를 저장하는 클래스
  *
@@ -30,16 +42,37 @@ public:
 	//~End IAbilitySystemInterface
 
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
-	void SpawnGridMapManager();
 
 	UNGAbilitySystemComponent* GetNGAbilitySystemComponent() const { return AbilitySystemComponent; }
-
-	void InitializeLogin(uint32 AssignedIndex);
 	
+	void InitializePostLogin();
+
+	void SpawnGridMapManager();
+	
+	void CaptureSnapShot();
+
 protected:
 	UPROPERTY()
 	TObjectPtr<UNGAbilitySystemComponent> AbilitySystemComponent;
 
+/*************************************/
+/*				전투 상태 관련		 */
+/*************************************/
+	
+public:
+	void SetGameState(EGameState NewState) { CurrentState = NewState; }
+	EGameState GetGameState() const { return CurrentState; }
+	
+	void OnCombatEnd(bool bIsWin);
+	
+protected:
+	
+	void OnCombatWin();
+	void OnCombatLose();
+	
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite)
+	EGameState CurrentState;
+	
 /*************************************/
 /*				Pocket 관련			 */
 /*************************************/
@@ -47,31 +80,51 @@ protected:
 public:
 	UNGPocketComponent* GetPlayerPocket() { return PlayerPocket; }
 
+	int32 GetPlayerLevel() const { return PlayerLevel; }
+	void SetPlayerLevel(int32 InPlayerLevel) { PlayerLevel = InPlayerLevel; }
+	
+	int32 GetUserIndex();
+	
 protected:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Game|Pocket")
 	TObjectPtr<UNGPocketComponent> PlayerPocket;
+	
+	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadOnly, Category = "Game")
+	int32 PlayerLevel;
 	
 	/*************************************/
 	/*				GridMap 관련			 */
 	/*************************************/
 public:
 	FHexGridMap& GetCombatGridMap() { return CombatGridMap; }
+	FQuadGridMap& GetEnemyWaitGridMap() { return EnemyWaitGridMap; }
+	FQuadGridMap& GetWaitGridMap() { return WaitGridMap; }
 	
-	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadWrite, Category = "Grid")
-	FQuadGridMap WaitGridMap;
+	AArena* GetHomeArena() const { return HomeArena; }
+	AArenaManager* GetArenaManager() const { return ArenaManager; }
 	
 	UFUNCTION()
-	void SetUserIndex(uint32 Idx);
+	void RestoreInitialGrid();
+	
+	void PrepareStartCombat();
 	
 protected:
 	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadWrite, Category = "Grid")
 	FHexGridMap CombatGridMap;
 	
+	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadWrite, Category = "Grid")
+	FQuadGridMap WaitGridMap;
+	
+	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadWrite, Category = "Grid")
+	FQuadGridMap EnemyWaitGridMap;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Grid")
+	FHexGridMap CombatGridMapSnapShot;
+	
 	//그리드 맵의 실체를 담당(각 유저당 하나임)
 	UPROPERTY(Replicated)
-	TObjectPtr<AGridMapManager> GridManager;
+	TObjectPtr<AArena> HomeArena;	
 	
-	UPROPERTY(Replicated)
-	uint32 UserIndex;
-	
+	UPROPERTY()
+	TObjectPtr<AArenaManager> ArenaManager;
 };

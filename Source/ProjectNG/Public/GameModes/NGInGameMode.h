@@ -6,50 +6,28 @@
 #include "NGGameModeBase.h"
 #include "Combat/NGCombatData.h"
 #include "Core/NGUnitData.h"
-#include "NGInGameGameMode.generated.h"
+#include "Game/NGGameState.h"
+#include "NGInGameMode.generated.h"
 
 /**
  * 
  */
 
 class ANGPawnBase;
-class AGridMapManager;
-class ACombatManager;
-
-UENUM(BlueprintType)
-enum class EGameState : uint8
-{
-	Waiting,
-	Exploration,
-	Combat,
-	GameOver
-};
 
 UCLASS()
-class PROJECTNG_API ANGInGameGameMode : public ANGGameModeBase
+class PROJECTNG_API ANGInGameMode : public ANGGameModeBase
 {
 	GENERATED_BODY()
 
 public:
 	void RequestStartCombat(APlayerController* PC);
+	void OnGameStart();
+	void NotifyGameStartToPlayer(ANGGameState* GS);
 	void OnCombatFinished(const FCombatResultData& ResultData);
-	void ReportPawnDeath(ANGPawnBase* DeadPawn);
+	void ReportPawnDeath(ANGPawnBase* DeadPawn) const;
 	
 	virtual void BeginPlay() override;
-	
-	ACombatManager* GetCombatManager(){ return ActiveCombatManager; }
-	
-protected:
-	void ChangeState(EGameState NewState);	
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EGameState CurrentState;
-	
-	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<ACombatManager> CombatManagerClass;
-	
-	UPROPERTY(Transient, BlueprintReadOnly, Category = "Managers")
-	TObjectPtr<ACombatManager> ActiveCombatManager;
 
 public:
 	/** 유닛풀에서 유닛 카운트를 하나 감소시킵니다. 이후 감소된 카운트를 반환합니다.
@@ -70,7 +48,6 @@ public:
 
 	TSubclassOf<ANGUnitPawn> GetUnitClass(FName UnitName) const;
 
-	
 protected:
 	// Key: DataTable RowName, Value: remain count
 	TMap<FName, int32> UnitPool;

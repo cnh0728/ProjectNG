@@ -4,11 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "SelectableInterface.h"
+#include "Combat/Grid/Grid.h"
 #include "Pawn/NGPawnBase.h"
 #include "NGUnitPawn.generated.h"
 
-class ANGPlayerController;
-struct FOnAttributeChangeData;
+class UNGWeaponData;
 
 UCLASS()
 class PROJECTNG_API ANGUnitPawn : public ANGPawnBase, public ISelectableInterface
@@ -28,13 +28,15 @@ public:
 	
 	virtual void OnSelected_Implementation() override;
 	virtual void OnDeselected_Implementation() override;
-	void ShowRangeIndicator(bool bVisible) const;
 
 	virtual void OnDrag_Implementation() override;
 	virtual void OnUndrag_Implementation() override;
 	
-	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	// Called to bind functionality to input
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
+	virtual void OnRep_PlayerState() override;
+
 protected:
 	virtual void InitAbilityActorInfo() override;
 	
@@ -76,30 +78,21 @@ protected:
 
 	void CheckAttackCondition();
 	
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
+	virtual void InitializeAttributes() override;
+
+private:
 	UFUNCTION()
 	void EquipWeapon(UNGWeaponData* NewWeaponData);
 	
-private:
+	virtual void InitAbilityActorInfo() override;
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Drag Drop")
 	float DragInterpSpeed = 15.0f;
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Drag Drop")
 	float AcceptanceRadius;
 
-	uint8 bIsGrabbed : 1;
-	uint8 bIsSelected : 1;
-	
-	UPROPERTY(Replicated)
-	uint8 bIsDragMoving : 1;
 
-	UPROPERTY()
-	uint8 bIsOnField : 1;
-	
-	UPROPERTY(Replicated, EditDefaultsOnly, Category = "GridIndex")
-	FIntVector2 PlacedGridIndex;
-	
-	UPROPERTY(Replicated, EditDefaultsOnly, Category = "GridIndex")
-	FIntVector2 CurrentGridIndex;
-	
-	UPROPERTY(Transient)
-	TObjectPtr<ANGPlayerController> OwnerController;
 };

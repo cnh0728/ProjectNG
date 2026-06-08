@@ -3,370 +3,23 @@
 
 #include "Pawn/NGUnitPawn.h"
 
-#include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystem/NGAbilitySystemComponent.h"
 #include "AbilitySystem/NGAttributeSet.h"
 #include "AbilitySystem/NGGameplayAbility.h"
-#include "Pawn/NGEnemyPawn.h"
 #include "Combat/Weapon/NGWeaponData.h"
-#include "Components/DecalComponent.h"
-#include "Components/SphereComponent.h"
-#include "Net/UnrealNetwork.h"
 #include "Player/NGPlayerController.h"
 #include "ProjectNG/ProjectNG.h"
 
 // Sets default values
-ANGUnitPawn::ANGUnitPawn() : AcceptanceRadius(1.0f), bIsGrabbed(false), bIsSelected(false), bIsDragMoving(false)
+ANGUnitPawn::ANGUnitPawn() : AcceptanceRadius(1.0f)
 {
-	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-	
-	bReplicates = true;
-	AActor::SetReplicateMovement(true);
-	NetUpdateFrequency =66.f;
-	
-	if (!DetectionSphere)
-	{
-		DetectionSphere = CreateDefaultSubobject<USphereComponent>(FName("DetectionSphere"));
-	}
-	
-	DetectionSphere->SetupAttachment(RootComponent);
-	
-	FVector HalfCap = GetHalfCapsule();
-	FVector DetectionSphereLocation = DetectionSphere->GetComponentLocation();
-	DetectionSphere->SetRelativeLocation(DetectionSphereLocation - HalfCap);
-	
-	DetectionSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	DetectionSphere->SetCollisionObjectType(ECC_WorldDynamic);
-	DetectionSphere->SetCollisionResponseToAllChannels(ECR_Ignore);
-	
-	//ECC_Pawn에서 원하는 채널만 오버랩되도록 변경
-	DetectionSphere->SetCollisionResponseToChannel(ECC_Enemy, ECR_Overlap);
-	
-	DetectionSphere->OnComponentBeginOverlap.AddDynamic(this, &ANGUnitPawn::OnDetectionBeginOverlap);
-	DetectionSphere->OnComponentEndOverlap.AddDynamic(this, &ANGUnitPawn::OnDetectionEndOverlap);
-	
-	RangeDecal = CreateDefaultSubobject<UDecalComponent>(TEXT("RangeDecalNew"));
-	RangeDecal->SetupAttachment(RootComponent);
-	RangeDecal->SetRelativeRotation(FRotator(-90.f, 0.f, 0.f));
-	
-	
+
 	if (UnitMesh)
 	{
 		UnitMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 		UnitMesh->SetCollisionResponseToChannel(ECC_SelectableUnit, ECR_Block);
 	}
-	
-	ShowRangeIndicator(false);
-}
-
-void ANGUnitPawn::OnSelected_Implementation()
-{
-	ISelectableInterface::OnSelected_Implementation();
-	UE_LOG(LogTemp, Log, TEXT("OnSelected"));
-	
-	ShowRangeIndicator(true);
-	
-	bIsSelected = true;
-}
-
-void ANGUnitPawn::OnDeselected_Implementation()
-{
-	ISelectableInterface::OnDeselected_Implementation();
-	UE_LOG(LogTemp, Log, TEXT("OnDeselected"));
-	
-	ShowRangeIndicator(false);
-	
-	bIsSelected = false;
-}
-
-void ANGUnitPawn::ShowRangeIndicator(bool bVisible) const
-{
-	UE_LOG(LogTemp, Warning, TEXT("Decal bVisible %s"), bVisible ? TEXT("On") : TEXT("Off"));
-	if (RangeDecal)
-	{
-		RangeDecal->SetVisibility(bVisible);
-	}
-}
-
-void ANGUnitPawn::OnDrag_Implementation()
-{
-	ISelectableInterface::OnDrag_Implementation();
-
-	UE_LOG(LogTemp, Log, TEXT("OnDrag"));
-	
-	bIsGrabbed = true;
-}
-
-void ANGUnitPawn::OnUndrag_Implementation()
-{
-	ISelectableInterface::OnUndrag_Implementation();
-
-	UE_LOG(LogTemp, Log, TEXT("OnUndrag"));
-	
-	bIsGrabbed = false;
-}
-
-void ANGUnitPawn::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	
-	DOREPLIFETIME(ANGUnitPawn, bIsDragMoving);
-	DOREPLIFETIME(ANGUnitPawn, PlacedGridIndex);
-}
-
-// Called when the game starts or when spawned
-void ANGUnitPawn::BeginPlay()
-{
-	Super::BeginPlay();
-}
-
-void ANGUnitPawn::Activate()
-{
-	InitAbilityActorInfo();
-	
-	if (!AttributeSet)
-	{
-		UE_LOG(LogTemp, Error, TEXT("ANGUnitCharacter::No attribute set"));
-		return;
-	}
-	
-	if (AbilitySystemComponent)
-	{	        
-		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
-			AttributeSet->GetAttackRangeAttribute()).AddUObject(this, &ANGUnitPawn::OnAttackRangeChanged);
-		
-		AttackAbilitySpecHandle = AbilitySystemComponent->GiveAbility(
-			FGameplayAbilitySpec(AttackAbilityClass, 1, INDEX_NONE, this)
-		);
-	}
-	
-	float CurrentRange = AttributeSet->GetAttackRange();
-	
-	if (RangeDecal)
-	{
-		UpdateDecalRange();
-		
-		RangeDecal->SetDecalMaterial(RangeMaterial);
-	}
-	
-	if (DetectionSphere)
-	{
-		DetectionSphere->SetSphereRadius(CurrentRange);
-	}
-	
-	GetWorld()->GetTimerManager().SetTimer(AttackCheckTimerHandle, this, &ANGUnitPawn::CheckAttackCondition, 0.2f, true);
-	
-	Super::Activate();
-}
-
-void ANGUnitPawn::Deactivate()
-{
-	GetWorld()->GetTimerManager().ClearTimer(AttackCheckTimerHandle);
-	
-	Super::Deactivate();
-}
-
-void ANGUnitPawn::InitAbilityActorInfo()
-{
-	// ASC 복사 및 아바타 설정
-	if (AbilitySystemComponent)
-	{
-		AbilitySystemComponent->InitAbilityActorInfo(this, this);
-	}
-}
-
-// Called every frame
-void ANGUnitPawn::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-	
-	if (!OwnerController)	return;
-	
-	ANGPlayerState* PS = OwnerController->GetPlayerState<ANGPlayerState>();
-	if (!PS)	return;
-	
-	if (bIsDragMoving)
-	{
-		FHexGridMap& CombatGridMap = PS->GetCombatGridMap();
-		FVector TargetLocation = CombatGridMap.GetWorldLocation(PlacedGridIndex) + LocationOffset;
-		
-		FVector CurrentLocation = GetActorLocation();
-		
-		FVector NewLocation = FMath::VInterpTo(CurrentLocation, TargetLocation, DeltaTime, DragInterpSpeed);
-		SetActorLocation(NewLocation);
-
-		if (CurrentLocation.Equals(TargetLocation, AcceptanceRadius))
-		{
-			bIsDragMoving = false;
-		}
-	}else
-	{
-		//드래그 이동중, 전투x
-		if (DetectedTarget.Num() > 0 && IsValid(DetectedTarget[0]))
-		{
-			CurrentTarget = DetectedTarget[0];
-			
-			FVector Direction = CurrentTarget->GetActorLocation() - GetActorLocation();
-			FRotator TargetRotation = Direction.Rotation();
-			
-			//Yaw만 사용
-			TargetRotation.Pitch = 0.f;
-			TargetRotation.Roll = 0.f;
-			
-			FRotator NewRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, RotationInterpSpeed);
-			SetActorRotation(NewRotation);
-		}else
-		{
-			CurrentTarget = nullptr;
-		}
-	}
-}
-
-void ANGUnitPawn::ExecuteAttack()
-{
-	// if (CurrentTarget && AttackAbilitySpecHandle.IsValid())
-	// {
-	// 	AbilitySystemComponent->TryActivateAbility(AttackAbilitySpecHandle);		
-	// }
-	if (IsValid(CurrentTarget.Get()) && GetAbilitySystemComponent())
-	{
-		FGameplayEventData Payload;
-		Payload.Instigator = this;
-		Payload.Target = CurrentTarget;
-		Payload.TargetData = UAbilitySystemBlueprintLibrary::AbilityTargetDataFromActor(CurrentTarget);
-		
-		GetAbilitySystemComponent()->HandleGameplayEvent(FGameplayTag::RequestGameplayTag(FName("Ability.Attack")), &Payload);
-	}
-}
-
-// Called to bind functionality to input
-void ANGUnitPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-}
-
-void ANGUnitPawn::SetDragTargetGridIndex_Implementation(const FIntVector2& NewIndex)
-{
-	if (!OwnerController)	return;
-	
-	ANGPlayerState* PS = OwnerController->GetPlayerState<ANGPlayerState>();
-	if (!PS)	return;
-	
-	FHexGridMap& CombatGridMap = PS->GetCombatGridMap();
-	if (!CombatGridMap.IsGridIndexEmpty(NewIndex))
-	{
-		return;
-	}
-	
-	SetPlacedGridIndex(NewIndex);
-	bIsDragMoving = true;
-}
-
-void ANGUnitPawn::Initialize(ANGPlayerController* InController)
-{
-	OwnerController = InController;
-}
-
-void ANGUnitPawn::SetPlacedGridIndex(const FIntVector2& NewIndex)
-{
-	if (!HasAuthority())	return;
-	
-	if (!OwnerController)	return;
-	
-	ANGPlayerState* PS = OwnerController->GetPlayerState<ANGPlayerState>();
-	if (!PS)	return;
-	
-	FHexGridMap& CombatGridMap = PS->GetCombatGridMap();
-	CombatGridMap.EmptyGridMap(PlacedGridIndex);
-
-	PlacedGridIndex = NewIndex;
-	
-	FGridData GridData;
-	GridData.PlacedPawn = this;
-	
-	CombatGridMap.SetGridData(NewIndex, GridData);
-}
-
-FIntVector2 ANGUnitPawn::GetPlacedGridIndex()
-{
-	return PlacedGridIndex;
-}
-
-void ANGUnitPawn::SetCurrentGridIndex(const FIntVector2& NewIndex)
-{
-	if (!HasAuthority())	return;
-	
-	if (!OwnerController)	return;
-	
-	ANGPlayerState* PS = OwnerController->GetPlayerState<ANGPlayerState>();
-	if (!PS)	return;
-	
-	FHexGridMap& CombatGridMap = PS->GetCombatGridMap();
-	CombatGridMap.EmptyGridMap(CurrentGridIndex);
-
-	CurrentGridIndex = NewIndex;
-	
-	FGridData GridData;
-	GridData.PlacedPawn = this;
-	
-	CombatGridMap.SetGridData(NewIndex, GridData);
-}
-
-void ANGUnitPawn::UpdateDecalRange()
-{
-	float CurrentRange = AttributeSet->GetAttackRange();
-	
-	if (RangeDecal)
-	{
-		RangeDecal->DecalSize = FVector(500.f, CurrentRange, CurrentRange);
-	}
-}
-
-void ANGUnitPawn::OnRep_PlayerState()
-{
-	Super::OnRep_PlayerState();
-	
-	OwnerController = GetOwner<ANGPlayerController>();
-}
-
-void ANGUnitPawn::OnAttackRangeChanged(const FOnAttributeChangeData& Data)
-{
-	Super::OnAttackRangeChanged(Data);
-	
-	DetectionSphere->SetSphereRadius(Data.NewValue);
-}
-
-void ANGUnitPawn::OnDetectionBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	// TODO: 이거 IsA말고 인터페이스로 하게 변경하는게 좋을듯
-	if (OtherActor && OtherActor != this && OtherActor->IsA(ANGEnemyPawn::StaticClass()))
-	{
-		DetectedTarget.AddUnique(Cast<ANGEnemyPawn>(OtherActor));
-		
-		UE_LOG(LogTemp, Log, TEXT("적 감지: %s"), *OtherActor->GetName());
-	}
-}
-
-void ANGUnitPawn::OnDetectionEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
-{
-	if (OtherActor)
-	{
-		DetectedTarget.Remove(Cast<ANGEnemyPawn>(OtherActor));
-		UE_LOG(LogTemp, Log, TEXT("적 사거리 이탈: %s"), *OtherActor->GetName());
-	}
-}
-
-void ANGUnitPawn::CheckAttackCondition()
-{
-	if (AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(TEXT("Ability.Attack"))))
-	{
-		return;
-	}
-	
-	ExecuteAttack();
 }
 
 void ANGUnitPawn::EquipWeapon(UNGWeaponData* NewWeaponData)
@@ -391,10 +44,98 @@ void ANGUnitPawn::EquipWeapon(UNGWeaponData* NewWeaponData)
 void ANGUnitPawn::InitializeAttributes()
 {
 	Super::InitializeAttributes();
+}
+
+void ANGUnitPawn::OnSelected_Implementation()
+{
+	ISelectableInterface::OnSelected_Implementation();
+	UE_LOG(LogTemp, Log, TEXT("OnSelected"));
 	
-	if (IsValid(AbilitySystemComponent))
+	// RangeIndicator 만들거면 GridAddress 인자 받아와서 완성하기
+	// ShowRangeIndicator(true, );
+	
+	bIsSelected = true;
+}
+
+void ANGUnitPawn::OnDeselected_Implementation()
+{
+	ISelectableInterface::OnDeselected_Implementation();
+	// UE_LOG(LogTemp, Log, TEXT("OnDeselected"));
+	
+	// ShowRangeIndicator(false, TODO);
+	
+	bIsSelected = false;
+}
+
+void ANGUnitPawn::OnDrag_Implementation()
+{
+	ISelectableInterface::OnDrag_Implementation();
+
+	// UE_LOG(LogTemp, Log, TEXT("OnDrag"));
+	//잡힌 모션 -> 레그돌화 해도 ㄱㅊ을듯
+	bIsDrag = true;
+}
+
+void ANGUnitPawn::OnUndrag_Implementation()
+{
+	ISelectableInterface::OnUndrag_Implementation();
+
+	// UE_LOG(LogTemp, Log, TEXT("OnUndrag"));
+	
+	bIsDrag = false;
+}
+
+// Called when the game starts or when spawned
+void ANGUnitPawn::BeginPlay()
+{
+	Super::BeginPlay();
+}
+
+void ANGUnitPawn::Activate()
+{
+	InitAbilityActorInfo();
+	
+	if (!AttributeSet)
 	{
-		UpdateDecalRange();
+		UE_LOG(LogTemp, Error, TEXT("ANGUnitCharacter::No attribute set"));
+		return;
+	}
+	
+	if (AbilitySystemComponent)
+	{	        
+		AttackAbilitySpecHandle = AbilitySystemComponent->GiveAbility(
+			FGameplayAbilitySpec(AttackAbilityClass, 1, INDEX_NONE, this)
+		);
 	}
 }
 
+
+void ANGUnitPawn::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+	
+	Super::Activate();
+}
+
+void ANGUnitPawn::Deactivate()
+{
+	GetWorld()->GetTimerManager().ClearTimer(AttackCheckTimerHandle);
+	
+	Super::Deactivate();
+}
+
+void ANGUnitPawn::InitAbilityActorInfo()
+{
+	// ASC 복사 및 아바타 설정
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+	}
+}
+
+
+// Called to bind functionality to input
+void ANGUnitPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+}

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "NGUserWidget.h"
+#include "Pawn/NGPawnBase.h"
 #include "NGUnitInfoWidget.generated.h"
 
 struct FOnAttributeChangeData;
@@ -19,7 +20,7 @@ class PROJECTNG_API UNGUnitInfoWidget : public UNGUserWidget
 	
 public:
 	UFUNCTION(BlueprintCallable)
-	void SetTargetUnit(ANGUnitPawn* NewUnit);
+	void SetTargetUnit(ANGPawnBase* NewUnit);
 	void ClearTargetUnit();
 
 protected:

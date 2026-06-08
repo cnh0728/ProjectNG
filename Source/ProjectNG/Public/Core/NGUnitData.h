@@ -3,9 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Engine/DataTable.h"
-#include "Pawn/NGUnitPawn.h"
 #include "NGUnitData.generated.h"
+
+class ANGUnitPawn;
 
 UENUM(BlueprintType)
 enum class EUnitTier : uint8

@@ -6,15 +6,16 @@
 #include "Components/NGPocketComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Blueprint/UserWidget.h"
+#include "Combat/Grid/Arena.h"
+#include "Components/NGCombatManagerComponent.h"
 #include "Pawn/NGUnitPawn.h"
 #include "Pawn/SelectableInterface.h"
 #include "Combat/GridMapManager.h"
 #include "Core/NGBlueprintLibrary.h"
 #include "Core/NGSpawnHelper.h"
 #include "Game/NGGameState.h"
-#include "GameModes/NGInGameGameMode.h"
+#include "GameModes/NGInGameMode.h"
 #include "Input/NGInputComponent.h"
-#include "Net/UnrealNetwork.h"
 #include "Player/NGPlayerState.h"
 
 #include "ProjectNG/ProjectNG.h"
@@ -22,17 +23,10 @@
 #include "UI/HUD/NGHUD.h"
 #include "UI/WidgetController/UnitDetailsWidgetController.h"
 
-ANGPlayerController::ANGPlayerController() : bIsDragging(false)
+ANGPlayerController::ANGPlayerController() : DragThreshold(10.f), DragHeightOffset(20.f), DragInterpSpeed(20.f)
 {
 	UE_LOG(LogTemp, Warning, TEXT("---------------PC Created!---------------"));
 	UE_LOG(LogTemp, Warning, TEXT("PC Addr: %p"), this);
-	
-	//커서 보이게 하는 변수
-	bShowMouseCursor = true;
-	bEnableClickEvents = true; 
-	bEnableMouseOverEvents = true;
-	DefaultMouseCursor = EMouseCursor::Default;
-	
 }
 
 ANGPlayerController::~ANGPlayerController()
@@ -43,6 +37,23 @@ ANGPlayerController::~ANGPlayerController()
 void ANGPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	SetIgnoreLookInput(true);
+	
+	bShowMouseCursor = true;
+	bEnableClickEvents = true; 
+	bEnableMouseOverEvents = true;
+	DefaultMouseCursor = EMouseCursor::Default;
+	
+	CurrentClickTraceChannel = ECC_SelectableUnit;
+	
+	if (PlayerCameraManager)
+	{
+		PlayerCameraManager->ViewYawMin = -179.9f;
+		PlayerCameraManager->ViewYawMax = 179.9f;
+		PlayerCameraManager->ViewPitchMin = -89.9f;
+		PlayerCameraManager->ViewPitchMax = 89.9f;
+	}
 	
 	if (ULocalPlayer* LocalPlayer = GetLocalPlayer())
 	{
@@ -72,7 +83,6 @@ void ANGPlayerController::SetupInputComponent()
 		if (ClickInputAction)
 		{
 			EnhancedInputComponent->BindAction(ClickInputAction, ETriggerEvent::Started, this, &ThisClass::HandleClickPressed);
-			EnhancedInputComponent->BindAction(ClickInputAction, ETriggerEvent::Triggered, this, &ThisClass::HandleClickTriggered);
 			EnhancedInputComponent->BindAction(ClickInputAction, ETriggerEvent::Completed, this, &ThisClass::HandleClickReleased);
 		}
 	}
@@ -84,89 +94,197 @@ void ANGPlayerController::Tick(float DeltaTime)
 	
 	GetMousePosition(CurrentMouseLocation.X, CurrentMouseLocation.Y);
 	
-	//TODO: UI랑 인게임 분기쳐서 인게임에서만 동작하도록 하면 좋을듯
-	// ProgressDragActor();
+	if (IsLocalController() && DraggingUnit.IsValid())
+	{
+		PerformDragUpdate(DeltaTime);
+	}
+	
+	if (bShowDebugGrid)
+	{
+		if (ANGPlayerState* PS = GetPlayerState<ANGPlayerState>())
+		{
+			FGridAddress CombatGridAddress(FIntVector2::ZeroValue, EGridType::Combat, PS, 0);
+			UGridMapHelper::DrawDebugGrid(this, CombatGridAddress);
+			FGridAddress WaitGridAddress(FIntVector2::ZeroValue, EGridType::Wait, PS, 0);
+			UGridMapHelper::DrawDebugGrid(this, WaitGridAddress);
+		}
+	}
 }
 
 void ANGPlayerController::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
 	
-	
 }
 
 void ANGPlayerController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
-	
+
 }
 
-
-void ANGPlayerController::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+void ANGPlayerController::PerformDragUpdate(float DeltaTime)
 {
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	
-}
-
-void ANGPlayerController::ProgressDragActor()
-{
-	if (DraggingUnit.IsValid())
+	if (!HasAuthority())
 	{
-		FHitResult HitResult;
-		
-		if (GetHitResultUnderCursor(ECC_Map, false, HitResult))
-		// if (GetHitResultUnderCursor(ECC_Visibility, false, HitResult))
-		{			
-			UE_LOG(LogTemp, Warning, TEXT("Success! Hit: %s"), *HitResult.GetActor()->GetName());
-			FVector TargetLocation = HitResult.Location;
-
-			if (ANGPlayerState* PS = GetPlayerState<ANGPlayerState>())
-			{
-				const FHexGridMap& GridMapCache = PS->GetCombatGridMap();
-				const FIntVector2 GridIndex = GridMapCache.GetCellIndex(TargetLocation);
-				
-				bool bValidGrid = GridMapCache.IsValidIndex(GridIndex);
-				
-				if (bValidGrid)
-				{
-					// TargetLocation = GridMapCache.GetWorldLocation(GridIndex);
-					DraggingUnit->SetDragTargetGridIndex(GridIndex);
-				}
-			}
+		if (DraggingUnit.IsValid())
+		{
+			FHitResult HitResult;
 			
+			if (GetHitResultUnderCursor(ECC_Map, false, HitResult))
+			{				
+				FVector CurrentLocation = DraggingUnit->GetActorLocation();
+				
+				FVector TargetLocation = HitResult.Location;
+				TargetLocation.Z += DragHeightOffset;
+				
+				FVector SmoothedLocation = FMath::VInterpTo(CurrentLocation, TargetLocation, DeltaTime, DragInterpSpeed);
+				
+				DraggingUnit->SetActorLocation(SmoothedLocation);
+
+				if (AArena* Arena = Cast<AArena>(HitResult.GetActor()))
+				{
+					//TODO: 여기서 갈 수 있는곳인지 체크
+					HighLightGrid(TargetLocation, Arena);
+				}
+			}else
+			{
+				ResetHighlight();
+			}
 		}
 	}
+}
+
+void ANGPlayerController::ResetHighlight()
+{
+	if (PreHighlightGridAddress.IsSet())
+	{
+		const FGridAddress& GridAddress = PreHighlightGridAddress.GetValue();
+		if (AArena* Arena = GridAddress.GridOwnerPS ? GridAddress.GridOwnerPS->GetHomeArena() : nullptr)
+		{
+			Arena->HighlightSpecificGrid(GridAddress, 0.f, true);
+		}
+	}
+	
+	PreHighlightGridAddress.Reset();
+}
+
+void ANGPlayerController::HighLightGrid(const FVector& TargetLocation, AArena* Arena)
+{
+	if (Arena)
+	{
+		if (ANGPlayerState* PS = Arena->GetOwnerPS())
+		{
+			EGridType GridType = UGridMapHelper::GetGridType(TargetLocation, PS);
+			FIntVector2 GridIndex = UGridMapHelper::GetCellIndex(GridType, TargetLocation, PS);
+						
+			FGridAddress HighlightGridAddress(GridIndex, GridType, PS, 0);
+			
+			if (PreHighlightGridAddress.IsSet())
+			{
+				if (HighlightGridAddress == PreHighlightGridAddress.GetValue())
+				{
+					return;
+				}
+					
+				ResetHighlight();
+			}
+			
+			// 범위표시도 하려했는데 요구자원 많아서 굳이..? 싶은 만드려면 Range표시한자리 지나갔을때 치워주는것도 만들어야함
+			// if (DraggingUnit.IsValid())
+			// {
+			// 	DraggingUnit->HighlightRangeIndicator(HighlightGridAddress);
+			// }
+			
+			if (CanHighlight(HighlightGridAddress))
+			{				
+				CurrentHighlightLocation = TargetLocation;
+				
+				Arena->HighlightSpecificGrid(HighlightGridAddress, 1.f, true);
+			
+				PreHighlightGridAddress = HighlightGridAddress;
+			}
+		}
+	}
+}
+
+bool ANGPlayerController::CanHighlight(const FGridAddress& GridAddress) const
+{	
+	ANGPlayerState* PS = GetPlayerState<ANGPlayerState>();
+	
+	EGameState GameState = PS ? PS->GetGameState() : EGameState::None;
+	
+	//TODO: 디버깅용으로 Exploration, 나중에 빼기
+	if (GameState == EGameState::Combat || GameState == EGameState::Maintaining || GameState == EGameState::Exploration)
+	{
+		if (GridAddress.GridType == EGridType::Wait)
+		{
+			return true;
+		}
+		
+		if (GameState == EGameState::Maintaining || GameState == EGameState::Exploration)
+		{
+			if (GridAddress.GridType == EGridType::Combat)
+			{
+				return 0 <= GridAddress.GridIndex.Y && GridAddress.GridIndex.Y < PS->GetCombatGridMap().Height / 2;
+			}
+		}
+	}
+	
+	return false;
+}
+
+void ANGPlayerController::SetHoveringUnit(ANGPawnBase* InHoveringPawn)
+{
+	if (InHoveringPawn)
+	{
+		if (CanHighlight(InHoveringPawn->GetGridAddress()))
+		{
+			HoveringUnit = InHoveringPawn;
+		}
+	}
+}
+
+void ANGPlayerController::ClearHoveringUnit()
+{
+	HoveringUnit = nullptr;
+}
+
+ANGPawnBase* ANGPlayerController::GetHoveringUnit() const
+{
+	return HoveringUnit.Get();
 }
 
 void ANGPlayerController::HandleClickPressed(const FInputActionValue& Value)
 {
 	GetMousePosition(ClickStartLocation.X, ClickStartLocation.Y);
-		
+	
 	PerformDrag();
-}
-
-void ANGPlayerController::HandleClickTriggered(const FInputActionValue& Value)
-{
-	if (DraggingUnit.IsValid())
-	{
-		ProgressDragActor();
-	}
 }
 
 void ANGPlayerController::HandleClickReleased(const FInputActionValue& Value)
 {
-	double MouseDelta = (ClickStartLocation - CurrentMouseLocation).Size();
-	
-	if (MouseDelta > DragThreshold)
+	if (DraggingUnit.IsValid())
 	{
-		// 클릭일땐 선택 유지, 드래그일땐 선택 취소
-		ResetSelectUnit();
-	}
+		double MouseDelta = (ClickStartLocation - CurrentMouseLocation).Size();
 	
-	ResetDragUnit();
+		if (MouseDelta > DragThreshold)
+		{
+			DraggingUnit->TryMoveTo(CurrentHighlightLocation);
+		}else
+		{
+			SetSelectedUnit(DraggingUnit.Get());
+		}
+		
+		//원래 위치로 reject
+		DraggingUnit->UpdatePawnCurrentLocation(DraggingUnit->GetGridAddress());
+		ResetHighlight();
+		ResetDragUnit();
+		ResetHoveringUnit();
+	}
 }
 
-void ANGPlayerController::UpdateUnitWidget(ANGUnitPawn* NewUnit)
+void ANGPlayerController::UpdateUnitWidget(ANGPawnBase* NewUnit)
 {
 	//위젯이 없는 상태면 생성
 	if (!UnitInfoWidgetInstance && UnitInfoWidgetClass)
@@ -187,7 +305,7 @@ void ANGPlayerController::UpdateUnitWidget(ANGUnitPawn* NewUnit)
 	}
 }
 
-void ANGPlayerController::SetSelectedUnit(ANGUnitPawn* InSelectedUnit)
+void ANGPlayerController::SetSelectedUnit(ANGPawnBase* InSelectedUnit)
 {
 	ResetSelectUnit();
 	
@@ -240,23 +358,20 @@ void ANGPlayerController::PerformDrag()
 	ResetDragUnit();
 	ResetSelectUnit();
 	
-	FHitResult HitResult;
-	if (GetHitResultUnderCursor(ECC_SelectableUnit, false, HitResult))
+	if (HoveringUnit.IsValid())
 	{
-		AActor* HitActor = HitResult.GetActor();
-		if (HitActor->GetOwner() != this)
+		//다른 유저거면 return
+		if (HoveringUnit->GetOwner() != this)
 		{
 			return;
 		}
 
-		if (HitActor && HitActor->Implements<USelectableInterface>())
+		if (HoveringUnit->Implements<USelectableInterface>())
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Hit Actor: %s"), *HitActor->GetName());
+			UE_LOG(LogTemp, Warning, TEXT("Hit Actor: %s"), *HoveringUnit->GetName());
 			
-			DraggingUnit = Cast<ANGUnitPawn>(HitActor);
-			ISelectableInterface::Execute_OnDrag(HitActor);
-			
-			SetSelectedUnit(DraggingUnit.Get());
+			DraggingUnit = Cast<ANGPawnBase>(HoveringUnit);
+			ISelectableInterface::Execute_OnDrag(HoveringUnit.Get());
 		}
 	}
 }
@@ -274,6 +389,14 @@ void ANGPlayerController::ResetDragUnit()
 	}
 }
 
+void ANGPlayerController::ResetHoveringUnit()
+{
+	if (HoveringUnit.IsValid())
+	{	
+		HoveringUnit.Reset();
+	}
+}
+
 void ANGPlayerController::Server_RequestBuyUnit_Implementation(FName UnitName)
 {
 	if (ANGPlayerState* PS = GetPlayerState<ANGPlayerState>())
@@ -287,27 +410,7 @@ void ANGPlayerController::Server_RequestBuyUnit_Implementation(FName UnitName)
 	}
 }
 
-void ANGPlayerController::Server_RequestStartWave_Implementation()
-{
-	if (HasAuthority())
-	{
-		if (ANGInGameGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameGameMode>()){
-			GM->RequestStartCombat(this);
-            
-			// 확인용 로그
-			UE_LOG(LogTemp, Warning, TEXT("Cmd: Wave Started!"));
-            
-			// 화면에 디버그 메시지 띄우기 (선택사항)
-			if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Wave Started!"));
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("CombatManager가 GameState에 없습니다!"));
-		}
-	}
-}
-
-UNGPocketComponent* ANGPlayerController::GetPlayerPocket()
+UNGPocketComponent* ANGPlayerController::GetPlayerPocket() const
 {
 	if (ANGPlayerState* PS = GetPlayerState<ANGPlayerState>())
 	{
@@ -317,7 +420,60 @@ UNGPocketComponent* ANGPlayerController::GetPlayerPocket()
 	return nullptr;
 }
 
-void ANGPlayerController::Cmd_StartWave()
+void ANGPlayerController::Server_EnterPhase_Implementation(EGamePhase Phase)
 {
-	Server_RequestStartWave();
+	ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>();
+	ANGPlayerState* PS = GetPlayerState<ANGPlayerState>();	
+	
+	if (UNGCombatManagerComponent* CMC = GS ? GS->GetCombatManagerComponent() : nullptr)
+	{
+		CMC->EnqueueCombatPhase(PS);
+	}
+}
+
+void ANGPlayerController::Server_RequestStartCombat_Implementation()
+{
+	if (ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>())
+	{
+		GM->RequestStartCombat(this);
+        
+		// 확인용 로그
+		UE_LOG(LogTemp, Warning, TEXT("Cmd: Wave Started!"));
+        
+		// 화면에 디버그 메시지 띄우기 (선택사항)
+		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Wave Started!"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("CombatManager가 GameState에 없습니다!"));
+	}
+}
+
+void ANGPlayerController::Server_RequestStopCombat_Implementation()
+{
+	if (HasAuthority())
+	{
+		if (ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>())
+		{
+			if (UNGCombatManagerComponent* CMC = GS->GetCombatManagerComponent())
+			{
+				CMC->FinishCombat();
+			}
+		}
+	}
+}
+
+void ANGPlayerController::Cmd_StartCombat()
+{
+	Server_RequestStartCombat();
+}
+
+void ANGPlayerController::Cmd_FinishCombat()
+{
+	Server_RequestStopCombat();
+}
+
+void ANGPlayerController::Cmd_ToggleDebugGrid()
+{
+	bShowDebugGrid = !bShowDebugGrid;
 }

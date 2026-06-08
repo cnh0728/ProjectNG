@@ -9,7 +9,7 @@
 class UUnitDetailsWidgetController;
 class UNGUnitAttributeInfoDataAsset;
 struct FWidgetParams;
-class URollShopWidgetController;
+class UNGRollShopWidgetController;
 class UNGUserWidget;
 class UAbilitySystemComponent;
 class UAttributeSet;
@@ -23,8 +23,8 @@ class PROJECTNG_API ANGHUD : public AHUD
 	GENERATED_BODY()
 
 public:
-	URollShopWidgetController* GetRollShopWidgetController(const FWidgetParams& WidgetControllerParams);
-	
+	UNGRollShopWidgetController* GetRollShopWidgetController(const FWidgetParams& WidgetControllerParams);
+
 	UUnitDetailsWidgetController* GetUnitDetailsWidgetController(const FWidgetParams& WidgetControllerParams);
 
 	void InitializeHUD(APlayerController* PC, APlayerState* PS);
@@ -44,11 +44,11 @@ private:
 
 	//~ Begin RollShop Widget
 	UPROPERTY()
-	TObjectPtr<URollShopWidgetController> RollShopWidgetController;
+	TObjectPtr<UNGRollShopWidgetController> RollShopWidgetController;
 
 	// 새롭게 생성 시 필요한 StaticClass
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<URollShopWidgetController> RollShopWidgetControllerClass;
+	TSubclassOf<UNGRollShopWidgetController> RollShopWidgetControllerClass;
 	//~ End RollShop Widget
 	
 	// ~Begin UnitDetails WidgetController

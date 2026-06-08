@@ -1,58 +1,77 @@
 // Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 
-#include "GameModes/NGInGameGameMode.h"
+#include "GameModes/NGInGameMode.h"
 
-#include "Combat/CombatManager.h"
+#include "Components/NGCombatManagerComponent.h"
 #include "Core/NGUnitData.h"
+#include "Game/NGGameState.h"
+#include "Pawn/NGUnitPawn.h"
+#include "Player/NGPlayerState.h"
 
 
-void ANGInGameGameMode::RequestStartCombat(APlayerController* PC)
+void ANGInGameMode::RequestStartCombat(APlayerController* PC)
 {
-	if (CurrentState == EGameState::Combat)	return;
+	// 테스트용으로 잠시 막음
+	// if (CurrentState == EGameState::Combat)	return;
 	
-	if (!ActiveCombatManager)
-	{
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.Owner = this;
-		ActiveCombatManager = GetWorld()->SpawnActor<ACombatManager>(CombatManagerClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-	}
+	ANGGameState* GS = GetGameState<ANGGameState>();
 	
-	//ActiveCombatManager가 없을수 없지만 혹시모르니
-	if (ActiveCombatManager)
+	UNGCombatManagerComponent* CMC = GS->GetCombatManagerComponent();
+	
+	// 테스트용
+	if (GS)
 	{
-		CurrentState = EGameState::Combat;
+		for (APlayerState* RawPS : GS->PlayerArray)
+		{
+			if (ANGPlayerState* PS = Cast<ANGPlayerState>(RawPS))
+			{
+				CMC->EnqueueCombatPhase(PS);
+			}
+		}
 		
-		//이거는 따로 웨이브 관리하는거 만들어서 그때 값 가져와서 넣어야할듯?
-		FCombatSettingData SettingData;
-		SettingData.EnemyCount = 3;
-		
-		ActiveCombatManager->StartCombat(SettingData, PC);
+		CMC->StartCombat();
 	}
 }
 
-void ANGInGameGameMode::OnCombatFinished(const FCombatResultData& ResultData)
+void ANGInGameMode::OnGameStart()
 {
-	if (CurrentState != EGameState::Combat)	return;
+	ANGGameState* GS = GetGameState<ANGGameState>();
+	NotifyGameStartToPlayer(GS);
+}
+
+void ANGInGameMode::NotifyGameStartToPlayer(ANGGameState* GS)
+{
+	if (!GS)	return;
 	
+	for (APlayerState* RawPS : GS->PlayerArray)
+	{
+		if (ANGPlayerState* PS = Cast<ANGPlayerState>(RawPS))
+		{
+			PS->SetGameState(EGameState::Exploration);
+		}
+	}	
+}
+
+void ANGInGameMode::OnCombatFinished(const FCombatResultData& ResultData)
+{
 	UE_LOG(LogTemp, Log, TEXT("Combat Finished"));
-	
-	//Combat은 모험중이 아니면 들어갈 수 없음
-	CurrentState = EGameState::Exploration;
-	
+		
 	//ResultData로 점수나 그런거 반영하기
-
+	
 }
 
-void ANGInGameGameMode::ReportPawnDeath(ANGPawnBase* DeadPawn)
+void ANGInGameMode::ReportPawnDeath(ANGPawnBase* DeadPawn) const
 {
-	if (ActiveCombatManager)
+	ANGGameState* GS = GetGameState<ANGGameState>();
+	if (UNGCombatManagerComponent* CMC = GS ? GS->GetCombatManagerComponent() : nullptr)
 	{
-		ActiveCombatManager->PawnDied(DeadPawn);
+		CMC->NotifyPawnDied(DeadPawn);
 	}
+	
 }
 
-void ANGInGameGameMode::BeginPlay()
+void ANGInGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 	
@@ -60,13 +79,9 @@ void ANGInGameGameMode::BeginPlay()
 	InitializeUnitPool();
 }
 
-void ANGInGameGameMode::ChangeState(const EGameState NewState)
-{
-	CurrentState = NewState;
-}
 
 
-int32 ANGInGameGameMode::GrabUnitFromPool(FName UnitRowName)
+int32 ANGInGameMode::GrabUnitFromPool(FName UnitRowName)
 {
 	if (!HasAuthority()) return false;
 	
@@ -81,17 +96,17 @@ int32 ANGInGameGameMode::GrabUnitFromPool(FName UnitRowName)
 	return -1;
 }
 
-bool ANGInGameGameMode::IsExistUnit(FName UnitRowName)
+bool ANGInGameMode::IsExistUnit(FName UnitRowName)
 {
 	return *UnitPool.Find(UnitRowName) > 0;
 }
 
-bool ANGInGameGameMode::IsExistUnitDataTable()
+bool ANGInGameMode::IsExistUnitDataTable()
 {
 	return UnitDataTable != nullptr;
 }
 
-void ANGInGameGameMode::ReturnUnitToPool(FName UnitRowName, int32 UnitCount)
+void ANGInGameMode::ReturnUnitToPool(FName UnitRowName, int32 UnitCount)
 {
 	if (int32* Count = UnitPool.Find(UnitRowName))
 	{
@@ -99,7 +114,7 @@ void ANGInGameGameMode::ReturnUnitToPool(FName UnitRowName, int32 UnitCount)
 	}
 }
 
-FName ANGInGameGameMode::GetRandomUnitByTier(EUnitTier Tier)
+FName ANGInGameMode::GetRandomUnitByTier(EUnitTier Tier)
 {
 	if (TieredUnitPool.Contains(Tier))
 	{
@@ -124,7 +139,7 @@ FName ANGInGameGameMode::GetRandomUnitByTier(EUnitTier Tier)
 	return NAME_None;
 }
 
-TSubclassOf<ANGUnitPawn> ANGInGameGameMode::GetUnitClass(FName UnitName) const
+TSubclassOf<ANGUnitPawn> ANGInGameMode::GetUnitClass(FName UnitName) const
 {
 	FUnitData* FoundRow = UnitDataTable->FindRow<FUnitData>(UnitName, TEXT(""));
 	if (!FoundRow)	return nullptr;
@@ -132,7 +147,7 @@ TSubclassOf<ANGUnitPawn> ANGInGameGameMode::GetUnitClass(FName UnitName) const
 	return FoundRow->UnitClass;
 }
 
-void ANGInGameGameMode::InitializeUnitPool()
+void ANGInGameMode::InitializeUnitPool()
 {
 	if (!IsValid(UnitDataTable.Get())) return;
 

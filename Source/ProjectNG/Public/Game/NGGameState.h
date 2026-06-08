@@ -6,10 +6,9 @@
 #include "GameFramework/GameStateBase.h"
 #include "NGGameState.generated.h"
 
-class ANGUnitPawn;
-class AGridMapManager;
-enum class EUnitTier : uint8;
-class ACombatManager;
+class ANGPlayerState;
+class AArena;
+class UNGCombatManagerComponent;
 /**
  * 
  */
@@ -25,16 +24,14 @@ public:
 	
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 		
-	uint8 AddGridMapManager(AGridMapManager* InitGridMap);
-	
-	AGridMapManager* GetGridMapManager(uint8 Id){ return GridMapManagers[Id]; }
+	uint8 GetPlayerId(const ANGPlayerState* InPS);
 	
 	float GridMargin;
 	
-protected:
+	UNGCombatManagerComponent* GetCombatManagerComponent() { return CombatManagerComponent; };	
 
+protected:
 	
-	UPROPERTY(Replicated, Transient, BlueprintReadOnly, Category = "Managers")
-	TArray<AGridMapManager*> GridMapManagers;
-	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Managers")
+	TObjectPtr<UNGCombatManagerComponent> CombatManagerComponent;
 };

@@ -5,38 +5,41 @@
 
 #include "AbilitySystem/NGAbilitySystemComponent.h"
 #include "Camera/CameraComponent.h"
-#include "GameFramework/SpringArmComponent.h"
+#include "Components/SphereComponent.h"
 #include "Player/NGPlayerController.h"
 #include "Player/NGPlayerState.h"
 #include "UI/HUD/NGHUD.h"
 
-class ANGPlayerState;
 // Sets default values
 ANGSpectatorPawn::ANGSpectatorPawn()
 {
-	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	SetReplicates(true);
 	PrimaryActorTick.bCanEverTick = true;
-	
+    
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
 	
-	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
-	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 300.0f; // 줌 인/아웃은 이 값만 조절하면 됨!
-	CameraBoom->bDoCollisionTest = false; // 카메라가 벽에 부딪혀서 앞으로 튀어나오는 현상 방지
-	CameraBoom->bUsePawnControlRotation = false; 
-	CameraBoom->bUsePawnControlRotation = false; // 컨트롤러 회전 무시
-	CameraBoom->bInheritPitch = false;           // 부모 Pitch 무시
-	CameraBoom->bInheritYaw = false;             // 부모 Yaw 무시
-	CameraBoom->bInheritRoll = false;            // 부모 Roll 무시
-	CameraBoom->SetUsingAbsoluteRotation(true);
-	CameraBoom->SetRelativeRotation(FRotator(-60.f, 0.f, 0.f)); // 카메라 각도 60도로 영구 고정
-	
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
-	CameraComponent->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
-	CameraComponent->bUsePawnControlRotation = false;
-	
+	if (GetCollisionComponent())
+	{
+		CameraComponent->SetupAttachment(GetCollisionComponent());
+	}
+	else
+	{
+		CameraComponent->SetupAttachment(RootComponent);
+	}
+    
+	CameraComponent->SetRelativeRotation(FRotator(0.f, 0.f, 0.f));
+	CameraComponent->SetRelativeLocation(FVector(0.f, 0.f, 0.f)); 
+	CameraComponent->bUsePawnControlRotation = false; 
+
+	// 밀려남 차단
+	if (USphereComponent* CollisionComp = GetCollisionComponent())
+	{
+		CollisionComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+    
 	bFindCameraComponentWhenViewTarget = true;
 }
 
@@ -51,6 +54,8 @@ void ANGSpectatorPawn::PossessedBy(AController* NewController)
 	{
 		PC->SetViewTarget(this);
 		PC->SetControlRotation(FRotator::ZeroRotator);
+		
+		//PossessedBy가 PostLogin보다 빠르기 때문에 다른 타이밍에서 GridManager세팅
 	}
 }
 
@@ -60,34 +65,13 @@ void ANGSpectatorPawn::OnRep_PlayerState()
 	
 	InitHUD();
 	
-	if (ANGPlayerController* PC = Cast<ANGPlayerController>(GetController()))
-	{
-		PC->SetControlRotation(FRotator::ZeroRotator);
-	}
-}
-
-// Called when the game starts or when spawned
-void ANGSpectatorPawn::BeginPlay()
-{
-	Super::BeginPlay();
-}
-
-// Called every frame
-void ANGSpectatorPawn::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
+	// FocusOnMyGrid();
 }
 
 void ANGSpectatorPawn::OnRep_Controller()
 {
 	Super::OnRep_Controller();
 	
-}
-
-// Called to bind functionality to input
-void ANGSpectatorPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
 
 void ANGSpectatorPawn::InitHUD()
@@ -106,5 +90,18 @@ void ANGSpectatorPawn::InitHUD()
 			MainHUD->InitializeHUD(PC, PS); // @note: 기획이 변경됨에 따라 Player는 ASC 와 Attribute가 필요없게 되어 파라미터 수정
 		}
 	}
+}
+
+void ANGSpectatorPawn::PossessCamera(const FTransform& CameraTransform)
+{
+	//Client함수
+	if (HasAuthority())	return;
+	
+	SetActorTransform(CameraTransform);
+}
+
+void ANGSpectatorPawn::Client_PossessCamera_Implementation(const FTransform& CameraTransform)
+{
+	PossessCamera(CameraTransform);
 }
 

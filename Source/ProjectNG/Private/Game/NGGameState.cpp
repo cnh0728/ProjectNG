@@ -3,11 +3,13 @@
 
 #include "Game/NGGameState.h"
 
-#include "Core/NGUnitData.h"
+#include "Components/NGCombatManagerComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "Player/NGPlayerState.h"
 
 ANGGameState::ANGGameState() : GridMargin(3000.f)
 {
+	CombatManagerComponent = CreateDefaultSubobject<UNGCombatManagerComponent>(TEXT("CombatManager"));
 }
 
 void ANGGameState::BeginPlay()
@@ -19,11 +21,9 @@ void ANGGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
-	DOREPLIFETIME(ANGGameState, GridMapManagers);
 }
 
-uint8 ANGGameState::AddGridMapManager(AGridMapManager* InitGridMap)
+uint8 ANGGameState::GetPlayerId(const ANGPlayerState* InPS)
 {
-	GridMapManagers.AddUnique(InitGridMap); 
-	return GridMapManagers.Num() - 1;
+	return InPS->GetPlayerId();
 }

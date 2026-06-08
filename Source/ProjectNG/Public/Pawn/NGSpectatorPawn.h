@@ -4,8 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/SpectatorPawn.h"
+#include "Player/NGPlayerState.h"
 #include "NGSpectatorPawn.generated.h"
 
+class AArena;
 class USpringArmComponent;
 class UCameraComponent;
 
@@ -19,24 +21,20 @@ public:
 	ANGSpectatorPawn();
 
 	virtual void PossessedBy(AController* NewController) override;
+	
 	virtual void OnRep_PlayerState() override;
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
 
 	virtual void OnRep_Controller() override;
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+
+	void PossessCamera(const FTransform& CameraTransform);
 	
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
-	
-	void InitHUD();
+	UFUNCTION(Client, Reliable)
+	void Client_PossessCamera(const FTransform& CameraTransform);
 
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<USpringArmComponent> CameraBoom;
+	void InitHUD();
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> CameraComponent;
+	
 };

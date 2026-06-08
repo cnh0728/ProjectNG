@@ -1,26 +1,24 @@
 ﻿// Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 
-#include "UI/WidgetController/RollShopWidgetController.h"
+#include "UI/WidgetController/NGRollShopWidgetController.h"
 
-#include "Combat/GridMapManager.h"
 #include "Components/NGPocketComponent.h"
-#include "GameModes/NGInGameGameMode.h"
 #include "Player/NGPlayerController.h"
 
 class ANGGameState;
 
-void URollShopWidgetController::BroadcastInitialValues()
+void UNGRollShopWidgetController::BroadcastInitialValues()
 {
 	
 }
 
-void URollShopWidgetController::BindCallbacksToDependencies()
+void UNGRollShopWidgetController::BindCallbacksToDependencies()
 {
 	
 }
 
-void URollShopWidgetController::GetPlayerRollPocket(TArray<FName>& RollPockets) const
+void UNGRollShopWidgetController::GetPlayerRollPocket(TArray<FName>& RollPockets) const
 {
 	if (ANGPlayerController* NGP = Cast<ANGPlayerController>(PlayerController))
 	{
@@ -31,7 +29,7 @@ void URollShopWidgetController::GetPlayerRollPocket(TArray<FName>& RollPockets) 
 	}
 }
 
-void URollShopWidgetController::RequestPlayerRollPocket() const
+void UNGRollShopWidgetController::RequestPlayerRollPocket() const
 {
 	if (ANGPlayerController* NGP = Cast<ANGPlayerController>(PlayerController))
 	{
@@ -42,14 +40,14 @@ void URollShopWidgetController::RequestPlayerRollPocket() const
 	}
 }
 
-int32 URollShopWidgetController::GainPlayerLevel() const
+int32 UNGRollShopWidgetController::GainPlayerLevel() const
 {
 	if (ANGPlayerController* NGP = Cast<ANGPlayerController>(PlayerController))
 	{
-		if (UNGPocketComponent* Pocket = NGP->GetPlayerPocket())
+		if (ANGPlayerState* PS = NGP->GetPlayerState<ANGPlayerState>())
 		{
-			int32 NewLevel = FMath::Clamp(Pocket->PlayerLevel + 1, 1, 5);
-			Pocket->PlayerLevel = NewLevel;
+			int32 NewLevel = FMath::Clamp(PS->GetPlayerLevel() + 1, 1, 5);
+			PS->SetPlayerLevel(NewLevel);
 			return NewLevel;
 		}
 	}
@@ -57,7 +55,7 @@ int32 URollShopWidgetController::GainPlayerLevel() const
 	return 1;
 }
 
-void URollShopWidgetController::BuyUnitFromPocket(FName UnitName)
+void UNGRollShopWidgetController::BuyUnitFromPocket(FName UnitName)
 {
 	if (ANGPlayerController* NGP = Cast<ANGPlayerController>(PlayerController))
 	{
