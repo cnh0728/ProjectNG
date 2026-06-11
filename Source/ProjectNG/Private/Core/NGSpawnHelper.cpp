@@ -3,10 +3,10 @@
 
 #include "Core/NGSpawnHelper.h"
 
+#include "Pawn/NGEnemyPawn.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/NGPocketComponent.h"
 #include "Core/NGPoolSubSystem.h"
-#include "Game/NGGameState.h"
 #include "GameModes/NGInGameMode.h"
 #include "Pawn/NGUnitPawn.h"
 #include "Player/NGPlayerController.h"
@@ -16,7 +16,7 @@ bool UNGSpawnHelper::SpawnUnitPawn(ANGPlayerController* OwnerController, FName U
 {
 	ANGPlayerState* PS = Cast<ANGPlayerController>(OwnerController)->GetPlayerState<ANGPlayerState>();
 	
-	FQuadGridMap& WaitGridMap = PS->GetWaitGridMap();
+	const FQuadGridMap& WaitGridMap = PS->GetWaitGridMap();
 	
 	TOptional<FIntVector2> EmptyGridIndex = WaitGridMap.GetEmptyGridIndex();
 	
@@ -55,6 +55,34 @@ bool UNGSpawnHelper::SpawnUnitPawn(ANGPlayerController* OwnerController, FName U
 	NewPawn->SetPawnOnGrid(SpawnGridAddress);
 	
 	Pocket->ControlPocketSpawning(NewPawn);
+	
+	return true;
+}
+
+bool UNGSpawnHelper::SpawnEnemyPawn(ANGPlayerController* OwnerController, FEnemySpawnInfo EnemySpawnInfo)
+{
+	ANGPlayerState* PS = Cast<ANGPlayerController>(OwnerController)->GetPlayerState<ANGPlayerState>();
+	
+	UWorld* World = OwnerController->GetWorld();
+	if (!World)	return false;
+	
+	FGridAddress SpawnGridAddress(EnemySpawnInfo.SpawnGridPoint, EGridType::Combat, PS, 0);
+	
+	FVector SpawnLoc = UGridMapHelper::GetWorldLocation(SpawnGridAddress);
+	FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLoc);
+
+	ANGUnitPawn* NewPawn = SpawnPawn<ANGUnitPawn>(World, EnemySpawnInfo.EnemyClass, SpawnTransform, OwnerController);
+	if (!NewPawn)	return false;
+	
+	NewPawn->Initialize(PS);
+	
+	//여기서 찾은 그리드에 값 기입
+	FGridData GridData;
+	GridData.PlacedPawn = NewPawn;
+	
+	NewPawn->SetPawnOnGrid(SpawnGridAddress);
+	
+	PS->AddCPUEnemyCount();
 	
 	return true;
 }

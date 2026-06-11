@@ -4,15 +4,16 @@
 #include "GameModes/NGInGameMode.h"
 
 #include "Components/NGCombatManagerComponent.h"
+#include "Core/NGDeveloperSettings.h"
 #include "Core/NGUnitData.h"
 #include "Game/NGGameState.h"
 #include "Pawn/NGUnitPawn.h"
 #include "Player/NGPlayerState.h"
 
 
-void ANGInGameMode::RequestStartCombat(APlayerController* PC)
+void ANGInGameMode::RequestStartCombat(APlayerController* PC, bool bIsCPUCombat)
 {
-	// 테스트용으로 잠시 막음
+	// TODO: 테스트용으로 잠시 막음
 	// if (CurrentState == EGameState::Combat)	return;
 	
 	ANGGameState* GS = GetGameState<ANGGameState>();
@@ -26,11 +27,32 @@ void ANGInGameMode::RequestStartCombat(APlayerController* PC)
 		{
 			if (ANGPlayerState* PS = Cast<ANGPlayerState>(RawPS))
 			{
-				CMC->EnqueueCombatPhase(PS);
+				if (bIsCPUCombat)
+				{
+					TSoftObjectPtr<UNGEnemyDataAsset> SoftPath = GetDefault<UNGDeveloperSettings>()->EnemyDataAsset;
+
+					if (SoftPath.IsNull()) return;
+
+					UNGEnemyDataAsset* LoadedAsset = SoftPath.LoadSynchronous();
+	    
+					if (LoadedAsset)
+					{
+						FEnemySquadData SelectedData;
+						if (LoadedAsset->GetRandomSquadForZone(PS->GetCurrentZoneTag(), SelectedData))
+						{
+							CMC->EnqueueCombatPhase(PS, &SelectedData);
+						}
+					}
+				}
+				else
+				{
+					CMC->EnqueueCombatPhase(PS);
+				}
 			}
 		}
 		
-		CMC->StartCombat();
+		CMC->MatchingCombatUser();
+		CMC->StartCountingCombat();
 	}
 }
 

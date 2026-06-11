@@ -25,22 +25,40 @@ void UNGCombatManagerComponent::BeginPlay()
 	Super::BeginPlay();
 }
 
-void UNGCombatManagerComponent::EnqueueCombatPhase(ANGPlayerState* PS)
+void UNGCombatManagerComponent::EnqueueCombatPhase(ANGPlayerState* PS, const FEnemySquadData* CPUCombatData)
 {
 	if (!PS)	return;
-	
-	CombatPSQueue.Add(PS);
+
+	if (CPUCombatData)
+	{
+		FCombatSettingData CPUCombatSettingData;
+		CPUCombatSettingData.bIsCPUCombat = true;
+		CPUCombatSettingData.EnemySquadData = *CPUCombatData; // 이때만 복사
+		CPUCombatSettingData.Players[0] = PS;
+		
+		SetupCombat(CPUCombatSettingData);
+	}
+	else
+	{
+		CombatPSMatchingQueue.Add(PS);
+	}
 }
 
-void UNGCombatManagerComponent::StartCombat()
+void UNGCombatManagerComponent::StartCountingCombat()
 {
-	Algo::RandomShuffle(CombatPSQueue);
+	GetWorld()->GetTimerManager().SetTimer(FightStartTimerHandle, this, &UNGCombatManagerComponent::StartCombat, FightWaitTime, false);	
+}
+
+void UNGCombatManagerComponent::MatchingCombatUser()
+{
+	Algo::RandomShuffle(CombatPSMatchingQueue);
 	
 	uint8 Checker = 0;
 	
 	FCombatSettingData CombatSettingData;
 	
-	for (ANGPlayerState* PS : CombatPSQueue)
+	//TODO: 홀수일때 처리필요 (부전승)
+	for (ANGPlayerState* PS : CombatPSMatchingQueue)
 	{
 		CombatSettingData.Players[Checker++] = PS;
 		
@@ -52,12 +70,9 @@ void UNGCombatManagerComponent::StartCombat()
 			CombatSettingData.Reset();
 		}
 	}
-	//TODO: 홀수일때 처리필요 (부전승)
-	
-	GetWorld()->GetTimerManager().SetTimer(FightStartTimerHandle, this, &UNGCombatManagerComponent::StartFight, FightWaitTime, false);	
 }
 
-void UNGCombatManagerComponent::StartFight()
+void UNGCombatManagerComponent::StartCombat()
 {
 	if (!GetOwner()->HasAuthority())	return;
 	
@@ -67,11 +82,14 @@ void UNGCombatManagerComponent::StartFight()
 	UE_LOG(LogTemp, Log, TEXT("CombatDatas Num : %d"), CombatDatas.Num());
 	
 	//모든 유저 경기장 순회하면서 전투상태로 변경
-	for (FCombatSettingData Data : CombatDatas)
+	for (const FCombatSettingData& Data : CombatDatas)
 	{
 		for (ANGPlayerState* PS : Data.Players)
 		{
-			PS->PrepareStartCombat();
+			if (IsValid(PS))
+			{
+				PS->StartCombat();
+			}
 		}
 	}
 }
@@ -97,8 +115,8 @@ void UNGCombatManagerComponent::NotifyEndCombat(const ANGPlayerState* LoseEndPla
 	
 	for (int32 i = 0; i < CombatDatas.Num(); ++i)
 	{
-		if (CombatDatas[i].Players[0] == LoseEndPlayer) { FoundDataIndex = i; LoserPlayerIndex = 0; break; }
-		if (CombatDatas[i].Players[1] == LoseEndPlayer) { FoundDataIndex = i; LoserPlayerIndex = 1; break; }
+		if (CombatDatas[i].Players.IsValidIndex(0) && CombatDatas[i].Players[0] == LoseEndPlayer) { FoundDataIndex = i; LoserPlayerIndex = 0; break; }
+		if (CombatDatas[i].Players.IsValidIndex(1) && CombatDatas[i].Players[1] == LoseEndPlayer) { FoundDataIndex = i; LoserPlayerIndex = 1; break; }
 	}
 	
 	bool bIsNewNotification = false;
@@ -108,29 +126,35 @@ void UNGCombatManagerComponent::NotifyEndCombat(const ANGPlayerState* LoseEndPla
 		int32 WinnerPlayerIndex = 1 - LoserPlayerIndex;
 		const FCombatSettingData& TargetCombat = CombatDatas[FoundDataIndex];
 		
-		if (ANGPlayerState* Winner = TargetCombat.Players[WinnerPlayerIndex].Get())
+		if (TargetCombat.Players.IsValidIndex(WinnerPlayerIndex))
 		{
-			if (CombatResultDictionary.Find(Winner) == nullptr)
+			if (ANGPlayerState* Winner = TargetCombat.Players[WinnerPlayerIndex].Get())
 			{
-				CombatResultDictionary.Add(Winner, ECombatResult::Win);
-				bIsNewNotification = true;
-			}else
-			{
-				uint8 WinCombinedResult = static_cast<uint8>(CombatResultDictionary[Winner]) | static_cast<uint8>(ECombatResult::Win);
-				CombatResultDictionary[Winner] = static_cast<ECombatResult>(WinCombinedResult);
+				if (CombatResultDictionary.Find(Winner) == nullptr)
+				{
+					CombatResultDictionary.Add(Winner, ECombatResult::Win);
+					bIsNewNotification = true;
+				}else
+				{
+					uint8 WinCombinedResult = static_cast<uint8>(CombatResultDictionary[Winner]) | static_cast<uint8>(ECombatResult::Win);
+					CombatResultDictionary[Winner] = static_cast<ECombatResult>(WinCombinedResult);
+				}
 			}
 		}
 		
-		if (ANGPlayerState* Loser = TargetCombat.Players[LoserPlayerIndex].Get())
+		if (TargetCombat.Players.IsValidIndex(LoserPlayerIndex))
 		{
-			if (CombatResultDictionary.Find(Loser) == nullptr)
+			if (ANGPlayerState* Loser = TargetCombat.Players[LoserPlayerIndex].Get())
 			{
-				CombatResultDictionary.Add(Loser, ECombatResult::Lose);
-				bIsNewNotification = true;
-			}else
-			{
-				uint8 LoseCombinedResult = static_cast<uint8>(CombatResultDictionary[Loser]) | static_cast<uint8>(ECombatResult::Lose);
-				CombatResultDictionary[Loser] = static_cast<ECombatResult>(LoseCombinedResult);
+				if (CombatResultDictionary.Find(Loser) == nullptr)
+				{
+					CombatResultDictionary.Add(Loser, ECombatResult::Lose);
+					bIsNewNotification = true;
+				}else
+				{
+					uint8 LoseCombinedResult = static_cast<uint8>(CombatResultDictionary[Loser]) | static_cast<uint8>(ECombatResult::Lose);
+					CombatResultDictionary[Loser] = static_cast<ECombatResult>(LoseCombinedResult);
+				}
 			}
 		}
 	}
@@ -153,7 +177,7 @@ void UNGCombatManagerComponent::FinishCombat()
 	
 	EGameState EndGameState = EGameState::Exploration;
 	
-	for (FCombatSettingData Data : CombatDatas)
+	for (FCombatSettingData& Data : CombatDatas)
 	{
 		if (Data.Players.Num() > 0)
 		{
@@ -193,6 +217,8 @@ void UNGCombatManagerComponent::ClearCombatEndDatas()
 	FinishedCombatCount = 0;
 	CombatResultDictionary.Reset();
 	CombatDatas.Empty();
+	
+	CombatPSMatchingQueue.Empty();
 }
 
 void UNGCombatManagerComponent::NotifyPawnDied(ANGPawnBase* DeadPawn)
@@ -230,19 +256,37 @@ void UNGCombatManagerComponent::NotifyPawnDied(ANGPawnBase* DeadPawn)
 void UNGCombatManagerComponent::SetupCombat(const FCombatSettingData& SettingData)
 {
 	if (!SettingData.Players[0])	return;
-	if (!SettingData.Players[1])	return;
+	if (!SettingData.Players[1] && !SettingData.bIsCPUCombat)	return;
 	
 	//전투 시작 전 그리드 상태 복구용 스냅샷
 	for (ANGPlayerState* Player : SettingData.Players)
 	{
-		Player->CaptureSnapShot();
-		Player->SetGameState(EGameState::Combat);
+		if (IsValid(Player))
+		{
+			Player->CaptureSnapShot();
+			Player->SetGameState(EGameState::Combat);
+		}
 	}
 	
-	if (AArenaManager* ArenaManager = SettingData.Players[1]->GetArenaManager())
+	if (SettingData.bIsCPUCombat)
 	{
-		FArenaAddress AwayArenaAddress(SettingData.Players[0]->GetHomeArena(), EPossessArenaIdentification::Away);
-		ArenaManager->PossessArena(AwayArenaAddress);
+		//CPU는 몹소환
+		const FEnemySquadData& SquadData= SettingData.EnemySquadData;
+		
+		ANGPlayerState* Player = SettingData.Players[0].Get();
+		if (ANGPlayerController* PC = Player ? Player->GetOwner<ANGPlayerController>() : nullptr)
+		{
+			PC->Server_RequestSpawnEnemySquad(SquadData);
+		}
+	}
+	else
+	{
+		//유저는 카메라 이동 시켜줘야함
+		if (AArenaManager* ArenaManager = SettingData.Players[1]->GetArenaManager())
+		{
+			FArenaAddress AwayArenaAddress(SettingData.Players[0]->GetHomeArena(), EPossessArenaIdentification::Away);
+			ArenaManager->PossessArena(AwayArenaAddress);
+		}
 	}
 	
 	CombatDatas.Add(SettingData);

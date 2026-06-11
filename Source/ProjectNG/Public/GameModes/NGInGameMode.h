@@ -21,7 +21,7 @@ class PROJECTNG_API ANGInGameMode : public ANGGameModeBase
 	GENERATED_BODY()
 
 public:
-	void RequestStartCombat(APlayerController* PC);
+	void RequestStartCombat(APlayerController* PC, bool bIsCPUCombat);
 	void OnGameStart();
 	void NotifyGameStartToPlayer(ANGGameState* GS);
 	void OnCombatFinished(const FCombatResultData& ResultData);

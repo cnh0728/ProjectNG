@@ -11,7 +11,7 @@
 #include "Pawn/NGUnitPawn.h"
 #include "Player/NGPlayerController.h"
 
-ANGPlayerState::ANGPlayerState() : PlayerLevel(1), CurrentState(EGameState::Maintaining)
+ANGPlayerState::ANGPlayerState() : PlayerLevel(1), CurrentState(EGameState::Maintaining), CurrentZoneTag(FGameplayTag::RequestGameplayTag(FName("Zone.Area.A")))
 {
 	PrimaryActorTick.bCanEverTick = false;
 	
@@ -151,7 +151,7 @@ void ANGPlayerState::RestoreInitialGrid()
 	}
 }
 
-void ANGPlayerState::PrepareStartCombat()
+void ANGPlayerState::StartCombat()
 {
 	FHexGridMap& GridMap = GetCombatGridMap();
 			

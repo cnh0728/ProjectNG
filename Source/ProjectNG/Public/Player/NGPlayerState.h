@@ -56,25 +56,28 @@ protected:
 	TObjectPtr<UNGAbilitySystemComponent> AbilitySystemComponent;
 
 /*************************************/
-/*				전투 상태 관련		 */
+/*			WorldMap Phase 관련		 */
 /*************************************/
 	
 public:
+	const FGameplayTag& GetCurrentZoneTag() const { return CurrentZoneTag; }
+
 	void SetGameState(EGameState NewState) { CurrentState = NewState; }
 	EGameState GetGameState() const { return CurrentState; }
-	
 	void OnCombatEnd(bool bIsWin);
 	
 protected:
-	
 	void OnCombatWin();
 	void OnCombatLose();
 	
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite)
 	EGameState CurrentState;
 	
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite)
+	FGameplayTag CurrentZoneTag;
+	
 /*************************************/
-/*				Pocket 관련			 */
+/*		전투 및 Pocket 관련			 */
 /*************************************/
 	
 public:
@@ -85,12 +88,17 @@ public:
 	
 	int32 GetUserIndex();
 	
+	void AddCPUEnemyCount() { ++CurrentCPUEnemyCount; }
+	
 protected:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Game|Pocket")
 	TObjectPtr<UNGPocketComponent> PlayerPocket;
 	
 	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadOnly, Category = "Game")
 	int32 PlayerLevel;
+	
+	UPROPERTY()
+	int32 CurrentCPUEnemyCount;
 	
 	/*************************************/
 	/*				GridMap 관련			 */
@@ -106,7 +114,7 @@ public:
 	UFUNCTION()
 	void RestoreInitialGrid();
 	
-	void PrepareStartCombat();
+	void StartCombat();
 	
 protected:
 	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadWrite, Category = "Grid")
@@ -127,4 +135,5 @@ protected:
 	
 	UPROPERTY()
 	TObjectPtr<AArenaManager> ArenaManager;
+
 };
