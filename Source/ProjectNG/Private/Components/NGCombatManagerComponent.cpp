@@ -11,6 +11,7 @@
 #include "Player/NGPlayerState.h"
 
 #include "Algo/RandomShuffle.h"
+#include "Core/NGSpawnHelper.h"
 
 // Sets default values
 UNGCombatManagerComponent::UNGCombatManagerComponent() : FightWaitTime(0.1f)
@@ -68,6 +69,21 @@ void UNGCombatManagerComponent::MatchingCombatUser()
 			SetupCombat(CombatSettingData);
 			
 			CombatSettingData.Reset();
+		}
+	}
+}
+
+void UNGCombatManagerComponent::RequestSpawnSquadByPlayer(ANGPlayerController* RequestingPC,
+	const FEnemySquadData& SquadData)
+{
+	if (!GetOwner()->HasAuthority())	return;
+	
+	if (!RequestingPC) return;
+	
+	for (const FEnemySpawnInfo& EnemySpawnInfo : SquadData.SpawnUnits)
+	{
+		if (UNGSpawnHelper::SpawnEnemyPawn(RequestingPC, EnemySpawnInfo))
+		{
 		}
 	}
 }
@@ -173,6 +189,8 @@ void UNGCombatManagerComponent::FinishCombat()
 {
 	if (!GetOwner()->HasAuthority())	return;
 	
+	UE_LOG(LogTemp, Log, TEXT("UNGCombatManagerComponent::FinishCombat"));
+	
 	FCombatResultData CombatResult = {};
 	
 	EGameState EndGameState = EGameState::Exploration;
@@ -183,7 +201,7 @@ void UNGCombatManagerComponent::FinishCombat()
 		{
 			if (ANGPlayerState* HomePlayer = Data.Players[0].Get())
 			{
-				// HomePlayer->OnCombatEnd(CombatWinDictionary[HomePlayer]);
+				HomePlayer->OnCombatEnd(CombatResultDictionary[HomePlayer]);
 				HomePlayer->SetGameState(EndGameState);
 				
 				ResetGrid(HomePlayer);
@@ -194,7 +212,7 @@ void UNGCombatManagerComponent::FinishCombat()
 		{
 			if (ANGPlayerState* AwayPlayer = Data.Players[1].Get())
 			{
-				// AwayPlayer->OnCombatEnd(CombatWinDictionary[AwayPlayer]);
+				AwayPlayer->OnCombatEnd(CombatResultDictionary[AwayPlayer]);
 				AwayPlayer->SetGameState(EndGameState);
 
 				ResetGrid(AwayPlayer);
@@ -227,30 +245,33 @@ void UNGCombatManagerComponent::NotifyPawnDied(ANGPawnBase* DeadPawn)
 	
 	if (!DeadPawn)	return;
 	
+	ANGPlayerController* OwnerPC = DeadPawn->GetOwner<ANGPlayerController>();
+	ANGPlayerState* OwnerPS = OwnerPC ? OwnerPC->GetPlayerState<ANGPlayerState>() : nullptr;
+	
 	//TODO: Enum으로 Type 넣어두던가 인터페이스 형태로? 바꾸는게 나을듯
 	if (DeadPawn->IsA(ANGEnemyPawn::StaticClass()))
 	{
 		UE_LOG(LogTemp, Log, TEXT("적 사망"));
 		
-		//TODO: 사망할때마다 사망한 Pocket체크해서 아무것도 없는지 확인
-		//적 사망 이벤트
-		//적 사망 델리게이트 만들어서 구독시키게 하고 델리게이트 호출도 나쁘지 않을듯
-	}else if (DeadPawn->IsA(ANGUnitPawn::StaticClass()))
-	{
-		UE_LOG(LogTemp, Log, TEXT("유닛 사망"));
-		//유닛 죽었을때 이벤트
-	}
-	
-	ANGPlayerController* OwnerPC = DeadPawn->GetOwner<ANGPlayerController>();
-	ANGPlayerState* OwnerPS = OwnerPC ? OwnerPC->GetPlayerState<ANGPlayerState>() : nullptr;
-	if (UNGPocketComponent* Pocket = OwnerPS ? OwnerPS->GetPlayerPocket() : nullptr)
-	{
-		if (Pocket->IsAnnihilated())
+		if (OwnerPS->IsCPUCombatFinished())
 		{
 			NotifyEndCombat(OwnerPS);
 		}
+		//적 사망 이벤트
+		//적 사망 델리게이트 만들어서 구독시키게 하고 델리게이트 호출도 나쁘지 않을듯
 	}
-	
+	else if (DeadPawn->IsA(ANGUnitPawn::StaticClass()))
+	{
+		UE_LOG(LogTemp, Log, TEXT("유닛 사망"));
+		//유닛 죽었을때 이벤트
+		if (UNGPocketComponent* Pocket = OwnerPS ? OwnerPS->GetPlayerPocket() : nullptr)
+		{
+			if (Pocket->IsAnnihilated())
+			{
+				NotifyEndCombat(OwnerPS);
+			}
+		}
+	}
 }
 
 void UNGCombatManagerComponent::SetupCombat(const FCombatSettingData& SettingData)
@@ -273,11 +294,16 @@ void UNGCombatManagerComponent::SetupCombat(const FCombatSettingData& SettingDat
 		//CPU는 몹소환
 		const FEnemySquadData& SquadData= SettingData.EnemySquadData;
 		
-		ANGPlayerState* Player = SettingData.Players[0].Get();
-		if (ANGPlayerController* PC = Player ? Player->GetOwner<ANGPlayerController>() : nullptr)
+		if (ANGPlayerState* Player = SettingData.Players[0].Get())
 		{
-			PC->Server_RequestSpawnEnemySquad(SquadData);
+			Player->InitCPUCombat(SquadData);
+			
+			if (ANGPlayerController* PC = Player ? Player->GetOwner<ANGPlayerController>() : nullptr)
+			{
+				RequestSpawnSquadByPlayer(PC, SquadData);
+			}
 		}
+
 	}
 	else
 	{

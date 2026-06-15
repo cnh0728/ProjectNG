@@ -171,8 +171,12 @@ void ANGPawnBase::BeginPlay()
 		
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
 			AttributeSet->GetAttackRangeAttribute()).AddUObject(this, &ANGPawnBase::OnAttackRangeChanged);
+
+		AttackAbilitySpecHandle = AbilitySystemComponent->GiveAbility(
+			FGameplayAbilitySpec(AttackAbilityClass, 1, INDEX_NONE, this)
+		);
 	}
-	
+		
 	UpdateHPBar();
 }
 

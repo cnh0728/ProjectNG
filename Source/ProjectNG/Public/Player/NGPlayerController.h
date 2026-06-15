@@ -11,7 +11,6 @@
 enum class EGamePhase : uint8;
 struct FInputActionValue;
 class UNGUnitInfoWidget;
-class ANGUnitPawn;
 class UInputMappingContext;
 class UInputAction;
 class UNGPocketComponent;
@@ -116,10 +115,7 @@ protected:
 public:
 	UFUNCTION(Server, Reliable)
 	void Server_RequestBuyUnit(FName UnitName);
-
-	UFUNCTION(Server, Reliable)
-	void Server_RequestSpawnEnemySquad(const FEnemySquadData& SquadData);
-
+	
 	UNGPocketComponent* GetPlayerPocket() const;
 	void EnterPhase(EGamePhase Phase);
 

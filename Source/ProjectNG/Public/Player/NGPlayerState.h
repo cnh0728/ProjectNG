@@ -6,6 +6,7 @@
 #include "AbilitySystemInterface.h"
 #include "AbilitySystem/NGAbilitySystemComponent.h"
 #include "Combat/Grid/Grid.h"
+#include "Components/NGCombatManagerComponent.h"
 #include "GameFramework/PlayerState.h"
 #include "NGPlayerState.generated.h"
 
@@ -64,7 +65,7 @@ public:
 
 	void SetGameState(EGameState NewState) { CurrentState = NewState; }
 	EGameState GetGameState() const { return CurrentState; }
-	void OnCombatEnd(bool bIsWin);
+	void OnCombatEnd(ECombatResult CombatResult);
 	
 protected:
 	void OnCombatWin();
@@ -88,7 +89,17 @@ public:
 	
 	int32 GetUserIndex();
 	
-	void AddCPUEnemyCount() { ++CurrentCPUEnemyCount; }
+	void AddCPUEnemyCount();
+	
+	void OnDieCPUEnemy() { ++CPUEnemyDieCount; }
+	
+	bool IsCPUCombatFinished() const
+	{
+		UE_LOG(LogTemp, Log, TEXT("CurrentCPUEnemyCount %d, CPUEnemyDieCount %d"), CurrentCPUEnemyCount, CPUEnemyDieCount);
+		return CurrentCPUEnemyCount <= CPUEnemyDieCount;
+	}
+	
+	void InitCPUCombat(const FEnemySquadData& SquadData);
 	
 protected:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Game|Pocket")
@@ -99,6 +110,9 @@ protected:
 	
 	UPROPERTY()
 	int32 CurrentCPUEnemyCount;
+
+	UPROPERTY()
+	int32 CPUEnemyDieCount;
 	
 	/*************************************/
 	/*				GridMap 관련			 */

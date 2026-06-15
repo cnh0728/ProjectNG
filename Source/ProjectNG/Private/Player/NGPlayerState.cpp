@@ -4,6 +4,7 @@
 
 #include "Combat/Grid/Arena.h"
 #include "Combat/Grid/ArenaManager.h"
+#include "Components/NGCombatManagerComponent.h"
 #include "Components/NGPocketComponent.h"
 #include "Core/NGDeveloperSettings.h"
 #include "Game/NGGameState.h"
@@ -95,15 +96,25 @@ void ANGPlayerState::CaptureSnapShot()
 	CombatGridMapSnapShot = CombatGridMap;
 }
 
-void ANGPlayerState::OnCombatEnd(bool bIsWin)
+void ANGPlayerState::OnCombatEnd(ECombatResult CombatResult)
 {
-	if (bIsWin)
+	switch (CombatResult)
 	{
-		OnCombatWin();
-	}
-	else
-	{
-		OnCombatLose();
+	case ECombatResult::Draw:
+		{
+			
+			break;
+		}
+	case ECombatResult::Win:
+		{
+			OnCombatWin();
+			break;
+		}
+	case ECombatResult::Lose:
+		{
+			OnCombatLose();
+			break;
+		}
 	}
 }
 
@@ -123,6 +134,23 @@ int32 ANGPlayerState::GetUserIndex()
 	}
 	
 	return -1;
+}
+
+void ANGPlayerState::AddCPUEnemyCount()
+{
+	if (ANGPlayerController* PC = GetOwner<ANGPlayerController>())
+	{
+		if (PC->IsLocalController())
+		{
+			++CurrentCPUEnemyCount;
+		}
+	}
+}
+
+void ANGPlayerState::InitCPUCombat(const FEnemySquadData& SquadData)
+{
+	CPUEnemyDieCount = 0;
+	CurrentCPUEnemyCount = SquadData.SpawnUnits.Num();
 }
 
 void ANGPlayerState::RestoreInitialGrid()

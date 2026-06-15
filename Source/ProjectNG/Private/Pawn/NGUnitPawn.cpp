@@ -97,13 +97,7 @@ void ANGUnitPawn::BeginPlay()
 		UE_LOG(LogTemp, Error, TEXT("ANGUnitCharacter::No attribute set"));
 		return;
 	}
-	
-	if (AbilitySystemComponent)
-	{	        
-		AttackAbilitySpecHandle = AbilitySystemComponent->GiveAbility(
-			FGameplayAbilitySpec(AttackAbilityClass, 1, INDEX_NONE, this)
-		);
-	}
+
 }
 
 

@@ -71,7 +71,7 @@ bool UNGSpawnHelper::SpawnEnemyPawn(ANGPlayerController* OwnerController, FEnemy
 	FVector SpawnLoc = UGridMapHelper::GetWorldLocation(SpawnGridAddress);
 	FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLoc);
 
-	ANGUnitPawn* NewPawn = SpawnPawn<ANGUnitPawn>(World, EnemySpawnInfo.EnemyClass, SpawnTransform, OwnerController);
+	ANGEnemyPawn* NewPawn = SpawnPawn<ANGEnemyPawn>(World, EnemySpawnInfo.EnemyClass, SpawnTransform, OwnerController);
 	if (!NewPawn)	return false;
 	
 	NewPawn->Initialize(PS);
@@ -82,7 +82,7 @@ bool UNGSpawnHelper::SpawnEnemyPawn(ANGPlayerController* OwnerController, FEnemy
 	
 	NewPawn->SetPawnOnGrid(SpawnGridAddress);
 	
-	PS->AddCPUEnemyCount();
+	// PS->AddCPUEnemyCount();
 	
 	return true;
 }

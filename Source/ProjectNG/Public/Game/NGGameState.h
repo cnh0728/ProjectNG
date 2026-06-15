@@ -28,10 +28,4 @@ public:
 	
 	float GridMargin;
 	
-	UNGCombatManagerComponent* GetCombatManagerComponent() { return CombatManagerComponent; };	
-
-protected:
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Managers")
-	TObjectPtr<UNGCombatManagerComponent> CombatManagerComponent;
 };

@@ -9,7 +9,6 @@
 
 ANGGameState::ANGGameState() : GridMargin(3000.f)
 {
-	CombatManagerComponent = CreateDefaultSubobject<UNGCombatManagerComponent>(TEXT("CombatManager"));
 }
 
 void ANGGameState::BeginPlay()

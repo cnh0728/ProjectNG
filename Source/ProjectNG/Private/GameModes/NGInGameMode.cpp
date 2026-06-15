@@ -11,15 +11,18 @@
 #include "Player/NGPlayerState.h"
 
 
+ANGInGameMode::ANGInGameMode()
+{
+	CombatManagerComponent = CreateDefaultSubobject<UNGCombatManagerComponent>(TEXT("CombatManager"));
+}
+
 void ANGInGameMode::RequestStartCombat(APlayerController* PC, bool bIsCPUCombat)
 {
 	// TODO: 테스트용으로 잠시 막음
 	// if (CurrentState == EGameState::Combat)	return;
 	
 	ANGGameState* GS = GetGameState<ANGGameState>();
-	
-	UNGCombatManagerComponent* CMC = GS->GetCombatManagerComponent();
-	
+		
 	// 테스트용
 	if (GS)
 	{
@@ -40,19 +43,19 @@ void ANGInGameMode::RequestStartCombat(APlayerController* PC, bool bIsCPUCombat)
 						FEnemySquadData SelectedData;
 						if (LoadedAsset->GetRandomSquadForZone(PS->GetCurrentZoneTag(), SelectedData))
 						{
-							CMC->EnqueueCombatPhase(PS, &SelectedData);
+							CombatManagerComponent->EnqueueCombatPhase(PS, &SelectedData);
 						}
 					}
 				}
 				else
 				{
-					CMC->EnqueueCombatPhase(PS);
+					CombatManagerComponent->EnqueueCombatPhase(PS);
 				}
 			}
 		}
 		
-		CMC->MatchingCombatUser();
-		CMC->StartCountingCombat();
+		CombatManagerComponent->MatchingCombatUser();
+		CombatManagerComponent->StartCountingCombat();
 	}
 }
 
@@ -85,10 +88,9 @@ void ANGInGameMode::OnCombatFinished(const FCombatResultData& ResultData)
 
 void ANGInGameMode::ReportPawnDeath(ANGPawnBase* DeadPawn) const
 {
-	ANGGameState* GS = GetGameState<ANGGameState>();
-	if (UNGCombatManagerComponent* CMC = GS ? GS->GetCombatManagerComponent() : nullptr)
+	if (CombatManagerComponent)
 	{
-		CMC->NotifyPawnDied(DeadPawn);
+		CombatManagerComponent->NotifyPawnDied(DeadPawn);
 	}
 	
 }

@@ -50,15 +50,17 @@ public:
 	void StartCountingCombat();
 	void MatchingCombatUser();
 
+	void RequestSpawnSquadByPlayer(ANGPlayerController* RequestingPC, const FEnemySquadData& SquadData);
+	
 protected:
 	//매개변수 의도된 복사
 	void SetupCombat(const FCombatSettingData& SettingData);
 	
 	UPROPERTY()
-	TArray<FCombatSettingData> CombatDatas;
-	
-	UPROPERTY()
 	TArray<ANGPlayerState*> CombatPSMatchingQueue;
+
+	UPROPERTY()
+	TArray<FCombatSettingData> CombatDatas;
 	
 	UPROPERTY()
 	TMap<ANGPlayerState*, ECombatResult> CombatResultDictionary;

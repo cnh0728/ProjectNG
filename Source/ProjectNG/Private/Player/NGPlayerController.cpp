@@ -12,7 +12,6 @@
 #include "Pawn/NGUnitPawn.h"
 #include "Pawn/SelectableInterface.h"
 #include "Core/NGSpawnHelper.h"
-#include "Game/NGGameState.h"
 #include "GameModes/NGInGameMode.h"
 #include "Input/NGInputComponent.h"
 #include "Player/NGPlayerState.h"
@@ -396,17 +395,6 @@ void ANGPlayerController::Server_RequestBuyUnit_Implementation(FName UnitName)
 	}
 }
 
-void ANGPlayerController::Server_RequestSpawnEnemySquad_Implementation(const FEnemySquadData& SquadData)
-{
-	for (const FEnemySpawnInfo& EnemySpawnInfo : SquadData.SpawnUnits)
-	{
-		if (UNGSpawnHelper::SpawnEnemyPawn(this, EnemySpawnInfo))
-		{
-			UE_LOG(LogTemp, Display, TEXT("EnemySpawn Success"));
-		}
-	}
-}
-
 UNGPocketComponent* ANGPlayerController::GetPlayerPocket() const
 {
 	if (ANGPlayerState* PS = GetPlayerState<ANGPlayerState>())
@@ -424,10 +412,13 @@ void ANGPlayerController::Server_EnterPhase_Implementation(EGamePhase Phase)
 
 void ANGPlayerController::EnterPhase(EGamePhase Phase)
 {
-	ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>();
+	if (!HasAuthority())	return;
+	
+	ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>();
+	
 	ANGPlayerState* PS = GetPlayerState<ANGPlayerState>();	
 	
-	if (UNGCombatManagerComponent* CMC = GS ? GS->GetCombatManagerComponent() : nullptr)
+	if (UNGCombatManagerComponent* CMC = GM ? GM->GetCombatManagerComponent() : nullptr)
 	{
 		bool bIsCPUCombat = false;
 		
@@ -459,9 +450,9 @@ void ANGPlayerController::Server_RequestStopCombat_Implementation()
 {
 	if (HasAuthority())
 	{
-		if (ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>())
+		if (ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>())
 		{
-			if (UNGCombatManagerComponent* CMC = GS->GetCombatManagerComponent())
+			if (UNGCombatManagerComponent* CMC = GM->GetCombatManagerComponent())
 			{
 				CMC->FinishCombat();
 			}

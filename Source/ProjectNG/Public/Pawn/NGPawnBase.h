@@ -123,7 +123,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Combat", meta = (AllowPrivateAccess = "true"))
 	int32 OwnerIndex;
 	
-	UPROPERTY(Replicated, VisibleAnywhere, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(Replicated, BlueprintReadOnly, VisibleAnywhere, Category = "Combat", meta = (AllowPrivateAccess = "true"))
 	EPawnState PawnState;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")

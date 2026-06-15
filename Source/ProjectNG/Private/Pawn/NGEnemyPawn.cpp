@@ -6,8 +6,7 @@
 #include "AbilitySystem/NGAbilitySystemComponent.h"
 #include "AbilitySystem/NGAttributeSet.h"
 #include "Components/CapsuleComponent.h"
-#include "Components/SplineComponent.h"
-#include "Components/WidgetComponent.h"
+#include "Player/NGPlayerController.h"
 #include "ProjectNG/ProjectNG.h"
 
 
@@ -32,6 +31,17 @@ void ANGEnemyPawn::BeginPlay()
 	.AddUObject(this, &ANGEnemyPawn::OnHealthChanged);
 }
 
+void ANGEnemyPawn::Die()
+{
+	ANGPlayerController* PC = GetOwner<ANGPlayerController>();
+	if (ANGPlayerState* PS = PC ? PC->GetPlayerState<ANGPlayerState>() : nullptr)
+	{
+		PS->OnDieCPUEnemy();
+	}
+
+	Super::Die();
+}
+
 // Called every frame
 void ANGEnemyPawn::Tick(float DeltaTime)
 {
@@ -44,6 +54,13 @@ void ANGEnemyPawn::Tick(float DeltaTime)
 void ANGEnemyPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
+}
+
+void ANGEnemyPawn::Initialize(ANGPlayerState* PS)
+{
+	Super::Initialize(PS);
+	
+	OwnerIndex = -1;
 }
 
 void ANGEnemyPawn::InitAbilityActorInfo()
