@@ -49,7 +49,7 @@ void ANGHUD::InitializeHUD(APlayerController* PC, APlayerState* PS)
 	MainWidgetC->BroadcastInitialValues();
 
 	// UnitDetail 위젯컨트롤러 생성
-	UUnitDetailsWidgetController* UnitDetailsWidgetC = GetUnitDetailsWidgetController(WidgetParams);
+	// UUnitDetailsWidgetController* UnitDetailsWidgetC = GetUnitDetailsWidgetController(WidgetParams);
 	
 	Widget->AddToViewport();
 }

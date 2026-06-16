@@ -93,6 +93,8 @@ void ANGUnitPawn::BeginPlay()
 
 void ANGUnitPawn::Activate()
 {
+	Super::Activate();
+	
 	InitAbilityActorInfo();
 	
 	if (!AttributeSet)
@@ -114,7 +116,7 @@ void ANGUnitPawn::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
 	
-	Super::Activate();
+	Activate();
 }
 
 void ANGUnitPawn::Deactivate()

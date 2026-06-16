@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 TeamNG. All Rights Reserved.
+// Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 
 #include "Game/NGUnitDataManager.h"
@@ -42,8 +42,20 @@ void UNGUnitDataManager::Initialize(FSubsystemCollectionBase& Collection)
 				TagToUnitNameDataMap.Add(RowData->IdentificationTag, RowName);
 			}
 		}
+
+		// NextTierTag를 기반으로 PrevTierTag 자동 역매핑
+		for (auto& [Tag, Data] : TagToUnitDataMap)
+		{
+			if (Data && Data->NextTierTag.IsValid())
+			{
+				if (FUnitData** NextData = TagToUnitDataMap.Find(Data->NextTierTag))
+				{
+					(*NextData)->PrevTierTag = Tag;
+				}
+			}
+		}
 		
-		UE_LOG(LogTemp, Log, TEXT("유닛 데이터 테이블 캐싱 완료! 총 %d개"), TagToUnitDataMap.Num());
+		UE_LOG(LogTemp, Log, TEXT("유닛 데이터 테이블 캐싱 완료! 총 %d개 (PrevTierTag 역매핑 완료)"), TagToUnitDataMap.Num());
 	}
 }
 
@@ -80,4 +92,39 @@ FName UNGUnitDataManager::GetUnitName(const FGameplayTag IdentificationTag) cons
 		return *FoundRowName;
 	}
 	return NAME_None;
+}
+
+FGameplayTag UNGUnitDataManager::GetBaseTierTag(const FGameplayTag IdentificationTag) const
+{
+	if (!IdentificationTag.IsValid()) return FGameplayTag();
+
+	FUnitData* const* FoundData = TagToUnitDataMap.Find(IdentificationTag);
+	if (!FoundData || !(*FoundData)) return FGameplayTag();
+
+	// T1이거나 PrevTierTag가 없으면 자기 자신이 기본 유닛
+	if ((*FoundData)->Tier == EUnitTier::Tier1 || !(*FoundData)->PrevTierTag.IsValid())
+	{
+		return IdentificationTag;
+	}
+
+	// 재귀적으로 하위 티어 추적
+	return GetBaseTierTag((*FoundData)->PrevTierTag);
+}
+
+int32 UNGUnitDataManager::GetDecomposedBaseUnitCount(const FGameplayTag IdentificationTag) const
+{
+	if (!IdentificationTag.IsValid()) return 0;
+
+	FUnitData* const* FoundData = TagToUnitDataMap.Find(IdentificationTag);
+	if (!FoundData || !(*FoundData)) return 0;
+
+	// T1이면 1개
+	if ((*FoundData)->Tier == EUnitTier::Tier1 || !(*FoundData)->PrevTierTag.IsValid())
+	{
+		return 1;
+	}
+
+	// 하위 티어의 분해 수 × 합성 필요 개수
+	const int32 MergeCount = FMath::Max((*FoundData)->MergeRequiredCount, 3);
+	return MergeCount * GetDecomposedBaseUnitCount((*FoundData)->PrevTierTag);
 }

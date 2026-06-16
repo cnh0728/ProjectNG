@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 TeamNG. All Rights Reserved.
+// Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 
 #include "Components/NGPocketComponent.h"
@@ -54,6 +54,11 @@ void UNGPocketComponent::AddUnitToBuyingPocket(FName UnitName)
 	RollShopPocket.Remove(UnitName);
 }
 
+void UNGPocketComponent::TryMergeUnit(FGameplayTag IdentificationTag)
+{
+	CheckAndMergeUnit(IdentificationTag);
+}
+
 void UNGPocketComponent::OnRep_RollPocket()
 {
 	switch (LastShopAction)
@@ -96,7 +101,6 @@ void UNGPocketComponent::UpdateRollUnit()
 
 void UNGPocketComponent::CheckAndMergeUnit(FGameplayTag IdentificationTag)
 {
-	
 	// 서버가 아니면 리턴
 	if (!GetOwner()->HasAuthority())
 	{
@@ -107,8 +111,8 @@ void UNGPocketComponent::CheckAndMergeUnit(FGameplayTag IdentificationTag)
 	if (!DataManager) return;
 	
 	
-	TArray<ANGUnitPawn*> SameUnits;
-	for (ANGUnitPawn* Unit : OwnedUnitPocket)
+	TArray<ANGPawnBase*> SameUnits;
+	for (ANGPawnBase* Unit : OwnedUnitPocket)
 	{
 		if (Unit && Unit->GetIdentificationTag() == IdentificationTag)
 		{
@@ -118,37 +122,47 @@ void UNGPocketComponent::CheckAndMergeUnit(FGameplayTag IdentificationTag)
 	
 	if (SameUnits.Num() >= 3)
 	{
-		ANGUnitPawn* Mat1 = SameUnits[0]; // 조합의 중심이 될 유닛
-		ANGUnitPawn* Mat2 = SameUnits[1];
-		ANGUnitPawn* Mat3 = SameUnits[2];
-		
-		
 		const FUnitData* UnitData = DataManager->GetUnitData(IdentificationTag);
 		if (!UnitData || !UnitData->NextTierTag.IsValid()) return;
+
+		const int32 MergeRequiredCount = FMath::Max(UnitData->MergeRequiredCount, 3);
+		if (SameUnits.Num() < MergeRequiredCount) return;
 		
+		const FName UnitRowName = DataManager->GetUnitName(IdentificationTag);
+		if (UnitRowName.IsNone()) return;
+
 		FName NextUnitRowName = DataManager->GetUnitName(UnitData->NextTierTag);
 		if (NextUnitRowName.IsNone()) return;
 		
-		FVector MergeLocation = Mat1->GetActorLocation(); // 첫번째 유닛 위치
-
-		if (UNGPoolSubSystem* Pool = GetWorld()->GetSubsystem<UNGPoolSubSystem>())
+		TArray<ANGPawnBase*> Materials;
+		Materials.Reserve(MergeRequiredCount);
+		for (int32 i = 0; i < MergeRequiredCount; ++i)
 		{
-			if (ANGPlayerState* PS = GetOwner<ANGPlayerState>())
+			Materials.Add(SameUnits[i]);
+		}
+
+		FGridAddress MergeGridAddress = Materials.Last()->GetGridAddress();
+		for (ANGPawnBase* Material : Materials)
+		{
+			if (Material && Material->GetGridAddress().GridType == EGridType::Combat)
 			{
-				FHexGridMap& CombatGridMap = PS->GetCombatGridMap();
-				
-				CombatGridMap.EmptyGridMap(Mat1->GetPlacedGridIndex());
-				CombatGridMap.EmptyGridMap(Mat2->GetPlacedGridIndex());
-				CombatGridMap.EmptyGridMap(Mat3->GetPlacedGridIndex());
+				MergeGridAddress = Material->GetGridAddress();
+				break;
 			}
+		}
+		
+		FVector MergeLocation = UGridMapHelper::GetWorldLocation(MergeGridAddress);
+
+		UNGPoolSubSystem* Pool = GetWorld()->GetSubsystem<UNGPoolSubSystem>();
+		if (!Pool) return;
+		
+		for (ANGPawnBase* Material : Materials)
+		{
+			if (!Material) continue;
 			
-			ControlPocketSelling(Mat1);
-			ControlPocketSelling(Mat2);
-			ControlPocketSelling(Mat3);
-			
-			Pool->ReleaseSegment(Mat1);
-			Pool->ReleaseSegment(Mat2);
-			Pool->ReleaseSegment(Mat3);
+			Material->UnSetPawnOnGrid(Material->GetGridAddress());
+			RemoveUnitFromPocket(Material);  // OwnedPocket에서만 제거 (상점 풀 미반환)
+			Pool->ReleaseSegment(Material);
 		}
 		
 		// 상위 등급 생성
@@ -157,7 +171,7 @@ void UNGPocketComponent::CheckAndMergeUnit(FGameplayTag IdentificationTag)
 			if (ANGPlayerController* PC = Cast<ANGPlayerController>(PS->GetPlayerController()))
 			{
 				// 이 스폰이 성공하면 다시 ControlPocketSpawning이 호출되며 연쇄 작용 일어남
-				bool bSpawned = UNGSpawnHelper::SpawnUnitPawn(PC, NextUnitRowName);
+				bool bSpawned = UNGSpawnHelper::SpawnUnitPawnAtGrid(PC, NextUnitRowName, MergeGridAddress);
 				if (bSpawned)
 				{
 					// 클라이언트 RPC 연출 호출
@@ -169,13 +183,80 @@ void UNGPocketComponent::CheckAndMergeUnit(FGameplayTag IdentificationTag)
 	}
 }
 
+void UNGPocketComponent::RequestSellUnit(ANGPawnBase* UnitToSell)
+{
+	if (!UnitToSell) return;
+	Server_SellUnit(UnitToSell);
+}
+
+void UNGPocketComponent::Server_SellUnit_Implementation(ANGPawnBase* UnitToSell)
+{
+	if (!GetOwner()->HasAuthority()) return;
+	if (!UnitToSell) return;
+
+	// 내 소유 유닛인지 검증
+	if (!OwnedUnitPocket.Contains(UnitToSell)) return;
+
+	UNGUnitDataManager* DataManager = GetWorld()->GetGameInstance()->GetSubsystem<UNGUnitDataManager>();
+	ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>();
+	UNGPoolSubSystem* Pool = GetWorld()->GetSubsystem<UNGPoolSubSystem>();
+	if (!DataManager || !GM || !Pool) return;
+
+	const FGameplayTag UnitTag = UnitToSell->GetIdentificationTag();
+
+	// 1. 재귀적으로 1성 유닛 목록 분해
+	TArray<FName> BaseUnitNames;
+	DecomposeToBaseUnits(UnitTag, BaseUnitNames);
+
+	// 2. 분해된 1성 유닛들을 상점 공용 풀로 반환
+	for (const FName& BaseName : BaseUnitNames)
+	{
+		GM->ReturnUnitToPool(BaseName, 1);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[판매] %s 판매 → 1성 유닛 %d개 공용 풀 반환"), *UnitTag.ToString(), BaseUnitNames.Num());
+
+	// 3. 판매 대상 유닛을 소유 목록에서 제거 + 오브젝트 풀로 반환
+	UnitToSell->UnSetPawnOnGrid(UnitToSell->GetGridAddress());
+	ControlPocketSelling(UnitToSell);
+	Pool->ReleaseSegment(UnitToSell);
+
+	// TODO: 골드 환불 로직 (Tier에 따른 판매 가격)
+}
+
+void UNGPocketComponent::DecomposeToBaseUnits(const FGameplayTag& UnitTag, TArray<FName>& OutBaseUnitNames) const
+{
+	UNGUnitDataManager* DataManager = GetWorld()->GetGameInstance()->GetSubsystem<UNGUnitDataManager>();
+	if (!DataManager) return;
+
+	const FUnitData* UnitData = DataManager->GetUnitData(UnitTag);
+	if (!UnitData) return;
+
+	// 1성이면 자기 자신의 FName을 추가하고 종료 (재귀 종료 조건)
+	if (UnitData->Tier == EUnitTier::Tier1 || !UnitData->PrevTierTag.IsValid())
+	{
+		FName UnitRowName = DataManager->GetUnitName(UnitTag);
+		if (!UnitRowName.IsNone())
+		{
+			OutBaseUnitNames.Add(UnitRowName);
+		}
+		return;
+	}
+
+	// 2성 이상이면, MergeRequiredCount만큼 하위 티어를 재귀 분해
+	const int32 Count = FMath::Max(UnitData->MergeRequiredCount, 3);
+	for (int32 i = 0; i < Count; ++i)
+	{
+		DecomposeToBaseUnits(UnitData->PrevTierTag, OutBaseUnitNames);
+	}
+}
+
 void UNGPocketComponent::Multicast_PlayMergeEffect_Implementation(FVector EffectLocation, EUnitTier UnitTier)
 {
 	// 이 함수는 서버에서 호출되더라도 모든 클라이언트(플레이어의 화면)에서 실행됩니다.
 	// 이 안에서 무거운 이펙트 생성, 파티클 폭발, 티어별 사운드 재생 등을 수행합니다.
 }
 
-void UNGPocketComponent::ControlPocketSpawning(ANGUnitPawn* NewPawn)
 void UNGPocketComponent::GetPlacedUnits(TArray<ANGPawnBase*>& OutUnits)
 {
 	for (ANGPawnBase* Unit : OwnedUnitPocket)
@@ -219,18 +300,11 @@ void UNGPocketComponent::ControlPocketSelling(ANGPawnBase* NewPawn)
 void UNGPocketComponent::AddUnitFromPocket(ANGPawnBase* NewPawn)
 {
 	OwnedUnitPocket.AddUnique(NewPawn);
-	WaitUnitPocket.AddUnique(NewPawn);
-	
+
 	if (NewPawn)
 	{
-		CheckAndMergeUnit(NewPawn->GetIdentificationTag());
+		TryMergeUnit(NewPawn->GetIdentificationTag());
 	}
-}
-
-void UNGPocketComponent::ControlPocketPlacing(ANGUnitPawn* NewPawn)
-{
-	PlacedUnitPocket.AddUnique(NewPawn);
-	WaitUnitPocket.Remove(NewPawn);
 }
 
 void UNGPocketComponent::RemoveUnitFromPocket(ANGPawnBase* Unit)

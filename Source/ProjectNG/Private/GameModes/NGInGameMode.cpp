@@ -141,10 +141,17 @@ FName ANGInGameMode::GetRandomUnitByTier(EUnitTier Tier)
 
 TSubclassOf<ANGUnitPawn> ANGInGameMode::GetUnitClass(FName UnitName) const
 {
-	FUnitData* FoundRow = UnitDataTable->FindRow<FUnitData>(UnitName, TEXT(""));
+	const FUnitData* FoundRow = GetUnitData(UnitName);
 	if (!FoundRow)	return nullptr;
 	
 	return FoundRow->UnitClass;
+}
+
+const FUnitData* ANGInGameMode::GetUnitData(FName UnitName) const
+{
+	if (!UnitDataTable) return nullptr;
+	
+	return UnitDataTable->FindRow<FUnitData>(UnitName, TEXT(""));
 }
 
 void ANGInGameMode::InitializeUnitPool()

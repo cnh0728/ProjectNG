@@ -47,6 +47,7 @@ public:
 	FName GetRandomUnitByTier(EUnitTier Tier);
 
 	TSubclassOf<ANGUnitPawn> GetUnitClass(FName UnitName) const;
+	const FUnitData* GetUnitData(FName UnitName) const;
 
 protected:
 	// Key: DataTable RowName, Value: remain count

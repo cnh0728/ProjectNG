@@ -95,7 +95,7 @@ void UNGPoolSubSystem::ReleaseSegment(ANGPawnBase* Pawn)
 {
 	if (!Pawn)	return;
 	
-	ReleaseDefaultSetting(Pawn);
+	Pawn->Deactivate();
 	
 	FNGPawnList& Pool = PawnPools.FindOrAdd(Pawn->GetClass());
 	Pool.FreePawnList.Push(Pawn);

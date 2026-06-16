@@ -10,7 +10,6 @@
 #include "Components/NGCombatManagerComponent.h"
 #include "Pawn/NGUnitPawn.h"
 #include "Pawn/SelectableInterface.h"
-#include "Combat/GridMapManager.h"
 #include "Core/NGBlueprintLibrary.h"
 #include "Core/NGSpawnHelper.h"
 #include "Game/NGGameState.h"
@@ -20,7 +19,6 @@
 
 #include "ProjectNG/ProjectNG.h"
 #include "UI/NGUnitInfoWidget.h"
-#include "UI/HUD/NGHUD.h"
 #include "UI/WidgetController/UnitDetailsWidgetController.h"
 
 ANGPlayerController::ANGPlayerController() : DragThreshold(10.f), DragHeightOffset(20.f), DragInterpSpeed(20.f)
@@ -320,10 +318,10 @@ void ANGPlayerController::SetSelectedUnit(ANGPawnBase* InSelectedUnit)
 		
 		UpdateUnitWidget(SelectedUnit);
 		
-		if (UUnitDetailsWidgetController* UnitDetailsWidgetController = UNGBlueprintLibrary::GetUnitDetailsWidgetController(this))
-		{
-			UnitDetailsWidgetController->SetTargetUnit(SelectedUnit.Get());
-		}
+		// if (UUnitDetailsWidgetController* UnitDetailsWidgetController = UNGBlueprintLibrary::GetUnitDetailsWidgetController(this))
+		// {
+		// 	UnitDetailsWidgetController->SetTargetUnit(SelectedUnit.Get());
+		// }
 	}
 }
 

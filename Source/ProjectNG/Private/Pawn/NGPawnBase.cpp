@@ -12,7 +12,6 @@
 #include "Components/NGPocketComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Game/NGUnitDataManager.h"
-#include "GameModes/NGInGameGameMode.h"
 #include "Core/NGDeveloperSettings.h"
 #include "GameModes/NGInGameMode.h"
 #include "Net/UnrealNetwork.h"
@@ -66,25 +65,6 @@ ANGPawnBase::ANGPawnBase() : SpeedScale(100.f), RotationInterpSpeed(10.f)
 	HPBarComponent->SetDrawSize(FVector2D(100.f, 20.f));
 }
 
-void ANGPawnBase::BeginPlay()
-{
-	Super::BeginPlay();
-	
-	ensureMsgf(IdentificationTag.IsValid(), TEXT("UnitIdTag is not valid for %s"), *GetName());
-	
-	LocationOffset = GetHalfCapsule();
-	
-	if (AbilitySystemComponent)
-	{
-		InitializeAttributes();
-		
-		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
-			UNGAttributeSet::GetHealthAttribute()).AddUObject(this, &ANGPawnBase::OnHealthChanged);
-	}
-	
-	UpdateHPBar();
-}
-
 void ANGPawnBase::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
@@ -99,11 +79,62 @@ void ANGPawnBase::PossessedBy(AController* NewController)
 	InitAbilityActorInfo();
 }
 
+void ANGPawnBase::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	ensureMsgf(IdentificationTag.IsValid(), TEXT("UnitIdTag is not valid for %s"), *GetName());
+	
+	if (AbilitySystemComponent)
+	{
+		InitializeAttributes();
+		
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+			AttributeSet->GetHealthAttribute()).AddUObject(this, &ANGPawnBase::OnHealthChanged);
+		
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+			AttributeSet->GetAttackRangeAttribute()).AddUObject(this, &ANGPawnBase::OnAttackRangeChanged);
+	}
+	
+	UpdateHPBar();
+}
+
+void ANGPawnBase::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	// VisualizePath();
+	
+	if (HasAuthority())
+	{
+		CheckCombatState();
+	}
+	
+	if (!HasAuthority())
+	{
+		if (PawnState == EPawnState::Following)
+		{
+			VisualizeFollowing(DeltaTime);
+		}
+		else if (PawnState == EPawnState::Combat)
+		{
+			LookAtInterp(CurrentTarget, DeltaTime);
+		}
+	}
+}
+
 void ANGPawnBase::Activate()
 {
-	SetActorHiddenInGame(false);
-	SetActorEnableCollision(true);
-	SetActorTickEnabled(true);
+	if (HasAuthority())
+	{
+		Multicast_Activate();
+	}
+	else
+	{
+		SetActorHiddenInGame(false);
+		SetActorEnableCollision(true);
+		SetActorTickEnabled(true);
+	}
 	
 	UNGUnitDataManager* UnitDataManager = GetWorld()->GetGameInstance()->GetSubsystem<UNGUnitDataManager>();
 	if (!UnitDataManager) return;
@@ -121,14 +152,30 @@ void ANGPawnBase::Activate()
 
 void ANGPawnBase::Deactivate()
 {
+	if (HasAuthority())
+	{
+		Multicast_Deactivate();
+	}
+	else
+	{
+		SetActorHiddenInGame(true);
+		SetActorEnableCollision(false);
+		SetActorTickEnabled(false);
+	}
+}
+
+void ANGPawnBase::Multicast_Activate_Implementation()
+{
+	SetActorHiddenInGame(false);
+	SetActorEnableCollision(true);
+	SetActorTickEnabled(true);
+}
+
+void ANGPawnBase::Multicast_Deactivate_Implementation()
+{
 	SetActorHiddenInGame(true);
 	SetActorEnableCollision(false);
 	SetActorTickEnabled(false);
-}
-
-void ANGPawnBase::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
 }
 
 
@@ -196,6 +243,7 @@ void ANGPawnBase::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& Ou
 	DOREPLIFETIME(ANGPawnBase, CurrentGridAddress);
 	DOREPLIFETIME(ANGPawnBase, NextGridPoint);
 	DOREPLIFETIME(ANGPawnBase, PawnState);
+	DOREPLIFETIME(ANGPawnBase, IdentificationTag);
 }
 
 void ANGPawnBase::HandleGameplayCue(UObject* Self, FGameplayTag GameplayCueTag, EGameplayCueEvent::Type EventType,
@@ -208,62 +256,6 @@ void ANGPawnBase::HandleGameplayCue(UObject* Self, FGameplayTag GameplayCueTag, 
 		if (EventType == EGameplayCueEvent::Executed)
 		{
 			PlayAnimMontage(DamagedMontage);
-		}
-	}
-}
-
-void ANGPawnBase::OnRep_PlayerState()
-{
-	Super::OnRep_PlayerState();
-	
-	InitAbilityActorInfo();
-}
-
-void ANGPawnBase::PossessedBy(AController* NewController)
-{
-	Super::PossessedBy(NewController);
-	
-	InitAbilityActorInfo();
-}
-
-void ANGPawnBase::BeginPlay()
-{
-	Super::BeginPlay();
-	
-	if (AbilitySystemComponent)
-	{
-		InitializeAttributes();
-		
-		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
-			AttributeSet->GetHealthAttribute()).AddUObject(this, &ANGPawnBase::OnHealthChanged);
-		
-		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
-			AttributeSet->GetAttackRangeAttribute()).AddUObject(this, &ANGPawnBase::OnAttackRangeChanged);
-	}
-	
-	UpdateHPBar();
-}
-
-void ANGPawnBase::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-	// VisualizePath();
-	
-	if (HasAuthority())
-	{
-		CheckCombatState();
-	}
-	
-	if (!HasAuthority())
-	{
-		if (PawnState == EPawnState::Following)
-		{
-			VisualizeFollowing(DeltaTime);
-		}
-		else if (PawnState == EPawnState::Combat)
-		{
-			LookAtInterp(CurrentTarget, DeltaTime);
 		}
 	}
 }
@@ -810,6 +802,14 @@ void ANGPawnBase::Server_TryMoveGrid_Implementation(const FVector& TargetLocatio
 {
 	if (FGridMapBase* GridMap = UGridMapHelper::GetGridMap(GridAddress))
 	{
+		if (ANGPlayerState* PS = GridAddress.GridOwnerPS)
+		{
+			if (UNGPocketComponent* Pocket = PS->GetPlayerPocket())
+			{
+				Pocket->TryMergeUnit(GetIdentificationTag());
+			}
+		}
+		
 		FIntVector2 NewIndex = UGridMapHelper::GetCellIndex(GridAddress.GridType, TargetLocation, GridAddress.GridOwnerPS);
 		
 		if (!CanPlaceUnit(*GridMap, NewIndex))

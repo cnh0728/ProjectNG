@@ -42,7 +42,7 @@ UUnitDetailsWidgetController* UNGBlueprintLibrary::GetUnitDetailsWidgetControlle
 	ANGHUD* NGHUD = nullptr;
 	if (MakeWidgetControllerParams(WorldContextObject, WParams, NGHUD))
 	{
-		return NGHUD->GetUnitDetailsWidgetController(WParams);
+		// return NGHUD->GetUnitDetailsWidgetController(WParams);
 	}
 	return nullptr;
 }

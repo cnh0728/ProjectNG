@@ -54,6 +54,12 @@ public:
 	
 	virtual void Deactivate() override;
 	//~End IPoolable
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_Activate();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_Deactivate();
 	
 	virtual void Die();
 	
@@ -120,7 +126,7 @@ protected:
 	void SetNextGridPoint(FIntVector2 NewNextGridPoint);
 
 protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pawn|GameplayTag")
+	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadOnly, Category = "Pawn|GameplayTag")
 	FGameplayTag IdentificationTag;
 	
 	UPROPERTY(VisibleAnywhere, Category = "Collision")
@@ -197,6 +203,8 @@ public:
 	bool IsSameTeam(uint32 OtherOwnerIndex) const { return OwnerIndex == OtherOwnerIndex; }
 	
 	FGameplayTag GetIdentificationTag() const { return IdentificationTag; };
+	
+	void SetIdentificationTag(const FGameplayTag InIdentificationTag) { IdentificationTag = InIdentificationTag; }
 	
 private:
 	void UpdateHPBar();
