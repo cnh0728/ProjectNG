@@ -119,17 +119,20 @@ public:
 	UNGPocketComponent* GetPlayerPocket() const;
 	void EnterPhase(EGamePhase Phase);
 
-	/*************************************/
+/*************************************/
 /*				전투					 */
 /*************************************/
 public:
 	UFUNCTION(Server, Reliable)
 	void Server_EnterPhase(EGamePhase Phase);
-	
+
+	UFUNCTION(Server, Reliable)
+	void Server_RequestFlee();
 	
 /*************************************/
 /*				UI					 */
 /*************************************/
+
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UNGUnitInfoWidget> UnitInfoWidgetClass;

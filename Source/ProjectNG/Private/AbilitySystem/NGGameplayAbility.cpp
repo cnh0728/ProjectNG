@@ -38,18 +38,21 @@ void UNGGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
-	
+
 	UAnimMontage* MontageToPlay = Unit->GetAttackMontage();
 	
 	float CurrentAS = GetAbilitySystemComponentFromActorInfo()->GetNumericAttribute(UNGAttributeSet::GetAttackSpeedAttribute());
 	
 	if (MontageToPlay)
 	{
+		float AnimLength = MontageToPlay->GetPlayLength();
+		float FinalPlayRate = AnimLength / CurrentAS;
+		
 		UAbilityTask_PlayMontageAndWait* AbilityTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
-			this, TEXT("Anim"), MontageToPlay, CurrentAS);
-		AbilityTask->OnCompleted.AddDynamic(this, &UNGGameplayAbility::K2_EndAbility);
-		AbilityTask->OnInterrupted.AddDynamic(this, &UNGGameplayAbility::K2_EndAbility);
-		AbilityTask->OnCancelled.AddDynamic(this, &UNGGameplayAbility::K2_EndAbility);
+			this, TEXT("Anim"), MontageToPlay, FinalPlayRate);
+		AbilityTask->OnCompleted.AddDynamic(this, &UNGGameplayAbility::OnMontageFinished);
+		AbilityTask->OnInterrupted.AddDynamic(this, &UNGGameplayAbility::OnMontageFinished);
+		AbilityTask->OnCancelled.AddDynamic(this, &UNGGameplayAbility::OnMontageFinished);
 		AbilityTask->ReadyForActivation();
 	}else
 	{
@@ -62,4 +65,11 @@ void UNGGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 ANGPawnBase* UNGGameplayAbility::GetUnitPawnFromActorInfo() const
 {
 	return Cast<ANGPawnBase>(GetAvatarActorFromActorInfo());
+}
+
+void UNGGameplayAbility::OnMontageFinished()
+{
+	UE_LOG(LogTemp, Log, TEXT("애니메이션이 완전히 끝나서 공격 락(태그)을 해제합니다."));
+    
+	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }

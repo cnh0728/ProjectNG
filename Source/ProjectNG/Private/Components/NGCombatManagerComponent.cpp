@@ -88,6 +88,16 @@ void UNGCombatManagerComponent::RequestSpawnSquadByPlayer(ANGPlayerController* R
 	}
 }
 
+void UNGCombatManagerComponent::ProcessPlayerFlee(ANGPlayerController* PlayerController)
+{
+	if (ANGPlayerState* PS = PlayerController->GetPlayerState<ANGPlayerState>())
+	{
+		// UE_LOG(LogTemp, Log, TEXT("ProcessPlayerFlee"));
+		//TODO: 돈 구현하고 돈 넘겨주는거 만들기
+		NotifyEndCombat(PS);
+	}
+}
+
 void UNGCombatManagerComponent::StartCombat()
 {
 	if (!GetOwner()->HasAuthority())	return;
@@ -155,6 +165,8 @@ void UNGCombatManagerComponent::NotifyEndCombat(const ANGPlayerState* LoseEndPla
 					uint8 WinCombinedResult = static_cast<uint8>(CombatResultDictionary[Winner]) | static_cast<uint8>(ECombatResult::Win);
 					CombatResultDictionary[Winner] = static_cast<ECombatResult>(WinCombinedResult);
 				}
+				
+				Winner->FinishCombat();
 			}
 		}
 		
@@ -171,6 +183,8 @@ void UNGCombatManagerComponent::NotifyEndCombat(const ANGPlayerState* LoseEndPla
 					uint8 LoseCombinedResult = static_cast<uint8>(CombatResultDictionary[Loser]) | static_cast<uint8>(ECombatResult::Lose);
 					CombatResultDictionary[Loser] = static_cast<ECombatResult>(LoseCombinedResult);
 				}
+				
+				Loser->FinishCombat();
 			}
 		}
 	}

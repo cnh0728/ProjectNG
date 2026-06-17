@@ -26,9 +26,6 @@ void ANGEnemyPawn::BeginPlay()
 	Super::BeginPlay();
 	
 	InitAbilityActorInfo();
-	
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UNGAttributeSet::GetHealthAttribute())
-	.AddUObject(this, &ANGEnemyPawn::OnHealthChanged);
 }
 
 void ANGEnemyPawn::Die()

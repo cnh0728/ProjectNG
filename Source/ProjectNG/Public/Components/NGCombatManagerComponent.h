@@ -52,6 +52,8 @@ public:
 
 	void RequestSpawnSquadByPlayer(ANGPlayerController* RequestingPC, const FEnemySquadData& SquadData);
 	
+	void ProcessPlayerFlee(ANGPlayerController* PlayerController);
+	
 protected:
 	//매개변수 의도된 복사
 	void SetupCombat(const FCombatSettingData& SettingData);

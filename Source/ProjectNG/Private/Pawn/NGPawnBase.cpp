@@ -135,7 +135,9 @@ void ANGPawnBase::HandleGameplayCue(UObject* Self, FGameplayTag GameplayCueTag, 
 {
 	IGameplayCueInterface::HandleGameplayCue(Self, GameplayCueTag, EventType, Parameters);
 	
-	if (GameplayCueTag.MatchesTag(FGameplayTag::RequestGameplayTag(FName("GameplayCue.Character.Hit"))))
+	const static FGameplayTag HitTag = FGameplayTag::RequestGameplayTag(FName("GameplayCue.Character.Hit"));
+	
+	if (GameplayCueTag.MatchesTag(HitTag))
 	{
 		if (EventType == EGameplayCueEvent::Executed)
 		{
@@ -271,7 +273,7 @@ void ANGPawnBase::ConsiderTransitionState()
 
 void ANGPawnBase::OnReachedNextGrid()
 {
-	// UE_LOG(LogTemp, Log, TEXT("OnReach index: %s"), *NextGridPoint.ToString());
+	UE_LOG(LogTemp, Log, TEXT("OnReach index: %s"), *NextGridPoint.ToString());
 	
 	//도착시 우선 그리드 업데이트 및 현재 길찾기 상황변동 파악
 	FGridMapBase* GridMap = UGridMapHelper::GetGridMap(CurrentGridAddress);
@@ -282,18 +284,17 @@ void ANGPawnBase::OnReachedNextGrid()
 	TranslatePawnOnGrid(NextGridAddress);
 	
 	//적에게 도착시 전투상태로 이전
+	if (!CurrentTarget || CurrentTarget->IsDead())
+	{
+		FindNewTarget();
+		return;
+	}
+	
 	int32 AttackRange = AttributeSet ? AttributeSet->GetAttackRange() : 1;
 	if (UGridMapHelper::GetDistance(CurrentGridAddress.GridIndex, CurrentTarget->CurrentGridAddress.GridIndex) <= AttackRange 
 		|| ++CurrentPathIndex >= TargetPath.Num())
 	{
 		TransitionToState(EPawnState::Combat);
-		return;
-	}
-	
-	//적이 죽었으면 새로운 적 찾기
-	if (CurrentTarget->IsDead())
-	{
-		FindNewTarget();
 		return;
 	}
 	
@@ -394,6 +395,9 @@ void ANGPawnBase::OnEnterNewState(EPawnState EnteringState)
 	}else if (EnteringState == EPawnState::HardCrowdControl)
 	{
 		OnApplyHardCrowdControl();
+	}else if (EnteringState == EPawnState::None)
+	{
+		RestoreStates();
 	}
 }
 
@@ -585,16 +589,10 @@ void ANGPawnBase::RestoreStates()
 	
 	UE_LOG(LogTemp, Log, TEXT("RestoreState"));
 	
-	
 	GetWorld()->GetTimerManager().ClearTimer(AttackCheckTimerHandle);
 	GetWorld()->GetTimerManager().ClearTimer(PredictGridReachingTimerHandle);
 	
-	TurnPawnState(EPawnState::None);
-}
-
-void ANGPawnBase::TurnPawnState(EPawnState InPawnState)
-{
-	PawnState = InPawnState;
+	TransitionToState(EPawnState::None);
 }
 
 void ANGPawnBase::UpdateHPBar()
@@ -827,6 +825,8 @@ void ANGPawnBase::ExecuteAttack()
 	if (CurrentTarget.Get() && GetAbilitySystemComponent())
 	{
 		LookAt(CurrentTarget.Get());
+		
+		UE_LOG(LogTemp, Log, TEXT("ExecuteAttack:: MyName: %s, Targetname: %s"), *GetName(), *CurrentTarget->GetName());
 		
 		FGameplayEventData Payload;
 		Payload.Instigator = this;

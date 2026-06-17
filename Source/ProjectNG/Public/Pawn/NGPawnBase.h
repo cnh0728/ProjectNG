@@ -53,7 +53,6 @@ public:
 
 	void HighlightRangeIndicator(FGridAddress PivotAddress) const;
 	
-	
 protected:
 	/** 파생 클래스에서 GAS 초기화를 위한 로직을 작성 */
 	virtual void InitAbilityActorInfo()	PURE_VIRTUAL(ANGPawnBase::InitAbilityActorInfo);
@@ -105,7 +104,6 @@ protected:
 	void CollectInRangeUnits(TArray<ANGPawnBase*>& OutEnemies);
 
 	void ForceTransitionToState(EPawnState NewState);
-	void TransitionToState(EPawnState NewState);
 	void OnApplyHardCrowdControl();
 	void OnRemoveHardCrowdControl();
 	void OnExitCurrentState(EPawnState RestState);
@@ -171,6 +169,8 @@ protected:
 	virtual void InitializeAttributes();
 	
 public:
+	void TransitionToState(EPawnState NewState);
+	
 	virtual void Initialize(ANGPlayerState* PS);
 	
 	float GetMoveSpeed() const;
@@ -184,8 +184,6 @@ public:
 	ANGPawnBase* GetCurrentTarget();
 	void RestoreStates();
 
-	void TurnPawnState(EPawnState InPawnState);
-	
 	bool IsSameTeam(uint32 OtherOwnerIndex) const { return OwnerIndex == OtherOwnerIndex; }
 	
 private:

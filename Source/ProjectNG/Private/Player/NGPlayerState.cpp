@@ -12,7 +12,7 @@
 #include "Pawn/NGUnitPawn.h"
 #include "Player/NGPlayerController.h"
 
-ANGPlayerState::ANGPlayerState() : PlayerLevel(1), CurrentState(EGameState::Maintaining), CurrentZoneTag(FGameplayTag::RequestGameplayTag(FName("Zone.Area.A")))
+ANGPlayerState::ANGPlayerState() : PlayerLevel(1), CurrentGameState(EGameState::Maintaining), CurrentZoneTag(FGameplayTag::RequestGameplayTag(FName("Zone.Area.A")))
 {
 	PrimaryActorTick.bCanEverTick = false;
 	
@@ -36,7 +36,7 @@ void ANGPlayerState::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>&
 	DOREPLIFETIME(ANGPlayerState, PlayerPocket);
 	DOREPLIFETIME(ANGPlayerState, HomeArena);
 	DOREPLIFETIME(ANGPlayerState, PlayerLevel);
-	DOREPLIFETIME(ANGPlayerState, CurrentState);
+	DOREPLIFETIME(ANGPlayerState, CurrentGameState);
 }
 
 void ANGPlayerState::SpawnGridMapManager()
@@ -167,7 +167,7 @@ void ANGPlayerState::RestoreInitialGrid()
 
 			FGridAddress GridAddress(OriginalIndex, EGridType::Combat, this, GridData.PlacedPawn->GetGridAddress().DirtyFlag);
 			
-			GridData.PlacedPawn->RestoreStates();
+			GridData.PlacedPawn->TransitionToState(EPawnState::None);
 			GridData.PlacedPawn->TranslatePawnOnGrid(GridAddress);
 		}
 	}
@@ -188,7 +188,21 @@ void ANGPlayerState::StartCombat()
 		ANGPawnBase* PlacedPawn = GridData.PlacedPawn;
 		if (IsValid(PlacedPawn))
 		{
-			PlacedPawn->TurnPawnState(EPawnState::Combat);
+			PlacedPawn->TransitionToState(EPawnState::Combat);
+		}
+	}
+}
+
+void ANGPlayerState::FinishCombat()
+{
+	FHexGridMap& GridMap = GetCombatGridMap();
+			
+	for (FGridData GridData : GridMap.GridInfo)
+	{
+		ANGPawnBase* PlacedPawn = GridData.PlacedPawn;
+		if (IsValid(PlacedPawn))
+		{
+			PlacedPawn->TransitionToState(EPawnState::None);
 		}
 	}
 }

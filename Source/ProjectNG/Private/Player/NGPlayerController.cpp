@@ -446,16 +446,26 @@ void ANGPlayerController::EnterPhase(EGamePhase Phase)
 	}
 }
 
+void ANGPlayerController::Server_RequestFlee_Implementation()
+{
+	//도망갔을때 행동
+	// CombatManager에서 나를 진사람, 상대방을 이긴사람으로 처리하고 게임 끝내기.
+	// 내 돈의 10% 정도? 를 상대에게 헌납 (패널티 수행)
+	ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>();
+	
+	if (UNGCombatManagerComponent* CMC = GM->GetCombatManagerComponent())
+	{
+		CMC->ProcessPlayerFlee(this);
+	}
+}
+
 void ANGPlayerController::Server_RequestStopCombat_Implementation()
 {
-	if (HasAuthority())
+	if (ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>())
 	{
-		if (ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>())
+		if (UNGCombatManagerComponent* CMC = GM->GetCombatManagerComponent())
 		{
-			if (UNGCombatManagerComponent* CMC = GM->GetCombatManagerComponent())
-			{
-				CMC->FinishCombat();
-			}
+			CMC->FinishCombat();
 		}
 	}
 }

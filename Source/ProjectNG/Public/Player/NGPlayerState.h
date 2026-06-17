@@ -63,8 +63,8 @@ protected:
 public:
 	const FGameplayTag& GetCurrentZoneTag() const { return CurrentZoneTag; }
 
-	void SetGameState(EGameState NewState) { CurrentState = NewState; }
-	EGameState GetGameState() const { return CurrentState; }
+	void SetGameState(EGameState NewState) { CurrentGameState = NewState; }
+	EGameState GetGameState() const { return CurrentGameState; }
 	void OnCombatEnd(ECombatResult CombatResult);
 	
 protected:
@@ -72,7 +72,7 @@ protected:
 	void OnCombatLose();
 	
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite)
-	EGameState CurrentState;
+	EGameState CurrentGameState;
 	
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite)
 	FGameplayTag CurrentZoneTag;
@@ -129,7 +129,8 @@ public:
 	void RestoreInitialGrid();
 	
 	void StartCombat();
-	
+	void FinishCombat();
+
 protected:
 	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadWrite, Category = "Grid")
 	FHexGridMap CombatGridMap;
