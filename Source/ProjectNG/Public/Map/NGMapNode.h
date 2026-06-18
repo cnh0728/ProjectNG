@@ -4,8 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "NGMapTypes.h"
-#include "Character/SelectableInterface.h"
 #include "GameFramework/Actor.h"
+#include "Pawn/SelectableInterface.h"
 #include "NGMapNode.generated.h"
 
 UCLASS()

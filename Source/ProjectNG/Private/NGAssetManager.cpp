@@ -4,7 +4,7 @@
 #include "NGAssetManager.h"
 
 #include "AbilitySystemGlobals.h"
-#include "NGGameplayTags.h"
+#include "Core/NGGameplayTags.h"
 
 UNGAssetManager& UNGAssetManager::Get()
 {
@@ -16,7 +16,7 @@ void UNGAssetManager::StartInitialLoading()
 {
 	Super::StartInitialLoading();
 	
-	FNGGameplayTags::InitializeNativeGameplayTags();
+	FNGGameplayTags::InitializeNativeTags();
 	
 	UAbilitySystemGlobals::Get().InitGlobalData();
 }

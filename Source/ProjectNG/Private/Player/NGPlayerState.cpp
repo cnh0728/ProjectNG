@@ -112,7 +112,7 @@ void ANGPlayerState::OnEnterGameState(const EGameState& NewState)
 					TArray<ANGPawnBase*> OwnedPawns = PocketComp->GetOwnedUnitPocket();
 					for (ANGPawnBase* Pawn : OwnedPawns)
 					{
-						GM->ReturnUnitToPool(Pawn->GetUnitName());
+						// GM->ReturnUnitToPool(Pawn->GetUnitName());
 					}
 					
 					OwnedPawns.Empty();

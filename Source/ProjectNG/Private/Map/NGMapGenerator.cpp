@@ -3,7 +3,7 @@
 
 #include "Map/NGMapGenerator.h"
 
-#include "NGGameplayTags.h"
+#include "Core/NGGameplayTags.h"
 #include "Components/SplineMeshComponent.h"
 #include "Map/MapNodeDataAsset.h"
 #include "Map/NGMapNode.h"
