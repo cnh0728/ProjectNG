@@ -8,7 +8,6 @@
 #include "Components/NGPocketComponent.h"
 #include "Core/NGPoolSubSystem.h"
 #include "Core/NGUnitData.h"
-#include "Game/NGGameState.h"
 #include "GameModes/NGInGameMode.h"
 #include "Pawn/NGUnitPawn.h"
 #include "Player/NGPlayerController.h"
@@ -82,6 +81,34 @@ bool UNGSpawnHelper::SpawnUnitPawnAtGrid(ANGPlayerController* OwnerController, F
 	NewPawn->SetPawnOnGrid(SpawnGridAddress);
 	
 	Pocket->ControlPocketSpawning(NewPawn);
+	
+	return true;
+}
+
+bool UNGSpawnHelper::SpawnEnemyPawn(ANGPlayerController* OwnerController, FEnemySpawnInfo EnemySpawnInfo)
+{
+	ANGPlayerState* PS = Cast<ANGPlayerController>(OwnerController)->GetPlayerState<ANGPlayerState>();
+	
+	UWorld* World = OwnerController->GetWorld();
+	if (!World)	return false;
+	
+	FGridAddress SpawnGridAddress(EnemySpawnInfo.SpawnGridPoint, EGridType::Combat, PS, 0);
+	
+	FVector SpawnLoc = UGridMapHelper::GetWorldLocation(SpawnGridAddress);
+	FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLoc);
+
+	ANGEnemyPawn* NewPawn = SpawnPawn<ANGEnemyPawn>(World, EnemySpawnInfo.EnemyClass, SpawnTransform, OwnerController);
+	if (!NewPawn)	return false;
+	
+	NewPawn->Initialize(PS);
+	
+	//여기서 찾은 그리드에 값 기입
+	FGridData GridData;
+	GridData.PlacedPawn = NewPawn;
+	
+	NewPawn->SetPawnOnGrid(SpawnGridAddress);
+	
+	// PS->AddCPUEnemyCount();
 	
 	return true;
 }

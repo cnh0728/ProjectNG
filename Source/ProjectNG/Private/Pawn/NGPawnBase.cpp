@@ -162,6 +162,61 @@ void ANGPawnBase::PossessedBy(AController* NewController)
 	InitAbilityActorInfo();
 }
 
+void ANGPawnBase::Activate()
+{
+	if (HasAuthority())
+	{
+		Multicast_Activate();
+	}
+	else
+	{
+		SetActorHiddenInGame(false);
+		SetActorEnableCollision(true);
+		SetActorTickEnabled(true);
+	}
+	
+	UNGUnitDataManager* UnitDataManager = GetWorld()->GetGameInstance()->GetSubsystem<UNGUnitDataManager>();
+	if (!UnitDataManager) return;
+	
+	const FUnitAbilityData* UnitData = UnitDataManager->GetUnitAbilityData(IdentificationTag);
+	if (UnitData)
+	{
+		InitAbilityData(*UnitData);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("[%s] 데이터 테이블에서 태그(%s)를 찾을 수 없습니다!"), *GetName(), *IdentificationTag.ToString());
+	}
+}
+
+void ANGPawnBase::Deactivate()
+{
+	if (HasAuthority())
+	{
+		Multicast_Deactivate();
+	}
+	else
+	{
+		SetActorHiddenInGame(true);
+		SetActorEnableCollision(false);
+		SetActorTickEnabled(false);
+	}
+}
+
+void ANGPawnBase::Multicast_Activate_Implementation()
+{
+	SetActorHiddenInGame(false);
+	SetActorEnableCollision(true);
+	SetActorTickEnabled(true);
+}
+
+void ANGPawnBase::Multicast_Deactivate_Implementation()
+{
+	SetActorHiddenInGame(true);
+	SetActorEnableCollision(false);
+	SetActorTickEnabled(false);
+}
+
 void ANGPawnBase::BeginPlay()
 {
 	Super::BeginPlay();
@@ -537,6 +592,8 @@ UAnimMontage* ANGPawnBase::GetAttackMontage() const
 {
 	return AttackMontage;
 }
+
+
 
 void ANGPawnBase::Die()
 {
