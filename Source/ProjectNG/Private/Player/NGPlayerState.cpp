@@ -8,6 +8,7 @@
 #include "Components/NGPocketComponent.h"
 #include "Core/NGDeveloperSettings.h"
 #include "Game/NGGameState.h"
+#include "GameModes/NGInGameMode.h"
 #include "Net/UnrealNetwork.h"
 #include "Pawn/NGUnitPawn.h"
 #include "Player/NGPlayerController.h"
@@ -96,6 +97,46 @@ void ANGPlayerState::CaptureSnapShot()
 	CombatGridMapSnapShot = CombatGridMap;
 }
 
+void ANGPlayerState::OnEnterGameState(const EGameState& NewState)
+{
+	switch (NewState)
+	{
+	case EGameState::GameOver:
+		{
+			UE_LOG(LogTemp, Log, TEXT("GameOver"));
+			
+			if (UNGPocketComponent* PocketComp = GetPlayerPocket())
+			{
+				if (ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>())
+				{
+					TArray<ANGPawnBase*> OwnedPawns = PocketComp->GetOwnedUnitPocket();
+					for (ANGPawnBase* Pawn : OwnedPawns)
+					{
+						GM->ReturnUnitToPool(Pawn->GetUnitName());
+					}
+					
+					OwnedPawns.Empty();
+				}
+			}
+			
+			break;
+		}
+	}
+}
+
+void ANGPlayerState::OnExitGameState(const EGameState& PreState)
+{
+	
+}
+
+void ANGPlayerState::SetGameState(EGameState NewState)
+{
+	OnExitGameState(CurrentGameState);
+	CurrentGameState = NewState;
+	OnEnterGameState(NewState);
+	
+}
+
 void ANGPlayerState::OnCombatEnd(ECombatResult CombatResult)
 {
 	switch (CombatResult)
@@ -124,6 +165,17 @@ void ANGPlayerState::OnCombatWin()
 
 void ANGPlayerState::OnCombatLose()
 {
+	//포켓이 비어있으면 사망처리
+	if (UNGPocketComponent* PocketComp = GetPlayerPocket())
+	{
+		TArray<ANGPawnBase*> PlacedPawns;
+		PocketComp->GetPlacedUnits(PlacedPawns);
+		
+		if (PlacedPawns.IsEmpty())
+		{
+			SetGameState(EGameState::GameOver);
+		}
+	}
 }
 
 int32 ANGPlayerState::GetUserIndex()
@@ -181,6 +233,16 @@ void ANGPlayerState::RestoreInitialGrid()
 
 void ANGPlayerState::StartCombat()
 {
+	if (UNGPocketComponent* Pocket = GetPlayerPocket())
+	{
+		TArray<ANGPawnBase*> PlacedPawns;
+		Pocket->GetPlacedUnits(PlacedPawns);
+		if (PlacedPawns.IsEmpty())
+		{
+			OnCombatLose();
+		}
+	}
+	
 	FHexGridMap& GridMap = GetCombatGridMap();
 			
 	for (FGridData GridData : GridMap.GridInfo)

@@ -69,7 +69,7 @@ ANGPawnBase* UNGGameplayAbility::GetUnitPawnFromActorInfo() const
 
 void UNGGameplayAbility::OnMontageFinished()
 {
-	UE_LOG(LogTemp, Log, TEXT("애니메이션이 완전히 끝나서 공격 락(태그)을 해제합니다."));
+	// UE_LOG(LogTemp, Log, TEXT("애니메이션이 완전히 끝나서 공격 락(태그)을 해제합니다."));
     
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }

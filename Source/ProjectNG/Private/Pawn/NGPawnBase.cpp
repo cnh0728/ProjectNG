@@ -332,7 +332,7 @@ void ANGPawnBase::ConsiderTransitionState()
 
 void ANGPawnBase::OnReachedNextGrid()
 {
-	UE_LOG(LogTemp, Log, TEXT("OnReach index: %s"), *NextGridPoint.ToString());
+	// UE_LOG(LogTemp, Log, TEXT("OnReach index: %s"), *NextGridPoint.ToString());
 	
 	//도착시 우선 그리드 업데이트 및 현재 길찾기 상황변동 파악
 	FGridMapBase* GridMap = UGridMapHelper::GetGridMap(CurrentGridAddress);
@@ -448,7 +448,7 @@ void ANGPawnBase::OnEnterNewState(EPawnState EnteringState)
 {
 	if (EnteringState == EPawnState::Combat)
 	{
-		UE_LOG(LogTemp, Log, TEXT("OnEnterCombatState"));
+		// UE_LOG(LogTemp, Log, TEXT("OnEnterCombatState"));
 		GetWorld()->GetTimerManager().ClearTimer(PredictGridReachingTimerHandle);
 		GetWorld()->GetTimerManager().SetTimer(AttackCheckTimerHandle, this, &ANGUnitPawn::CheckAttackCondition, 0.2f, true);
 	}else if (EnteringState == EPawnState::HardCrowdControl)
@@ -898,7 +898,7 @@ void ANGPawnBase::ExecuteAttack()
 	{
 		LookAt(CurrentTarget.Get());
 		
-		UE_LOG(LogTemp, Log, TEXT("ExecuteAttack:: MyName: %s, Targetname: %s"), *GetName(), *CurrentTarget->GetName());
+		// UE_LOG(LogTemp, Log, TEXT("ExecuteAttack:: MyName: %s, Targetname: %s"), *GetName(), *CurrentTarget->GetName());
 		
 		FGameplayEventData Payload;
 		Payload.Instigator = this;

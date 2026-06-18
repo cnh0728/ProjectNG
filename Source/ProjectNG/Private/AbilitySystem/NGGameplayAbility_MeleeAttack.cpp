@@ -24,7 +24,7 @@ void UNGGameplayAbility_MeleeAttack::ActivateAbility(const FGameplayAbilitySpecH
 
 void UNGGameplayAbility_MeleeAttack::OnAttackReceived(FGameplayEventData Payload)
 {
-	UE_LOG(LogTemp, Log, TEXT("OnAttackHitReceived"));
+	// UE_LOG(LogTemp, Log, TEXT("OnAttackHitReceived"));
 	
 	if (DamageEffectClass)
 	{

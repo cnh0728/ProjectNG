@@ -182,6 +182,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|AbilitySystemComponent")
 	TObjectPtr<UDataTable> DefaultAttributeTable;
 	
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
+	FName UnitName;
+	
 	virtual void InitializeAttributes();
 	
 public:
