@@ -103,7 +103,14 @@ void ANGInGameMode::BeginPlay()
 	InitializeUnitPool();
 }
 
-
+int32 ANGInGameMode::SellUnit(ANGUnitPawn* Unit)
+{
+	int32 UnitSellValue = 1;
+	
+	//DataTable참조해서 유닛의 가격이랑 성보고 돈 계산 후 반환
+	
+	return UnitSellValue;
+}
 
 int32 ANGInGameMode::GrabUnitFromPool(FName UnitRowName)
 {

@@ -11,6 +11,6 @@ void UNGGameplayAbility_Attack::ActivateAbility(const FGameplayAbilitySpecHandle
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 	
-	UE_LOG(LogTemp, Log, TEXT("ActivateAbility_Attack"));
+	// UE_LOG(LogTemp, Log, TEXT("ActivateAbility_Attack"));
 
 }

@@ -32,6 +32,10 @@ public:
 	virtual void BeginPlay() override;
 
 public:
+	
+	//유닛을 팔고(반환까지 진행) 유닛의 값을 리턴
+	int32 SellUnit(ANGUnitPawn* Unit);
+	
 	/** 유닛풀에서 유닛 카운트를 하나 감소시킵니다. 이후 감소된 카운트를 반환합니다.
  *  반환할 수 없다면 -1을 반환합니다.
  */

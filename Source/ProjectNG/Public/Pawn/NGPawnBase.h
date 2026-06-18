@@ -166,6 +166,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|AbilitySystemComponent")
 	TObjectPtr<UDataTable> DefaultAttributeTable;
 	
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
+	FName UnitName;
+	
 	virtual void InitializeAttributes();
 	
 public:
@@ -185,6 +188,9 @@ public:
 	void RestoreStates();
 
 	bool IsSameTeam(uint32 OtherOwnerIndex) const { return OwnerIndex == OtherOwnerIndex; }
+	
+	void SetUnitName(FName NewUnitName) { UnitName = NewUnitName; }
+	const FName& GetUnitName() { return UnitName;}
 	
 private:
 	void UpdateHPBar();

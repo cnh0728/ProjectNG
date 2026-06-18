@@ -51,6 +51,8 @@ public:
 	void SpawnGridMapManager();
 	
 	void CaptureSnapShot();
+	void OnEnterGameState(const EGameState& NewState);
+	void OnExitGameState(const EGameState& PreState);
 
 protected:
 	UPROPERTY()
@@ -63,7 +65,7 @@ protected:
 public:
 	const FGameplayTag& GetCurrentZoneTag() const { return CurrentZoneTag; }
 
-	void SetGameState(EGameState NewState) { CurrentGameState = NewState; }
+	void SetGameState(EGameState NewState);
 	EGameState GetGameState() const { return CurrentGameState; }
 	void OnCombatEnd(ECombatResult CombatResult);
 	

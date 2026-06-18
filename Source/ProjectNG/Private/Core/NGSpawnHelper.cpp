@@ -47,6 +47,7 @@ bool UNGSpawnHelper::SpawnUnitPawn(ANGPlayerController* OwnerController, FName U
 	}
 	
 	NewPawn->Initialize(PS);
+	NewPawn->SetUnitName(UnitName);
 	
 	//여기서 찾은 그리드에 값 기입
 	FGridData GridData;

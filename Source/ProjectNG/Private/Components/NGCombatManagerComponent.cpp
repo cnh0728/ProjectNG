@@ -203,11 +203,9 @@ void UNGCombatManagerComponent::FinishCombat()
 {
 	if (!GetOwner()->HasAuthority())	return;
 	
-	UE_LOG(LogTemp, Log, TEXT("UNGCombatManagerComponent::FinishCombat"));
-	
 	FCombatResultData CombatResult = {};
 	
-	EGameState EndGameState = EGameState::Exploration;
+	constexpr static EGameState EndGameState = EGameState::Exploration;
 	
 	for (FCombatSettingData& Data : CombatDatas)
 	{
@@ -215,8 +213,8 @@ void UNGCombatManagerComponent::FinishCombat()
 		{
 			if (ANGPlayerState* HomePlayer = Data.Players[0].Get())
 			{
-				HomePlayer->OnCombatEnd(CombatResultDictionary[HomePlayer]);
 				HomePlayer->SetGameState(EndGameState);
+				HomePlayer->OnCombatEnd(CombatResultDictionary[HomePlayer]);
 				
 				ResetGrid(HomePlayer);
 			}
@@ -226,8 +224,8 @@ void UNGCombatManagerComponent::FinishCombat()
 		{
 			if (ANGPlayerState* AwayPlayer = Data.Players[1].Get())
 			{
-				AwayPlayer->OnCombatEnd(CombatResultDictionary[AwayPlayer]);
 				AwayPlayer->SetGameState(EndGameState);
+				AwayPlayer->OnCombatEnd(CombatResultDictionary[AwayPlayer]);
 
 				ResetGrid(AwayPlayer);
 				ReturnSpectatorHome(AwayPlayer);
