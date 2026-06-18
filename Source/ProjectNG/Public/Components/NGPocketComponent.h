@@ -1,11 +1,15 @@
-﻿// Copyright (c) 2025 TeamNG. All Rights Reserved.
+// Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "Components/ActorComponent.h"
 #include "NGPocketComponent.generated.h"
 
+
+enum class EUnitTier : uint8;
+class ANGUnitPawn;
 class ANGPawnBase;
 
 UENUM(BlueprintType)
@@ -36,6 +40,11 @@ public:
 	int32 PlayerLevel = 1; // TODO. 어빌리티 시스템으로 처리해야함. 현재 디버깅용으로 임시 변수
 
 	void AddUnitToBuyingPocket(FName UnitName);
+	void TryMergeUnit(FGameplayTag IdentificationTag);
+
+	/** 유닛을 판매합니다. 상급 유닛일 경우 구성 1성 유닛을 재귀적으로 공용 풀에 반환합니다. */
+	UFUNCTION(BlueprintCallable, Category = "Game|Shop")
+	void RequestSellUnit(ANGPawnBase* UnitToSell);
 
 protected:
 	UFUNCTION(Server, Reliable)
@@ -46,6 +55,20 @@ protected:
 	
 	UFUNCTION()
 	void UpdateRollUnit();
+	
+	void CheckAndMergeUnit(FGameplayTag IdentificationTag);
+
+	UFUNCTION(Server, Reliable)
+	void Server_SellUnit(ANGPawnBase* UnitToSell);
+
+	/**
+	 * 유닛 태그를 재귀적으로 분해하여 1성 유닛의 FName 목록을 반환합니다.
+	 * 2성 → 1성 FName × 3, 3성 → 1성 FName × 9
+	 */
+	void DecomposeToBaseUnits(const FGameplayTag& UnitTag, TArray<FName>& OutBaseUnitNames) const;
+	
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multicast_PlayMergeEffect(FVector EffectLocation, EUnitTier UnitTier);
 
 	UPROPERTY(EditDefaultsOnly, Category = "Game|Shop")
 	int32 ShopSlotCount = 3;

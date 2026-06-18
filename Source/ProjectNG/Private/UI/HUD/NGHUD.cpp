@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "UI/NGUserWidget.h"
 #include "UI/WidgetController/NGRollShopWidgetController.h"
+#include "UI/WidgetController/UnitDetailsWidgetController.h"
 
 UNGRollShopWidgetController* ANGHUD::GetRollShopWidgetController(const FWidgetParams& WidgetControllerParams)
 {
@@ -19,7 +20,20 @@ UNGRollShopWidgetController* ANGHUD::GetRollShopWidgetController(const FWidgetPa
 	return RollShopWidgetController;
 }
 
-void ANGHUD::InitializeHUD(APlayerController* PC, APlayerState* PS, /*UAbilitySystemComponent* ASC,*/ UAttributeSet* AS)
+UUnitDetailsWidgetController* ANGHUD::GetUnitDetailsWidgetController(const FWidgetParams& WidgetControllerParams)
+{
+	if (UnitDetailsWidgetController == nullptr)
+	{
+		UnitDetailsWidgetController = NewObject<UUnitDetailsWidgetController>(this, UnitDetailsWidgetControllerClass);
+		UnitDetailsWidgetController->AssignWidgetControllerParams(WidgetControllerParams);
+		UnitDetailsWidgetController->BindCallbacksToDependencies();
+		UnitDetailsWidgetController->SetAttributeInfo(AttributeInfo);
+	}
+	
+	return UnitDetailsWidgetController;
+}
+
+void ANGHUD::InitializeHUD(APlayerController* PC, APlayerState* PS)
 {
 	checkf(MainWidgetClass, TEXT("[HUD] MainWidgetClass not initialized"));
 	checkf(RollShopWidgetControllerClass, TEXT("[HUD] RollShopWidgetController not initialized"));
@@ -27,12 +41,15 @@ void ANGHUD::InitializeHUD(APlayerController* PC, APlayerState* PS, /*UAbilitySy
 	UUserWidget* Widget = CreateWidget<UUserWidget>(GetWorld(), MainWidgetClass);
 	MainWidget = Cast<UNGUserWidget>(Widget);
 
-	const FWidgetParams WidgetParams(PC, PS, AS);
+	const FWidgetParams WidgetParams(PC, PS);
 	UNGRollShopWidgetController* MainWidgetC = GetRollShopWidgetController(WidgetParams); // TODO. 테스트용 롤링샵 UI 출력중, 나중에 메인 위젯으로 다시 변경 필요.
 
 	// 위젯 컨트롤러 연결
 	MainWidget->ConnectWidgetController(MainWidgetC);
 	MainWidgetC->BroadcastInitialValues();
 
+	// UnitDetail 위젯컨트롤러 생성
+	// UUnitDetailsWidgetController* UnitDetailsWidgetC = GetUnitDetailsWidgetController(WidgetParams);
+	
 	Widget->AddToViewport();
 }

@@ -59,6 +59,7 @@ ANGPawnBase* UNGPoolSubSystem::AcquirePawn(TSubclassOf<ANGPawnBase> PawnClass,
 	if (Pool.FreePawnList.Num() > 0)
 	{
 		Pawn = Pool.FreePawnList.Pop();
+		Pawn->SetActorTransform(SpawnTransform);
 	}
 	else
 	{
@@ -78,7 +79,6 @@ ANGPawnBase* UNGPoolSubSystem::AcquirePawn(TSubclassOf<ANGPawnBase> PawnClass,
 		Pawn = GetWorld()->SpawnActor<ANGPawnBase>(TargetClass, SpawnTransform, SpawnParams);
 		UE_LOG(LogTemp, Log, TEXT("Spawn Default Pawn Class"));
 	}
-	
 	return Pawn;
 }
 
@@ -95,7 +95,7 @@ void UNGPoolSubSystem::ReleaseSegment(ANGPawnBase* Pawn)
 {
 	if (!Pawn)	return;
 	
-	ReleaseDefaultSetting(Pawn);
+	Pawn->Deactivate();
 	
 	FNGPawnList& Pool = PawnPools.FindOrAdd(Pawn->GetClass());
 	Pool.FreePawnList.Push(Pawn);

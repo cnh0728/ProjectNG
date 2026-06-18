@@ -7,13 +7,19 @@
 #include "GameFramework/Pawn.h"
 #include "GameplayAbilitySpecHandle.h"
 #include "GameplayCueInterface.h"
+#include "Interface/Poolable.h"
 #include "Player/NGPlayerState.h"
 #include "NGPawnBase.generated.h"
 
+struct FUnitAbilityData;
 class UNGHPBarWidgetComponent;
 class UNGPathFindingComponent;
 class UCapsuleComponent;
 class UNGAttributeSet;
+class ANGCharacterBase;
+class ANGEnemyPawn;
+class USphereComponent;
+class UWidgetComponent;
 class UNGAbilitySystemComponent;
 
 UENUM(BlueprintType)
@@ -27,7 +33,7 @@ enum class EPawnState : uint8
 };
 
 UCLASS()
-class PROJECTNG_API ANGPawnBase : public APawn, public IAbilitySystemInterface, public IGameplayCueInterface
+class PROJECTNG_API ANGPawnBase : public APawn, public IAbilitySystemInterface, public IGameplayCueInterface, public IPoolable
 {
 	GENERATED_BODY()
 
@@ -35,9 +41,33 @@ public:
 	// Sets default values for this pawn's properties
 	ANGPawnBase();
 	
+	virtual void BeginPlay() override;
+	
+	virtual void Tick(float DeltaTime) override;
+	
+	virtual void OnRep_PlayerState() override;
+	
+	virtual void PossessedBy(AController* NewController) override;
+	
+	//~Begin IPoolable
+	virtual void Activate() override;
+	
+	virtual void Deactivate() override;
+	//~End IPoolable
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_Activate();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_Deactivate();
+	
+	virtual void Die();
+	
 	//~Begin IAbilitySystemInterface
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	//~End IAbilitySystemInterface
+
+	virtual void HandleGameplayCue(UObject* Self, FGameplayTag GameplayCueTag, EGameplayCueEvent::Type EventType, const FGameplayCueParameters& Parameters) override;
 
 	FORCEINLINE USkeletalMeshComponent* GetMesh() const { return UnitMesh; }
 	FORCEINLINE UCapsuleComponent* GetCapsuleComponent() const { return CapsuleComponent; }
@@ -57,28 +87,11 @@ protected:
 	/** 파생 클래스에서 GAS 초기화를 위한 로직을 작성 */
 	virtual void InitAbilityActorInfo()	PURE_VIRTUAL(ANGPawnBase::InitAbilityActorInfo);
 
-	// virtual void ServerSideInit();
-	// virtual void ClientSideInit();
-	
+	void LookAtInterp(ANGPawnBase* Target, float DeltaTime);
 protected:
 	//캐싱 용도
 	UPROPERTY(BlueprintReadOnly, Category = "GAS|AbilitySystemComponent")
 	TObjectPtr<UNGAbilitySystemComponent> AbilitySystemComponent;
-	
-	virtual void HandleGameplayCue(UObject* Self, FGameplayTag GameplayCueTag, EGameplayCueEvent::Type EventType, const FGameplayCueParameters& Parameters) override;
-	
-	virtual void OnRep_PlayerState() override;
-	virtual void PossessedBy(AController* NewController) override;
-	
-protected:
-
-	// virtual void ServerSideInit();
-	// virtual void ClientSideInit();
-	
-	virtual void BeginPlay() override;
-	
-	virtual void Tick(float DeltaTime) override;
-	void LookAtInterp(ANGPawnBase* Target, float DeltaTime);
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
 	TObjectPtr<UNGHPBarWidgetComponent> HPBarComponent; 
@@ -111,6 +124,9 @@ protected:
 	void SetNextGridPoint(FIntVector2 NewNextGridPoint);
 
 protected:
+	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadOnly, Category = "Pawn|GameplayTag")
+	FGameplayTag IdentificationTag;
+	
 	UPROPERTY(VisibleAnywhere, Category = "Collision")
 	UCapsuleComponent* CapsuleComponent;
 
@@ -180,8 +196,6 @@ public:
 	
 	UAnimMontage* GetAttackMontage() const;
 	
-	virtual void Die();
-	
 	bool IsDead();
 	
 	ANGPawnBase* GetCurrentTarget();
@@ -189,11 +203,15 @@ public:
 
 	bool IsSameTeam(uint32 OtherOwnerIndex) const { return OwnerIndex == OtherOwnerIndex; }
 	
-	void SetUnitName(FName NewUnitName) { UnitName = NewUnitName; }
-	const FName& GetUnitName() { return UnitName;}
+	FGameplayTag GetIdentificationTag() const { return IdentificationTag; };
+	
+	void SetIdentificationTag(const FGameplayTag InIdentificationTag) { IdentificationTag = InIdentificationTag; }
 	
 private:
 	void UpdateHPBar();
+	
+	void InitAbilityData(const FUnitAbilityData& AbilityData);
+	
 	bool CanAddUnitOnCombatGrid(EGridType NewGridType) const;
 
 protected:

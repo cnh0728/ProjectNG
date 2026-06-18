@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameplayEffectTypes.h"
 #include "GameFramework/Actor.h"
+#include "Interface/Poolable.h"
 #include "NGProjectile.generated.h"
 
 class ANGPawnBase;
@@ -12,7 +13,7 @@ class UProjectileMovementComponent;
 class USphereComponent;
 
 UCLASS()
-class PROJECTNG_API ANGProjectile : public AActor
+class PROJECTNG_API ANGProjectile : public AActor, public IPoolable
 {
 	GENERATED_BODY()
 
@@ -21,6 +22,9 @@ public:
 	ANGProjectile();
 
 	virtual void Tick(float DeltaTime) override;
+	
+	virtual void Activate() override;
+	virtual void Deactivate() override;
 	
 protected:
 	// Called when the game starts or when spawned

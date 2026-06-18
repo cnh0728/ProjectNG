@@ -9,6 +9,8 @@
 #include "NGPlayerController.generated.h"
 
 enum class EGamePhase : uint8;
+class ANGHUD;
+class AGridMapManager;
 struct FInputActionValue;
 class UNGUnitInfoWidget;
 class UInputMappingContext;
@@ -109,6 +111,10 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Selection")
 	TOptional<FGridAddress> PreHighlightGridAddress;
+	
+	UPROPERTY()
+	TObjectPtr<ANGHUD> NGHUD;
+	
 /*************************************/
 /*				리롤 관련			 */
 /*************************************/

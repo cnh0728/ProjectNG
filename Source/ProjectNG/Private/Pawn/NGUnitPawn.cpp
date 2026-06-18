@@ -89,7 +89,12 @@ void ANGUnitPawn::OnUndrag_Implementation()
 void ANGUnitPawn::BeginPlay()
 {
 	Super::BeginPlay();
+}
 
+void ANGUnitPawn::Activate()
+{
+	Super::Activate();
+	
 	InitAbilityActorInfo();
 	
 	if (!AttributeSet)
@@ -104,6 +109,15 @@ void ANGUnitPawn::BeginPlay()
 void ANGUnitPawn::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
+	
+	Activate();
+}
+
+void ANGUnitPawn::Deactivate()
+{
+	GetWorld()->GetTimerManager().ClearTimer(AttackCheckTimerHandle);
+	
+	Super::Deactivate();
 }
 
 void ANGUnitPawn::InitAbilityActorInfo()

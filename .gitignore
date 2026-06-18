@@ -78,4 +78,6 @@ Plugins/**/Intermediate/*
 DerivedDataCache/*
 
 #etc
+Content/Resources/
+Content/StarterContent/
 Content/Resources/Characters/

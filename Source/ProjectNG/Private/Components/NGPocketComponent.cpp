@@ -1,10 +1,14 @@
-﻿// Copyright (c) 2025 TeamNG. All Rights Reserved.
+// Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 
 #include "Components/NGPocketComponent.h"
 
+#include "Core/NGPoolSubSystem.h"
 #include "Core/NGShopProbability.h"
+#include "Core/NGSpawnHelper.h"
 #include "Core/NGUnitData.h"
+#include "Game/NGGameState.h"
+#include "Game/NGUnitDataManager.h"
 #include "GameModes/NGInGameMode.h"
 #include "Net/UnrealNetwork.h"
 #include "Pawn/NGPawnBase.h"
@@ -50,6 +54,11 @@ void UNGPocketComponent::AddUnitToBuyingPocket(FName UnitName)
 	RollShopPocket.Remove(UnitName);
 }
 
+void UNGPocketComponent::TryMergeUnit(FGameplayTag IdentificationTag)
+{
+	CheckAndMergeUnit(IdentificationTag);
+}
+
 void UNGPocketComponent::OnRep_RollPocket()
 {
 	switch (LastShopAction)
@@ -88,6 +97,164 @@ void UNGPocketComponent::UpdateRollUnit()
 			PC->OnUnitsUpdated.Broadcast();
 		}
 	}
+}
+
+void UNGPocketComponent::CheckAndMergeUnit(FGameplayTag IdentificationTag)
+{
+	// 서버가 아니면 리턴
+	if (!GetOwner()->HasAuthority())
+	{
+		return;
+	}
+	
+	UNGUnitDataManager* DataManager = GetWorld()->GetGameInstance()->GetSubsystem<UNGUnitDataManager>();
+	if (!DataManager) return;
+	
+	
+	TArray<ANGPawnBase*> SameUnits;
+	for (ANGPawnBase* Unit : OwnedUnitPocket)
+	{
+		if (Unit && Unit->GetIdentificationTag() == IdentificationTag)
+		{
+			SameUnits.Add(Unit);
+		}
+	}
+	
+	if (SameUnits.Num() >= 3)
+	{
+		const FUnitData* UnitData = DataManager->GetUnitData(IdentificationTag);
+		if (!UnitData || !UnitData->NextTierTag.IsValid()) return;
+
+		const int32 MergeRequiredCount = FMath::Max(UnitData->MergeRequiredCount, 3);
+		if (SameUnits.Num() < MergeRequiredCount) return;
+		
+		const FName UnitRowName = DataManager->GetUnitName(IdentificationTag);
+		if (UnitRowName.IsNone()) return;
+
+		FName NextUnitRowName = DataManager->GetUnitName(UnitData->NextTierTag);
+		if (NextUnitRowName.IsNone()) return;
+		
+		TArray<ANGPawnBase*> Materials;
+		Materials.Reserve(MergeRequiredCount);
+		for (int32 i = 0; i < MergeRequiredCount; ++i)
+		{
+			Materials.Add(SameUnits[i]);
+		}
+
+		FGridAddress MergeGridAddress = Materials.Last()->GetGridAddress();
+		for (ANGPawnBase* Material : Materials)
+		{
+			if (Material && Material->GetGridAddress().GridType == EGridType::Combat)
+			{
+				MergeGridAddress = Material->GetGridAddress();
+				break;
+			}
+		}
+		
+		FVector MergeLocation = UGridMapHelper::GetWorldLocation(MergeGridAddress);
+
+		UNGPoolSubSystem* Pool = GetWorld()->GetSubsystem<UNGPoolSubSystem>();
+		if (!Pool) return;
+		
+		for (ANGPawnBase* Material : Materials)
+		{
+			if (!Material) continue;
+			
+			Material->UnSetPawnOnGrid(Material->GetGridAddress());
+			RemoveUnitFromPocket(Material);  // OwnedPocket에서만 제거 (상점 풀 미반환)
+			Pool->ReleaseSegment(Material);
+		}
+		
+		// 상위 등급 생성
+		if (ANGPlayerState* PS = GetOwner<ANGPlayerState>())
+		{
+			if (ANGPlayerController* PC = Cast<ANGPlayerController>(PS->GetPlayerController()))
+			{
+				// 이 스폰이 성공하면 다시 ControlPocketSpawning이 호출되며 연쇄 작용 일어남
+				bool bSpawned = UNGSpawnHelper::SpawnUnitPawnAtGrid(PC, NextUnitRowName, MergeGridAddress);
+				if (bSpawned)
+				{
+					// 클라이언트 RPC 연출 호출
+					const FUnitData* NextData = DataManager->GetUnitData(UnitData->NextTierTag);
+					if (NextData) Multicast_PlayMergeEffect(MergeLocation, NextData->Tier);
+				}
+			}
+		}
+	}
+}
+
+void UNGPocketComponent::RequestSellUnit(ANGPawnBase* UnitToSell)
+{
+	if (!UnitToSell) return;
+	Server_SellUnit(UnitToSell);
+}
+
+void UNGPocketComponent::Server_SellUnit_Implementation(ANGPawnBase* UnitToSell)
+{
+	if (!GetOwner()->HasAuthority()) return;
+	if (!UnitToSell) return;
+
+	// 내 소유 유닛인지 검증
+	if (!OwnedUnitPocket.Contains(UnitToSell)) return;
+
+	UNGUnitDataManager* DataManager = GetWorld()->GetGameInstance()->GetSubsystem<UNGUnitDataManager>();
+	ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>();
+	UNGPoolSubSystem* Pool = GetWorld()->GetSubsystem<UNGPoolSubSystem>();
+	if (!DataManager || !GM || !Pool) return;
+
+	const FGameplayTag UnitTag = UnitToSell->GetIdentificationTag();
+
+	// 1. 재귀적으로 1성 유닛 목록 분해
+	TArray<FName> BaseUnitNames;
+	DecomposeToBaseUnits(UnitTag, BaseUnitNames);
+
+	// 2. 분해된 1성 유닛들을 상점 공용 풀로 반환
+	for (const FName& BaseName : BaseUnitNames)
+	{
+		GM->ReturnUnitToPool(BaseName, 1);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[판매] %s 판매 → 1성 유닛 %d개 공용 풀 반환"), *UnitTag.ToString(), BaseUnitNames.Num());
+
+	// 3. 판매 대상 유닛을 소유 목록에서 제거 + 오브젝트 풀로 반환
+	UnitToSell->UnSetPawnOnGrid(UnitToSell->GetGridAddress());
+	ControlPocketSelling(UnitToSell);
+	Pool->ReleaseSegment(UnitToSell);
+
+	// TODO: 골드 환불 로직 (Tier에 따른 판매 가격)
+}
+
+void UNGPocketComponent::DecomposeToBaseUnits(const FGameplayTag& UnitTag, TArray<FName>& OutBaseUnitNames) const
+{
+	UNGUnitDataManager* DataManager = GetWorld()->GetGameInstance()->GetSubsystem<UNGUnitDataManager>();
+	if (!DataManager) return;
+
+	const FUnitData* UnitData = DataManager->GetUnitData(UnitTag);
+	if (!UnitData) return;
+
+	// 1성이면 자기 자신의 FName을 추가하고 종료 (재귀 종료 조건)
+	if (UnitData->Tier == EUnitTier::Tier1 || !UnitData->PrevTierTag.IsValid())
+	{
+		FName UnitRowName = DataManager->GetUnitName(UnitTag);
+		if (!UnitRowName.IsNone())
+		{
+			OutBaseUnitNames.Add(UnitRowName);
+		}
+		return;
+	}
+
+	// 2성 이상이면, MergeRequiredCount만큼 하위 티어를 재귀 분해
+	const int32 Count = FMath::Max(UnitData->MergeRequiredCount, 3);
+	for (int32 i = 0; i < Count; ++i)
+	{
+		DecomposeToBaseUnits(UnitData->PrevTierTag, OutBaseUnitNames);
+	}
+}
+
+void UNGPocketComponent::Multicast_PlayMergeEffect_Implementation(FVector EffectLocation, EUnitTier UnitTier)
+{
+	// 이 함수는 서버에서 호출되더라도 모든 클라이언트(플레이어의 화면)에서 실행됩니다.
+	// 이 안에서 무거운 이펙트 생성, 파티클 폭발, 티어별 사운드 재생 등을 수행합니다.
 }
 
 void UNGPocketComponent::GetPlacedUnits(TArray<ANGPawnBase*>& OutUnits)
@@ -133,6 +300,11 @@ void UNGPocketComponent::ControlPocketSelling(ANGPawnBase* NewPawn)
 void UNGPocketComponent::AddUnitFromPocket(ANGPawnBase* NewPawn)
 {
 	OwnedUnitPocket.AddUnique(NewPawn);
+
+	if (NewPawn)
+	{
+		TryMergeUnit(NewPawn->GetIdentificationTag());
+	}
 }
 
 void UNGPocketComponent::RemoveUnitFromPocket(ANGPawnBase* Unit)

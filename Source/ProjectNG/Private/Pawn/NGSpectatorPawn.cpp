@@ -87,9 +87,7 @@ void ANGSpectatorPawn::InitHUD()
 		if (ANGHUD* MainHUD = Cast<ANGHUD>(PC->GetHUD()))
 		{
 			UE_LOG(LogTemp, Log, TEXT("AddToView - PC: %p, this: %p"), PC, this);
-			// TODO: AttributeSet 데이터 추가
-			//원래 SpectatorPawn이 GAS있었는데 지금은 필요없다고 생각돼서 뺐음. 필요하면 다시 멤버변수 선언 후 넣기
-			MainHUD->InitializeHUD(PC, PS, /*AbilitySystemComponent,*/ nullptr);
+			MainHUD->InitializeHUD(PC, PS); // @note: 기획이 변경됨에 따라 Player는 ASC 와 Attribute가 필요없게 되어 파라미터 수정
 		}
 	}
 }

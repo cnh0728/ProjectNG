@@ -11,6 +11,7 @@
 #include "Core/NGDeveloperSettings.h"
 #include "Pawn/NGUnitPawn.h"
 #include "Pawn/SelectableInterface.h"
+#include "Core/NGBlueprintLibrary.h"
 #include "Core/NGSpawnHelper.h"
 #include "GameModes/NGInGameMode.h"
 #include "Input/NGInputComponent.h"
@@ -18,6 +19,7 @@
 
 #include "ProjectNG/ProjectNG.h"
 #include "UI/NGUnitInfoWidget.h"
+#include "UI/WidgetController/UnitDetailsWidgetController.h"
 
 ANGPlayerController::ANGPlayerController() : DragThreshold(10.f), DragHeightOffset(20.f), DragInterpSpeed(20.f)
 {
@@ -314,6 +316,11 @@ void ANGPlayerController::SetSelectedUnit(ANGPawnBase* InSelectedUnit)
 		}
 		
 		UpdateUnitWidget(SelectedUnit);
+		
+		// if (UUnitDetailsWidgetController* UnitDetailsWidgetController = UNGBlueprintLibrary::GetUnitDetailsWidgetController(this))
+		// {
+		// 	UnitDetailsWidgetController->SetTargetUnit(SelectedUnit.Get());
+		// }
 	}
 }
 
@@ -330,6 +337,11 @@ void ANGPlayerController::ResetSelectUnit()
 		{
 			UnitInfoWidgetInstance->ClearTargetUnit();
 			UnitInfoWidgetInstance->SetVisibility(ESlateVisibility::Collapsed);
+		}
+		
+		if (UUnitDetailsWidgetController* UnitDetailsWidgetController = UNGBlueprintLibrary::GetUnitDetailsWidgetController(this))
+		{
+			UnitDetailsWidgetController->ClearTargetUnit();
 		}
 		
 		SelectedUnit = nullptr;

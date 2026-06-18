@@ -53,6 +53,7 @@ public:
 	FName GetRandomUnitByTier(EUnitTier Tier);
 
 	TSubclassOf<ANGUnitPawn> GetUnitClass(FName UnitName) const;
+	const FUnitData* GetUnitData(FName UnitName) const;
 
 	UNGCombatManagerComponent* GetCombatManagerComponent() { return CombatManagerComponent; };	
 protected:

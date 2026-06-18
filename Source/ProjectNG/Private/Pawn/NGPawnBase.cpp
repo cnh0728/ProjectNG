@@ -11,6 +11,7 @@
 #include "Components/NGPathFindingComponent.h"
 #include "Components/NGPocketComponent.h"
 #include "Components/WidgetComponent.h"
+#include "Game/NGUnitDataManager.h"
 #include "Core/NGDeveloperSettings.h"
 #include "GameModes/NGInGameMode.h"
 #include "Net/UnrealNetwork.h"
@@ -128,6 +129,7 @@ void ANGPawnBase::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& Ou
 	DOREPLIFETIME(ANGPawnBase, CurrentGridAddress);
 	DOREPLIFETIME(ANGPawnBase, NextGridPoint);
 	DOREPLIFETIME(ANGPawnBase, PawnState);
+	DOREPLIFETIME(ANGPawnBase, IdentificationTag);
 }
 
 void ANGPawnBase::HandleGameplayCue(UObject* Self, FGameplayTag GameplayCueTag, EGameplayCueEvent::Type EventType,
@@ -160,9 +162,66 @@ void ANGPawnBase::PossessedBy(AController* NewController)
 	InitAbilityActorInfo();
 }
 
+void ANGPawnBase::Activate()
+{
+	if (HasAuthority())
+	{
+		Multicast_Activate();
+	}
+	else
+	{
+		SetActorHiddenInGame(false);
+		SetActorEnableCollision(true);
+		SetActorTickEnabled(true);
+	}
+	
+	UNGUnitDataManager* UnitDataManager = GetWorld()->GetGameInstance()->GetSubsystem<UNGUnitDataManager>();
+	if (!UnitDataManager) return;
+	
+	const FUnitAbilityData* UnitData = UnitDataManager->GetUnitAbilityData(IdentificationTag);
+	if (UnitData)
+	{
+		InitAbilityData(*UnitData);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("[%s] 데이터 테이블에서 태그(%s)를 찾을 수 없습니다!"), *GetName(), *IdentificationTag.ToString());
+	}
+}
+
+void ANGPawnBase::Deactivate()
+{
+	if (HasAuthority())
+	{
+		Multicast_Deactivate();
+	}
+	else
+	{
+		SetActorHiddenInGame(true);
+		SetActorEnableCollision(false);
+		SetActorTickEnabled(false);
+	}
+}
+
+void ANGPawnBase::Multicast_Activate_Implementation()
+{
+	SetActorHiddenInGame(false);
+	SetActorEnableCollision(true);
+	SetActorTickEnabled(true);
+}
+
+void ANGPawnBase::Multicast_Deactivate_Implementation()
+{
+	SetActorHiddenInGame(true);
+	SetActorEnableCollision(false);
+	SetActorTickEnabled(false);
+}
+
 void ANGPawnBase::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	ensureMsgf(IdentificationTag.IsValid(), TEXT("UnitIdTag is not valid for %s"), *GetName());
 	
 	if (AbilitySystemComponent)
 	{
@@ -520,7 +579,7 @@ void ANGPawnBase::InitializeAttributes()
 	
 	if (AbilitySystemComponent)
 	{
-		AbilitySystemComponent->InitStats(UNGAttributeSet::StaticClass(), DefaultAttributeTable);
+		// AbilitySystemComponent->InitStats(UNGAttributeSet::StaticClass(), DefaultAttributeTable);
 	}
 }
 
@@ -533,6 +592,8 @@ UAnimMontage* ANGPawnBase::GetAttackMontage() const
 {
 	return AttackMontage;
 }
+
+
 
 void ANGPawnBase::Die()
 {
@@ -552,6 +613,9 @@ void ANGPawnBase::Die()
 	
 	// AddLooseGameplayTag는 메모리 상에서만 일시적 태그를 붙일 때 유용
 	GetAbilitySystemComponent()->AddLooseGameplayTag(DeadTag);
+	
+	// Todo: 삭제가 되는 것이 아니라, 비활성화해서 pool로 복귀
+	Deactivate();
 	
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetMesh()->SetSimulatePhysics(true); //레그돌
@@ -741,6 +805,14 @@ void ANGPawnBase::Server_TryMoveGrid_Implementation(const FVector& TargetLocatio
 {
 	if (FGridMapBase* GridMap = UGridMapHelper::GetGridMap(GridAddress))
 	{
+		if (ANGPlayerState* PS = GridAddress.GridOwnerPS)
+		{
+			if (UNGPocketComponent* Pocket = PS->GetPlayerPocket())
+			{
+				Pocket->TryMergeUnit(GetIdentificationTag());
+			}
+		}
+		
 		FIntVector2 NewIndex = UGridMapHelper::GetCellIndex(GridAddress.GridType, TargetLocation, GridAddress.GridOwnerPS);
 		
 		if (!CanPlaceUnit(*GridMap, NewIndex))
@@ -874,5 +946,22 @@ void ANGPawnBase::HighlightRangeIndicator(FGridAddress PivotAddress) const
 	{
 		int32 HighlightRange = AttributeSet ? AttributeSet->GetAttackRange() : 1;
 		CombatArena->HighlightAttackRange(PivotAddress, HighlightRange);
+	}
+}
+void ANGPawnBase::InitAbilityData(const FUnitAbilityData& AbilityData)
+{
+	if (!AbilitySystemComponent || !AttributeSet) return;
+	
+	if (HasAuthority())
+	{
+		// Setup Tag
+		IdentificationTag = AbilityData.IdentificationTag;
+		AbilitySystemComponent->AddLooseGameplayTags(AbilityData.OwnedTags);
+		
+		// Initialize Stat
+		for (const auto& Stat : AbilityData.DefaultStats)
+		{
+			AbilitySystemComponent->SetNumericAttributeBase(Stat.Key, Stat.Value);
+		}
 	}
 }

@@ -7,8 +7,6 @@ void UNGWidgetController::AssignWidgetControllerParams(const FWidgetParams& InWi
 {
 	PlayerController = InWidgetParams.PlayerController;
 	PlayerState = InWidgetParams.PlayerState;
-	// AbilitySystemComponent = InWidgetParams.AbilitySystemComponent;
-	AttributeSet = InWidgetParams.AttributeSet;
 }
 
 void UNGWidgetController::BroadcastInitialValues()

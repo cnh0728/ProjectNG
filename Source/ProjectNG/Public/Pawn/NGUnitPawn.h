@@ -15,8 +15,12 @@ class PROJECTNG_API ANGUnitPawn : public ANGPawnBase, public ISelectableInterfac
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this character's properties
 	ANGUnitPawn();
+	
+	virtual void BeginPlay() override;
+	
+	virtual void Activate() override;
+	virtual void Deactivate() override;
 	
 	virtual void OnSelected_Implementation() override;
 	virtual void OnDeselected_Implementation() override;
@@ -24,27 +28,21 @@ public:
 	virtual void OnDrag_Implementation() override;
 	virtual void OnUndrag_Implementation() override;
 	
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	
 	virtual void OnRep_PlayerState() override;
-
+	
 protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+	virtual void InitAbilityActorInfo() override;
 	virtual void InitializeAttributes() override;
+	
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 private:
 	UFUNCTION()
 	void EquipWeapon(UNGWeaponData* NewWeaponData);
-	
-	virtual void InitAbilityActorInfo() override;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Drag Drop")
 	float DragInterpSpeed = 15.0f;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Drag Drop")
 	float AcceptanceRadius;
-
-
 };

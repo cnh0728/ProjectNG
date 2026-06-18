@@ -27,6 +27,7 @@ public:
 	}
 	
 	static bool SpawnUnitPawn(ANGPlayerController* OwnerController, FName UnitName);
+	static bool SpawnUnitPawnAtGrid(ANGPlayerController* OwnerController, FName UnitName, const FGridAddress& SpawnGridAddress);
 	
 	static bool SpawnEnemyPawn(ANGPlayerController* OwnerController, FEnemySpawnInfo EnemySpawnInfo);
 		
