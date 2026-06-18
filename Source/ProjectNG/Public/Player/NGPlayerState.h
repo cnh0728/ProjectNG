@@ -6,6 +6,7 @@
 #include "AbilitySystemInterface.h"
 #include "AbilitySystem/NGAbilitySystemComponent.h"
 #include "Combat/Grid/Grid.h"
+#include "Components/NGCombatManagerComponent.h"
 #include "GameFramework/PlayerState.h"
 #include "NGPlayerState.generated.h"
 
@@ -56,25 +57,28 @@ protected:
 	TObjectPtr<UNGAbilitySystemComponent> AbilitySystemComponent;
 
 /*************************************/
-/*				전투 상태 관련		 */
+/*			WorldMap Phase 관련		 */
 /*************************************/
 	
 public:
-	void SetGameState(EGameState NewState) { CurrentState = NewState; }
-	EGameState GetGameState() const { return CurrentState; }
-	
-	void OnCombatEnd(bool bIsWin);
+	const FGameplayTag& GetCurrentZoneTag() const { return CurrentZoneTag; }
+
+	void SetGameState(EGameState NewState) { CurrentGameState = NewState; }
+	EGameState GetGameState() const { return CurrentGameState; }
+	void OnCombatEnd(ECombatResult CombatResult);
 	
 protected:
-	
 	void OnCombatWin();
 	void OnCombatLose();
 	
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite)
-	EGameState CurrentState;
+	EGameState CurrentGameState;
+	
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite)
+	FGameplayTag CurrentZoneTag;
 	
 /*************************************/
-/*				Pocket 관련			 */
+/*		전투 및 Pocket 관련			 */
 /*************************************/
 	
 public:
@@ -85,12 +89,30 @@ public:
 	
 	int32 GetUserIndex();
 	
+	void AddCPUEnemyCount();
+	
+	void OnDieCPUEnemy() { ++CPUEnemyDieCount; }
+	
+	bool IsCPUCombatFinished() const
+	{
+		UE_LOG(LogTemp, Log, TEXT("CurrentCPUEnemyCount %d, CPUEnemyDieCount %d"), CurrentCPUEnemyCount, CPUEnemyDieCount);
+		return CurrentCPUEnemyCount <= CPUEnemyDieCount;
+	}
+	
+	void InitCPUCombat(const FEnemySquadData& SquadData);
+	
 protected:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Game|Pocket")
 	TObjectPtr<UNGPocketComponent> PlayerPocket;
 	
 	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadOnly, Category = "Game")
 	int32 PlayerLevel;
+	
+	UPROPERTY()
+	int32 CurrentCPUEnemyCount;
+
+	UPROPERTY()
+	int32 CPUEnemyDieCount;
 	
 	/*************************************/
 	/*				GridMap 관련			 */
@@ -106,8 +128,9 @@ public:
 	UFUNCTION()
 	void RestoreInitialGrid();
 	
-	void PrepareStartCombat();
-	
+	void StartCombat();
+	void FinishCombat();
+
 protected:
 	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadWrite, Category = "Grid")
 	FHexGridMap CombatGridMap;
@@ -127,4 +150,5 @@ protected:
 	
 	UPROPERTY()
 	TObjectPtr<AArenaManager> ArenaManager;
+
 };

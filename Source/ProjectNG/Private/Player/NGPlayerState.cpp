@@ -4,6 +4,7 @@
 
 #include "Combat/Grid/Arena.h"
 #include "Combat/Grid/ArenaManager.h"
+#include "Components/NGCombatManagerComponent.h"
 #include "Components/NGPocketComponent.h"
 #include "Core/NGDeveloperSettings.h"
 #include "Game/NGGameState.h"
@@ -11,7 +12,7 @@
 #include "Pawn/NGUnitPawn.h"
 #include "Player/NGPlayerController.h"
 
-ANGPlayerState::ANGPlayerState() : PlayerLevel(1), CurrentState(EGameState::Maintaining)
+ANGPlayerState::ANGPlayerState() : PlayerLevel(1), CurrentGameState(EGameState::Maintaining), CurrentZoneTag(FGameplayTag::RequestGameplayTag(FName("Zone.Area.A")))
 {
 	PrimaryActorTick.bCanEverTick = false;
 	
@@ -35,7 +36,7 @@ void ANGPlayerState::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>&
 	DOREPLIFETIME(ANGPlayerState, PlayerPocket);
 	DOREPLIFETIME(ANGPlayerState, HomeArena);
 	DOREPLIFETIME(ANGPlayerState, PlayerLevel);
-	DOREPLIFETIME(ANGPlayerState, CurrentState);
+	DOREPLIFETIME(ANGPlayerState, CurrentGameState);
 }
 
 void ANGPlayerState::SpawnGridMapManager()
@@ -95,15 +96,25 @@ void ANGPlayerState::CaptureSnapShot()
 	CombatGridMapSnapShot = CombatGridMap;
 }
 
-void ANGPlayerState::OnCombatEnd(bool bIsWin)
+void ANGPlayerState::OnCombatEnd(ECombatResult CombatResult)
 {
-	if (bIsWin)
+	switch (CombatResult)
 	{
-		OnCombatWin();
-	}
-	else
-	{
-		OnCombatLose();
+	case ECombatResult::Draw:
+		{
+			
+			break;
+		}
+	case ECombatResult::Win:
+		{
+			OnCombatWin();
+			break;
+		}
+	case ECombatResult::Lose:
+		{
+			OnCombatLose();
+			break;
+		}
 	}
 }
 
@@ -125,6 +136,23 @@ int32 ANGPlayerState::GetUserIndex()
 	return -1;
 }
 
+void ANGPlayerState::AddCPUEnemyCount()
+{
+	if (ANGPlayerController* PC = GetOwner<ANGPlayerController>())
+	{
+		if (PC->IsLocalController())
+		{
+			++CurrentCPUEnemyCount;
+		}
+	}
+}
+
+void ANGPlayerState::InitCPUCombat(const FEnemySquadData& SquadData)
+{
+	CPUEnemyDieCount = 0;
+	CurrentCPUEnemyCount = SquadData.SpawnUnits.Num();
+}
+
 void ANGPlayerState::RestoreInitialGrid()
 {
 	if (!HasAuthority())	return;
@@ -139,7 +167,7 @@ void ANGPlayerState::RestoreInitialGrid()
 
 			FGridAddress GridAddress(OriginalIndex, EGridType::Combat, this, GridData.PlacedPawn->GetGridAddress().DirtyFlag);
 			
-			GridData.PlacedPawn->RestoreStates();
+			GridData.PlacedPawn->TransitionToState(EPawnState::None);
 			GridData.PlacedPawn->TranslatePawnOnGrid(GridAddress);
 		}
 	}
@@ -151,7 +179,7 @@ void ANGPlayerState::RestoreInitialGrid()
 	}
 }
 
-void ANGPlayerState::PrepareStartCombat()
+void ANGPlayerState::StartCombat()
 {
 	FHexGridMap& GridMap = GetCombatGridMap();
 			
@@ -160,7 +188,21 @@ void ANGPlayerState::PrepareStartCombat()
 		ANGPawnBase* PlacedPawn = GridData.PlacedPawn;
 		if (IsValid(PlacedPawn))
 		{
-			PlacedPawn->TurnPawnState(EPawnState::Combat);
+			PlacedPawn->TransitionToState(EPawnState::Combat);
+		}
+	}
+}
+
+void ANGPlayerState::FinishCombat()
+{
+	FHexGridMap& GridMap = GetCombatGridMap();
+			
+	for (FGridData GridData : GridMap.GridInfo)
+	{
+		ANGPawnBase* PlacedPawn = GridData.PlacedPawn;
+		if (IsValid(PlacedPawn))
+		{
+			PlacedPawn->TransitionToState(EPawnState::None);
 		}
 	}
 }

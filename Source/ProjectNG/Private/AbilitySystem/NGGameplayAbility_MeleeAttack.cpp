@@ -13,9 +13,13 @@ void UNGGameplayAbility_MeleeAttack::ActivateAbility(const FGameplayAbilitySpecH
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 	
+	TossTargetData = *TriggerEventData;
+	
 	UAbilityTask_WaitGameplayEvent* EventTask = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, FGameplayTag::RequestGameplayTag(TEXT("Event.Attack.Melee")));
 	EventTask->EventReceived.AddDynamic(this, &UNGGameplayAbility_MeleeAttack::OnAttackReceived);
 	EventTask->ReadyForActivation();
+	
+	
 }
 
 void UNGGameplayAbility_MeleeAttack::OnAttackReceived(FGameplayEventData Payload)
@@ -27,12 +31,9 @@ void UNGGameplayAbility_MeleeAttack::OnAttackReceived(FGameplayEventData Payload
 		FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(DamageEffectClass, GetAbilityLevel());
 		if (SpecHandle.IsValid())
 		{
-			TArray<TWeakObjectPtr<AActor>> TargetActors = Payload.TargetData.Get(0)->GetActors();
-			if (TargetActors.Num() > 0 && TargetActors[0].IsValid())
-			{
-				UE_LOG(LogTemp, Log, TEXT("Target Actor Name: %s"), *TargetActors[0]->GetName());
-			}
-			ApplyGameplayEffectSpecToTarget(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, SpecHandle, Payload.TargetData);
+			TArray<TWeakObjectPtr<AActor>> TargetActors = TossTargetData.TargetData.Get(0)->GetActors();
+
+			ApplyGameplayEffectSpecToTarget(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, SpecHandle, TossTargetData.TargetData);
 		}
 	}
 }

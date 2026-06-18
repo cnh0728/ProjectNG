@@ -6,6 +6,7 @@
 #include "Engine/DeveloperSettings.h"
 #include "NGDeveloperSettings.generated.h"
 
+class UNGEnemyDataAsset;
 class AArena;
 class ANGPawnBase;
 class ANGProjectile;
@@ -33,5 +34,8 @@ public:
 
 	UPROPERTY(Config, EditAnywhere, Category = "NG Pool Settings")
 	TSoftObjectPtr<UMaterialInterface> HoverOverlayMaterial;
+	
+	UPROPERTY(Config, EditAnywhere, Category = "NG Pool Settings")
+	TSoftObjectPtr<UNGEnemyDataAsset> EnemyDataAsset;
 	
 };

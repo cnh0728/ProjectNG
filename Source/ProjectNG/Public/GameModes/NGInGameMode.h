@@ -20,8 +20,10 @@ class PROJECTNG_API ANGInGameMode : public ANGGameModeBase
 {
 	GENERATED_BODY()
 
+	ANGInGameMode();
+	
 public:
-	void RequestStartCombat(APlayerController* PC);
+	void RequestStartCombat(APlayerController* PC, bool bIsCPUCombat);
 	void OnGameStart();
 	void NotifyGameStartToPlayer(ANGGameState* GS);
 	void OnCombatFinished(const FCombatResultData& ResultData);
@@ -49,7 +51,10 @@ public:
 	TSubclassOf<ANGUnitPawn> GetUnitClass(FName UnitName) const;
 	const FUnitData* GetUnitData(FName UnitName) const;
 
+	UNGCombatManagerComponent* GetCombatManagerComponent() { return CombatManagerComponent; };	
 protected:
+	void InitializeUnitPool();
+
 	// Key: DataTable RowName, Value: remain count
 	TMap<FName, int32> UnitPool;
 
@@ -59,5 +64,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Game|DataTable")
 	TObjectPtr<UDataTable> UnitDataTable;
 	
-	void InitializeUnitPool();
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Managers")
+	TObjectPtr<UNGCombatManagerComponent> CombatManagerComponent;
 };

@@ -8,11 +8,11 @@
 #include "Blueprint/UserWidget.h"
 #include "Combat/Grid/Arena.h"
 #include "Components/NGCombatManagerComponent.h"
+#include "Core/NGDeveloperSettings.h"
 #include "Pawn/NGUnitPawn.h"
 #include "Pawn/SelectableInterface.h"
 #include "Core/NGBlueprintLibrary.h"
 #include "Core/NGSpawnHelper.h"
-#include "Game/NGGameState.h"
 #include "GameModes/NGInGameMode.h"
 #include "Input/NGInputComponent.h"
 #include "Player/NGPlayerState.h"
@@ -142,7 +142,6 @@ void ANGPlayerController::PerformDragUpdate(float DeltaTime)
 
 				if (AArena* Arena = Cast<AArena>(HitResult.GetActor()))
 				{
-					//TODO: 여기서 갈 수 있는곳인지 체크
 					HighLightGrid(TargetLocation, Arena);
 				}
 			}else
@@ -420,20 +419,74 @@ UNGPocketComponent* ANGPlayerController::GetPlayerPocket() const
 
 void ANGPlayerController::Server_EnterPhase_Implementation(EGamePhase Phase)
 {
-	ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>();
+	EnterPhase(Phase);
+}
+
+void ANGPlayerController::EnterPhase(EGamePhase Phase)
+{
+	if (!HasAuthority())	return;
+	
+	ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>();
+	
 	ANGPlayerState* PS = GetPlayerState<ANGPlayerState>();	
 	
-	if (UNGCombatManagerComponent* CMC = GS ? GS->GetCombatManagerComponent() : nullptr)
+	if (UNGCombatManagerComponent* CMC = GM ? GM->GetCombatManagerComponent() : nullptr)
 	{
-		CMC->EnqueueCombatPhase(PS);
+		bool bIsCPUCombat = false;
+		
+		if (bIsCPUCombat)
+		{
+			TSoftObjectPtr<UNGEnemyDataAsset> SoftPath = GetDefault<UNGDeveloperSettings>()->EnemyDataAsset;
+
+			if (SoftPath.IsNull()) return;
+
+			UNGEnemyDataAsset* LoadedAsset = SoftPath.LoadSynchronous();
+	    
+			if (LoadedAsset)
+			{
+				FEnemySquadData SelectedData;
+				if (LoadedAsset->GetRandomSquadForZone(PS->GetCurrentZoneTag(), SelectedData))
+				{
+					CMC->EnqueueCombatPhase(PS, &SelectedData);
+				}
+			}
+		}
+		else
+		{
+			CMC->EnqueueCombatPhase(PS);
+		}
 	}
 }
 
-void ANGPlayerController::Server_RequestStartCombat_Implementation()
+void ANGPlayerController::Server_RequestFlee_Implementation()
+{
+	//도망갔을때 행동
+	// CombatManager에서 나를 진사람, 상대방을 이긴사람으로 처리하고 게임 끝내기.
+	// 내 돈의 10% 정도? 를 상대에게 헌납 (패널티 수행)
+	ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>();
+	
+	if (UNGCombatManagerComponent* CMC = GM->GetCombatManagerComponent())
+	{
+		CMC->ProcessPlayerFlee(this);
+	}
+}
+
+void ANGPlayerController::Server_RequestStopCombat_Implementation()
 {
 	if (ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>())
 	{
-		GM->RequestStartCombat(this);
+		if (UNGCombatManagerComponent* CMC = GM->GetCombatManagerComponent())
+		{
+			CMC->FinishCombat();
+		}
+	}
+}
+
+void ANGPlayerController::Server_RequestStartCombat_Implementation(bool bIsCPUCombat)
+{
+	if (ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>())
+	{
+		GM->RequestStartCombat(this, bIsCPUCombat);
         
 		// 확인용 로그
 		UE_LOG(LogTemp, Warning, TEXT("Cmd: Wave Started!"));
@@ -447,23 +500,9 @@ void ANGPlayerController::Server_RequestStartCombat_Implementation()
 	}
 }
 
-void ANGPlayerController::Server_RequestStopCombat_Implementation()
+void ANGPlayerController::Cmd_StartCombat(bool bIsCPUCombat)
 {
-	if (HasAuthority())
-	{
-		if (ANGGameState* GS = GetWorld()->GetGameState<ANGGameState>())
-		{
-			if (UNGCombatManagerComponent* CMC = GS->GetCombatManagerComponent())
-			{
-				CMC->FinishCombat();
-			}
-		}
-	}
-}
-
-void ANGPlayerController::Cmd_StartCombat()
-{
-	Server_RequestStartCombat();
+	Server_RequestStartCombat(bIsCPUCombat);
 }
 
 void ANGPlayerController::Cmd_FinishCombat()

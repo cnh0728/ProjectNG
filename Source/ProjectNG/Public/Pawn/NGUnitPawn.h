@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "SelectableInterface.h"
-#include "Combat/Grid/Grid.h"
 #include "Pawn/NGPawnBase.h"
 #include "NGUnitPawn.generated.h"
 

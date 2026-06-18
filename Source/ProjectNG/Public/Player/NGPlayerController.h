@@ -4,14 +4,15 @@
 
 #include "CoreMinimal.h"
 #include "NGPlayerState.h"
+#include "Core/NGEnemyDataAsset.h"
 #include "GameFramework/PlayerController.h"
 #include "NGPlayerController.generated.h"
 
+enum class EGamePhase : uint8;
 class ANGHUD;
 class AGridMapManager;
 struct FInputActionValue;
 class UNGUnitInfoWidget;
-class ANGUnitPawn;
 class UInputMappingContext;
 class UInputAction;
 class UNGPocketComponent;
@@ -122,6 +123,7 @@ public:
 	void Server_RequestBuyUnit(FName UnitName);
 	
 	UNGPocketComponent* GetPlayerPocket() const;
+	void EnterPhase(EGamePhase Phase);
 
 /*************************************/
 /*				전투					 */
@@ -129,11 +131,14 @@ public:
 public:
 	UFUNCTION(Server, Reliable)
 	void Server_EnterPhase(EGamePhase Phase);
-	
+
+	UFUNCTION(Server, Reliable)
+	void Server_RequestFlee();
 	
 /*************************************/
 /*				UI					 */
 /*************************************/
+
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UNGUnitInfoWidget> UnitInfoWidgetClass;
@@ -148,14 +153,14 @@ protected:
 
 public:
 	UFUNCTION(Server, Reliable)
-	void Server_RequestStartCombat();
+	void Server_RequestStartCombat(bool bIsCPUCombat);
 	
 	UFUNCTION(Server, Reliable)
 	void Server_RequestStopCombat();
 
 	UFUNCTION(Exec)
-	void Cmd_StartCombat();
-	
+	void Cmd_StartCombat(bool bIsCPUCombat);
+
 	UFUNCTION(Exec)
 	void Cmd_FinishCombat();
 	

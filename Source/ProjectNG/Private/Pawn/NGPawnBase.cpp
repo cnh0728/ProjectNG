@@ -65,120 +65,6 @@ ANGPawnBase::ANGPawnBase() : SpeedScale(100.f), RotationInterpSpeed(10.f)
 	HPBarComponent->SetDrawSize(FVector2D(100.f, 20.f));
 }
 
-void ANGPawnBase::OnRep_PlayerState()
-{
-	Super::OnRep_PlayerState();
-	
-	InitAbilityActorInfo();
-}
-
-void ANGPawnBase::PossessedBy(AController* NewController)
-{
-	Super::PossessedBy(NewController);
-	
-	InitAbilityActorInfo();
-}
-
-void ANGPawnBase::BeginPlay()
-{
-	Super::BeginPlay();
-	
-	ensureMsgf(IdentificationTag.IsValid(), TEXT("UnitIdTag is not valid for %s"), *GetName());
-	
-	if (AbilitySystemComponent)
-	{
-		InitializeAttributes();
-		
-		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
-			AttributeSet->GetHealthAttribute()).AddUObject(this, &ANGPawnBase::OnHealthChanged);
-		
-		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
-			AttributeSet->GetAttackRangeAttribute()).AddUObject(this, &ANGPawnBase::OnAttackRangeChanged);
-	}
-	
-	UpdateHPBar();
-}
-
-void ANGPawnBase::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-	// VisualizePath();
-	
-	if (HasAuthority())
-	{
-		CheckCombatState();
-	}
-	
-	if (!HasAuthority())
-	{
-		if (PawnState == EPawnState::Following)
-		{
-			VisualizeFollowing(DeltaTime);
-		}
-		else if (PawnState == EPawnState::Combat)
-		{
-			LookAtInterp(CurrentTarget, DeltaTime);
-		}
-	}
-}
-
-void ANGPawnBase::Activate()
-{
-	if (HasAuthority())
-	{
-		Multicast_Activate();
-	}
-	else
-	{
-		SetActorHiddenInGame(false);
-		SetActorEnableCollision(true);
-		SetActorTickEnabled(true);
-	}
-	
-	UNGUnitDataManager* UnitDataManager = GetWorld()->GetGameInstance()->GetSubsystem<UNGUnitDataManager>();
-	if (!UnitDataManager) return;
-	
-	const FUnitAbilityData* UnitData = UnitDataManager->GetUnitAbilityData(IdentificationTag);
-	if (UnitData)
-	{
-		InitAbilityData(*UnitData);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("[%s] 데이터 테이블에서 태그(%s)를 찾을 수 없습니다!"), *GetName(), *IdentificationTag.ToString());
-	}
-}
-
-void ANGPawnBase::Deactivate()
-{
-	if (HasAuthority())
-	{
-		Multicast_Deactivate();
-	}
-	else
-	{
-		SetActorHiddenInGame(true);
-		SetActorEnableCollision(false);
-		SetActorTickEnabled(false);
-	}
-}
-
-void ANGPawnBase::Multicast_Activate_Implementation()
-{
-	SetActorHiddenInGame(false);
-	SetActorEnableCollision(true);
-	SetActorTickEnabled(true);
-}
-
-void ANGPawnBase::Multicast_Deactivate_Implementation()
-{
-	SetActorHiddenInGame(true);
-	SetActorEnableCollision(false);
-	SetActorTickEnabled(false);
-}
-
-
 UAbilitySystemComponent* ANGPawnBase::GetAbilitySystemComponent() const
 {
 	return AbilitySystemComponent;
@@ -251,11 +137,75 @@ void ANGPawnBase::HandleGameplayCue(UObject* Self, FGameplayTag GameplayCueTag, 
 {
 	IGameplayCueInterface::HandleGameplayCue(Self, GameplayCueTag, EventType, Parameters);
 	
-	if (GameplayCueTag.MatchesTag(FGameplayTag::RequestGameplayTag(FName("GameplayCue.Character.Hit"))))
+	const static FGameplayTag HitTag = FGameplayTag::RequestGameplayTag(FName("GameplayCue.Character.Hit"));
+	
+	if (GameplayCueTag.MatchesTag(HitTag))
 	{
 		if (EventType == EGameplayCueEvent::Executed)
 		{
 			PlayAnimMontage(DamagedMontage);
+		}
+	}
+}
+
+void ANGPawnBase::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+	
+	InitAbilityActorInfo();
+}
+
+void ANGPawnBase::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	
+	InitAbilityActorInfo();
+}
+
+void ANGPawnBase::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	ensureMsgf(IdentificationTag.IsValid(), TEXT("UnitIdTag is not valid for %s"), *GetName());
+	
+	if (AbilitySystemComponent)
+	{
+		InitializeAttributes();
+		
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+			AttributeSet->GetHealthAttribute()).AddUObject(this, &ANGPawnBase::OnHealthChanged);
+		
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+			AttributeSet->GetAttackRangeAttribute()).AddUObject(this, &ANGPawnBase::OnAttackRangeChanged);
+
+		AttackAbilitySpecHandle = AbilitySystemComponent->GiveAbility(
+			FGameplayAbilitySpec(AttackAbilityClass, 1, INDEX_NONE, this)
+		);
+	}
+		
+	UpdateHPBar();
+}
+
+void ANGPawnBase::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	// VisualizePath();
+	
+	if (HasAuthority())
+	{
+		CheckCombatState();
+	}
+	
+	if (!HasAuthority())
+	{
+		if (PawnState == EPawnState::Following)
+		{
+			VisualizeFollowing(DeltaTime);
+		}
+		else if (PawnState == EPawnState::Combat)
+		{
+			LookAtInterp(CurrentTarget, DeltaTime);
 		}
 	}
 }
@@ -327,7 +277,7 @@ void ANGPawnBase::ConsiderTransitionState()
 
 void ANGPawnBase::OnReachedNextGrid()
 {
-	// UE_LOG(LogTemp, Log, TEXT("OnReach index: %s"), *NextGridPoint.ToString());
+	UE_LOG(LogTemp, Log, TEXT("OnReach index: %s"), *NextGridPoint.ToString());
 	
 	//도착시 우선 그리드 업데이트 및 현재 길찾기 상황변동 파악
 	FGridMapBase* GridMap = UGridMapHelper::GetGridMap(CurrentGridAddress);
@@ -338,18 +288,17 @@ void ANGPawnBase::OnReachedNextGrid()
 	TranslatePawnOnGrid(NextGridAddress);
 	
 	//적에게 도착시 전투상태로 이전
+	if (!CurrentTarget || CurrentTarget->IsDead())
+	{
+		FindNewTarget();
+		return;
+	}
+	
 	int32 AttackRange = AttributeSet ? AttributeSet->GetAttackRange() : 1;
 	if (UGridMapHelper::GetDistance(CurrentGridAddress.GridIndex, CurrentTarget->CurrentGridAddress.GridIndex) <= AttackRange 
 		|| ++CurrentPathIndex >= TargetPath.Num())
 	{
 		TransitionToState(EPawnState::Combat);
-		return;
-	}
-	
-	//적이 죽었으면 새로운 적 찾기
-	if (CurrentTarget->IsDead())
-	{
-		FindNewTarget();
 		return;
 	}
 	
@@ -450,6 +399,9 @@ void ANGPawnBase::OnEnterNewState(EPawnState EnteringState)
 	}else if (EnteringState == EPawnState::HardCrowdControl)
 	{
 		OnApplyHardCrowdControl();
+	}else if (EnteringState == EPawnState::None)
+	{
+		RestoreStates();
 	}
 }
 
@@ -644,16 +596,10 @@ void ANGPawnBase::RestoreStates()
 	
 	UE_LOG(LogTemp, Log, TEXT("RestoreState"));
 	
-	
 	GetWorld()->GetTimerManager().ClearTimer(AttackCheckTimerHandle);
 	GetWorld()->GetTimerManager().ClearTimer(PredictGridReachingTimerHandle);
 	
-	TurnPawnState(EPawnState::None);
-}
-
-void ANGPawnBase::TurnPawnState(EPawnState InPawnState)
-{
-	PawnState = InPawnState;
+	TransitionToState(EPawnState::None);
 }
 
 void ANGPawnBase::UpdateHPBar()
@@ -894,6 +840,8 @@ void ANGPawnBase::ExecuteAttack()
 	if (CurrentTarget.Get() && GetAbilitySystemComponent())
 	{
 		LookAt(CurrentTarget.Get());
+		
+		UE_LOG(LogTemp, Log, TEXT("ExecuteAttack:: MyName: %s, Targetname: %s"), *GetName(), *CurrentTarget->GetName());
 		
 		FGameplayEventData Payload;
 		Payload.Instigator = this;

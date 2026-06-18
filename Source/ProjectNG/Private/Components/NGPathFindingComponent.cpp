@@ -20,6 +20,8 @@ void UNGPathFindingComponent::FindPath(const FGridAddress& StartAddress,
         return;
     }
 
+    OutPath.Empty();
+    
     FIntVector2 StartIdx = StartAddress.GridIndex;
     FIntVector2 TargetIdx = TargetAddress.GridIndex;
 
@@ -113,6 +115,8 @@ ANGPawnBase* UNGPathFindingComponent::FindPathToClosestEnemy(const FGridAddress&
     FGridMapBase* GridMap = UGridMapHelper::GetGridMap(StartAddress);
     if (!GridMap) return nullptr;
 
+    OutPath.Empty();
+    
     FIntVector2 StartIdx = StartAddress.GridIndex;
 
     TArray<FIntVector2> Queue;

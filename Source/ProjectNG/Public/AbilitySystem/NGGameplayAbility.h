@@ -24,4 +24,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Ability")
 	ANGPawnBase* GetUnitPawnFromActorInfo() const;
+	
+	UFUNCTION()
+	void OnMontageFinished();
 };

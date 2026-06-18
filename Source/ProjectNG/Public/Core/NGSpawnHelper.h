@@ -29,6 +29,8 @@ public:
 	static bool SpawnUnitPawn(ANGPlayerController* OwnerController, FName UnitName);
 	static bool SpawnUnitPawnAtGrid(ANGPlayerController* OwnerController, FName UnitName, const FGridAddress& SpawnGridAddress);
 	
+	static bool SpawnEnemyPawn(ANGPlayerController* OwnerController, FEnemySpawnInfo EnemySpawnInfo);
+		
 protected:
 	static ANGPawnBase* Internal_SpawnPawn(UObject* WorldContextObject, TSubclassOf<ANGPawnBase> PawnClass,
 	                              FTransform SpawnTransform, AActor* Owner);

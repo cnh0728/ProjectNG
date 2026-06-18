@@ -4,21 +4,25 @@
 #include "GameModes/NGInGameMode.h"
 
 #include "Components/NGCombatManagerComponent.h"
+#include "Core/NGDeveloperSettings.h"
 #include "Core/NGUnitData.h"
 #include "Game/NGGameState.h"
 #include "Pawn/NGUnitPawn.h"
 #include "Player/NGPlayerState.h"
 
 
-void ANGInGameMode::RequestStartCombat(APlayerController* PC)
+ANGInGameMode::ANGInGameMode()
 {
-	// 테스트용으로 잠시 막음
+	CombatManagerComponent = CreateDefaultSubobject<UNGCombatManagerComponent>(TEXT("CombatManager"));
+}
+
+void ANGInGameMode::RequestStartCombat(APlayerController* PC, bool bIsCPUCombat)
+{
+	// TODO: 테스트용으로 잠시 막음
 	// if (CurrentState == EGameState::Combat)	return;
 	
 	ANGGameState* GS = GetGameState<ANGGameState>();
-	
-	UNGCombatManagerComponent* CMC = GS->GetCombatManagerComponent();
-	
+		
 	// 테스트용
 	if (GS)
 	{
@@ -26,11 +30,32 @@ void ANGInGameMode::RequestStartCombat(APlayerController* PC)
 		{
 			if (ANGPlayerState* PS = Cast<ANGPlayerState>(RawPS))
 			{
-				CMC->EnqueueCombatPhase(PS);
+				if (bIsCPUCombat)
+				{
+					TSoftObjectPtr<UNGEnemyDataAsset> SoftPath = GetDefault<UNGDeveloperSettings>()->EnemyDataAsset;
+
+					if (SoftPath.IsNull()) return;
+
+					UNGEnemyDataAsset* LoadedAsset = SoftPath.LoadSynchronous();
+	    
+					if (LoadedAsset)
+					{
+						FEnemySquadData SelectedData;
+						if (LoadedAsset->GetRandomSquadForZone(PS->GetCurrentZoneTag(), SelectedData))
+						{
+							CombatManagerComponent->EnqueueCombatPhase(PS, &SelectedData);
+						}
+					}
+				}
+				else
+				{
+					CombatManagerComponent->EnqueueCombatPhase(PS);
+				}
 			}
 		}
 		
-		CMC->StartCombat();
+		CombatManagerComponent->MatchingCombatUser();
+		CombatManagerComponent->StartCountingCombat();
 	}
 }
 
@@ -63,10 +88,9 @@ void ANGInGameMode::OnCombatFinished(const FCombatResultData& ResultData)
 
 void ANGInGameMode::ReportPawnDeath(ANGPawnBase* DeadPawn) const
 {
-	ANGGameState* GS = GetGameState<ANGGameState>();
-	if (UNGCombatManagerComponent* CMC = GS ? GS->GetCombatManagerComponent() : nullptr)
+	if (CombatManagerComponent)
 	{
-		CMC->NotifyPawnDied(DeadPawn);
+		CombatManagerComponent->NotifyPawnDied(DeadPawn);
 	}
 	
 }

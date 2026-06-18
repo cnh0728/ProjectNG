@@ -3,6 +3,7 @@
 
 #include "Core/NGSpawnHelper.h"
 
+#include "Pawn/NGEnemyPawn.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/NGPocketComponent.h"
 #include "Core/NGPoolSubSystem.h"
@@ -20,7 +21,7 @@ bool UNGSpawnHelper::SpawnUnitPawn(ANGPlayerController* OwnerController, FName U
 	ANGPlayerState* PS = OwnerController->GetPlayerState<ANGPlayerState>();
 	if (!PS) return false;
 	
-	FQuadGridMap& WaitGridMap = PS->GetWaitGridMap();
+	const FQuadGridMap& WaitGridMap = PS->GetWaitGridMap();
 	
 	TOptional<FIntVector2> EmptyGridIndex = WaitGridMap.GetEmptyGridIndex();
 	

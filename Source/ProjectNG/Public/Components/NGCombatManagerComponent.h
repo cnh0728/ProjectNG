@@ -3,9 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Player/NGPlayerState.h"
+#include "Core/NGEnemyDataAsset.h"
 #include "NGCombatManagerComponent.generated.h"
 
+struct FEnemySquadData;
 class ANGPlayerController;
 class ANGPawnBase;
 class ANGPlayerState;
@@ -34,7 +35,7 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	void StartFight();
+	void StartCombat();
 	void ReturnSpectatorHome(ANGPlayerState* AwayPlayer);
 	void NotifyEndCombat(const ANGPlayerState* LoseEndPlayer);
 
@@ -45,18 +46,23 @@ public:
 
 	void ResetGrid(ANGPlayerState* PS);
 
-	void EnqueueCombatPhase(ANGPlayerState* PS);
-	void StartCombat();
+	void EnqueueCombatPhase(ANGPlayerState* PS, const FEnemySquadData* CPUCombatData = nullptr);
+	void StartCountingCombat();
+	void MatchingCombatUser();
 
+	void RequestSpawnSquadByPlayer(ANGPlayerController* RequestingPC, const FEnemySquadData& SquadData);
+	
+	void ProcessPlayerFlee(ANGPlayerController* PlayerController);
+	
 protected:
 	//매개변수 의도된 복사
 	void SetupCombat(const FCombatSettingData& SettingData);
 	
 	UPROPERTY()
-	TArray<FCombatSettingData> CombatDatas;
-	
+	TArray<ANGPlayerState*> CombatPSMatchingQueue;
+
 	UPROPERTY()
-	TArray<ANGPlayerState*> CombatPSQueue;
+	TArray<FCombatSettingData> CombatDatas;
 	
 	UPROPERTY()
 	TMap<ANGPlayerState*, ECombatResult> CombatResultDictionary;
