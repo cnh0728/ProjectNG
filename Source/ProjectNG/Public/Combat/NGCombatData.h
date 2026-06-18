@@ -1,27 +1,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Core/NGEnemyDataAsset.h"
 #include "NGCombatData.generated.h"
 
-class ANGEnemyCharacter;
-
-USTRUCT(BlueprintType)
-struct FWaveData
-{
-	GENERATED_BODY()
-	
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<ANGEnemyCharacter> EnemyClass;
-	
-	UPROPERTY(EditAnywhere)
-	int32 EnemyCount = 10;
-	
-	UPROPERTY(EditAnywhere)
-	float SpawnInterval = 1.0f; //스폰 간격
-	
-	UPROPERTY(EditAnywhere)
-	float SpawnRandomDevation = 1.0f; //간격에서 랜덤 간극
-};
+class ANGPlayerState;
+class ANGEnemyPawn;
 
 USTRUCT()
 struct FCombatResultData
@@ -35,5 +19,27 @@ USTRUCT()
 struct FCombatSettingData
 {
 	GENERATED_BODY()
-	int EnemyCount;
+	
+	FCombatSettingData()
+	{
+		Players.SetNum(2);
+		bIsCPUCombat = false;
+	}
+	
+	void Reset()
+	{
+		Players.Reset();
+		Players.SetNum(2);
+		bIsCPUCombat = false;
+		EnemySquadData = FEnemySquadData();
+	}
+	
+	UPROPERTY()
+	bool bIsCPUCombat;
+	
+	UPROPERTY()
+	TArray<TObjectPtr<ANGPlayerState>> Players;
+	
+	UPROPERTY()
+	FEnemySquadData EnemySquadData;
 };

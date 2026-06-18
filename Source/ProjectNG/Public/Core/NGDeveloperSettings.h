@@ -6,7 +6,9 @@
 #include "Engine/DeveloperSettings.h"
 #include "NGDeveloperSettings.generated.h"
 
-class ANGCharacterBase;
+class UNGEnemyDataAsset;
+class AArena;
+class ANGPawnBase;
 class ANGProjectile;
 /**
  * 
@@ -25,6 +27,15 @@ public:
 	TMap<TSubclassOf<ANGProjectile>, TSoftClassPtr<ANGProjectile>> ProjectileClass;
 	
 	UPROPERTY(Config, EditAnywhere, Category = "NG Pool Settings")
-	TMap<TSubclassOf<ANGCharacterBase>, TSoftClassPtr<ANGCharacterBase>> CharacterClass;
+	TMap<TSubclassOf<ANGPawnBase>, TSoftClassPtr<ANGPawnBase>> PawnClass;
+
+	UPROPERTY(Config, EditAnywhere, Category = "NG Pool Settings")
+	TSoftClassPtr<AArena> ArenaClass;
+
+	UPROPERTY(Config, EditAnywhere, Category = "NG Pool Settings")
+	TSoftObjectPtr<UMaterialInterface> HoverOverlayMaterial;
+	
+	UPROPERTY(Config, EditAnywhere, Category = "NG Pool Settings")
+	TSoftObjectPtr<UNGEnemyDataAsset> EnemyDataAsset;
 	
 };

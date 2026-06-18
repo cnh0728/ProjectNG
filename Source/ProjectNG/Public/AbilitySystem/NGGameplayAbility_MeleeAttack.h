@@ -20,4 +20,7 @@ protected:
 	
 	UFUNCTION()
 	void OnAttackReceived(FGameplayEventData Payload);
+	
+	UPROPERTY()
+	FGameplayEventData TossTargetData;
 };

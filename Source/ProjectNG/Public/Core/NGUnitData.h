@@ -3,9 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Engine/DataTable.h"
-#include "Character/NGUnitCharacter.h"
 #include "NGUnitData.generated.h"
+
+class ANGUnitPawn;
 
 UENUM(BlueprintType)
 enum class EUnitTier : uint8
@@ -34,7 +34,7 @@ public:
 	EUnitTier Tier = EUnitTier::Tier1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, DisplayName = "생성 할 유닛 액터 클래스")
-	TSubclassOf<ANGUnitCharacter> UnitClass;
+	TSubclassOf<ANGUnitPawn> UnitClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, DisplayName = "유닛 이미지")
 	TSoftObjectPtr<UTexture2D> UnitTexture;

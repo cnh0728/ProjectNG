@@ -4,10 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
+#include "Pawn/NGPawnBase.h"
 #include "NGGameplayAbility.generated.h"
 
 class ANGCharacterBase;
-class ANGUnitCharacter;
+class ANGUnitPawn;
 /**
  * 
  */
@@ -20,7 +21,10 @@ public:
 	UNGGameplayAbility();
 	
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
-	
+
 	UFUNCTION(BlueprintCallable, Category = "Ability")
-	ANGCharacterBase* GetUnitCharacterFromActorInfo() const;
+	ANGPawnBase* GetUnitPawnFromActorInfo() const;
+	
+	UFUNCTION()
+	void OnMontageFinished();
 };

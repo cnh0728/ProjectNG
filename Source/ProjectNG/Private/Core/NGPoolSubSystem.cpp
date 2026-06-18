@@ -4,9 +4,10 @@
 #include "Core/NGPoolSubSystem.h"
 
 #include "Combat/Weapon/NGProjectile.h"
+#include "Core/NGDeveloperSettings.h"
 
 ANGProjectile* UNGPoolSubSystem::AcquireProjectile(TSubclassOf<ANGProjectile> ProjectileClass,
-                                                   const FTransform& SpawnTransform, ANGCharacterBase* Target)
+                                                   const FTransform& SpawnTransform, ANGPawnBase* Target)
 {
 	if (!ProjectileClass)	return nullptr;
 	
@@ -45,29 +46,43 @@ ANGProjectile* UNGPoolSubSystem::AcquireProjectile(TSubclassOf<ANGProjectile> Pr
 }
 
 
-ANGCharacterBase* UNGPoolSubSystem::AcquireCharacter(TSubclassOf<ANGCharacterBase> CharacterClass,
-	const FTransform& SpawnTransform)
+ANGPawnBase* UNGPoolSubSystem::AcquirePawn(TSubclassOf<ANGPawnBase> PawnClass,
+                                           const FTransform& SpawnTransform, const FActorSpawnParameters& SpawnParams)
 {
-	if (!CharacterClass)	return nullptr;
+	if (!PawnClass)	return nullptr;
 	
-	FNGCharacterList& Pool = CharacterPools.FindOrAdd(CharacterClass);
+	FNGPawnList& Pool = PawnPools.FindOrAdd(PawnClass);
 	
-	ANGCharacterBase* Character;
+	ANGPawnBase* Pawn;
 	
 	//여유분이 있으면 반환
-	if (Pool.FreeCharacterList.Num() > 0)
+	if (Pool.FreePawnList.Num() > 0)
 	{
-		Character = Pool.FreeCharacterList.Pop();
+		Pawn = Pool.FreePawnList.Pop();
 	}
 	else
 	{
-		Character = GetWorld()->SpawnActor<ANGCharacterBase>(CharacterClass, SpawnTransform);
+		UClass* TargetClass = PawnClass;
+		
+		TMap<TSubclassOf<ANGPawnBase>, TSoftClassPtr<ANGPawnBase>> ClassMap = GetDefault<UNGDeveloperSettings>()->PawnClass;
+		if (ClassMap.Contains(PawnClass))
+		{
+			//TODO: LoadSynchronous는 병목의 원인이 되기도 함. 비동기로드를 미리 해두고 나중에는 메모리에 있는지 체크하는 방식이 나음
+			if (UClass* LoadClass = ClassMap[PawnClass].LoadSynchronous())
+			{
+				TargetClass = LoadClass;
+				UE_LOG(LogTemp, Log, TEXT("Spawn Developer Setting Pawn Class"));
+			}
+		}
+		
+		Pawn = GetWorld()->SpawnActor<ANGPawnBase>(TargetClass, SpawnTransform, SpawnParams);
+		UE_LOG(LogTemp, Log, TEXT("Spawn Default Pawn Class"));
 	}
 	
-	return Character;
+	return Pawn;
 }
 
-void UNGPoolSubSystem::ReleaseDefault(AActor* InActor)
+void UNGPoolSubSystem::ReleaseDefaultSetting(AActor* InActor)
 {
 	check(InActor);
 	
@@ -76,22 +91,21 @@ void UNGPoolSubSystem::ReleaseDefault(AActor* InActor)
 	InActor->SetActorTickEnabled(false);
 }
 
-void UNGPoolSubSystem::ReleaseSegment(ANGCharacterBase* Character)
+void UNGPoolSubSystem::ReleaseSegment(ANGPawnBase* Pawn)
 {
-	//TODO: release는 굉장히 유사해서 Template으로 하고 싶었는데 Pool을 통일해버리면 드롭리스트가 전부나와서 지저분해져서 걍 분리 
-	if (!Character)	return;
+	if (!Pawn)	return;
 	
-	ReleaseDefault(Character);
+	ReleaseDefaultSetting(Pawn);
 	
-	FNGCharacterList& Pool = CharacterPools.FindOrAdd(Character->GetClass());
-	Pool.FreeCharacterList.Push(Character);
+	FNGPawnList& Pool = PawnPools.FindOrAdd(Pawn->GetClass());
+	Pool.FreePawnList.Push(Pawn);
 }
 
 void UNGPoolSubSystem::ReleaseSegment(ANGProjectile* Projectile)
 {
 	if (!Projectile)	return;
 	
-	ReleaseDefault(Projectile);
+	ReleaseDefaultSetting(Projectile);
 	
 	FNGProjectileList& Pool = ProjectilePools.FindOrAdd(Projectile->GetClass());
 	Pool.FreeProjectileList.Push(Projectile);

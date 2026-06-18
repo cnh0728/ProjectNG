@@ -7,7 +7,7 @@
 #include "GameFramework/Actor.h"
 #include "NGProjectile.generated.h"
 
-class ANGCharacterBase;
+class ANGPawnBase;
 class UProjectileMovementComponent;
 class USphereComponent;
 
@@ -39,16 +39,21 @@ protected:
 	FGameplayEffectSpecHandle SpecHandle;	
 	
 	UPROPERTY(VisibleAnywhere)
-	ANGCharacterBase* Target;
+	ANGPawnBase* Target;
 	
 	UPROPERTY(BlueprintReadWrite, Category = "Setting | Projectile")
 	float MoveSpeed = 2000.f;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Setting | Projectile")
 	float RotateSpeed = 10.f;
-
+	
 public:
 	void SetSpecHandle(const FGameplayEffectSpecHandle InSpecHandle) { SpecHandle = InSpecHandle; }
 	
-	void SetTarget(ANGCharacterBase* NewTarget);
+	void SetTarget(ANGPawnBase* NewTarget);
+	
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UStaticMeshComponent> ProjectileMesh;
+	
 };

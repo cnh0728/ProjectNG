@@ -6,7 +6,7 @@
 
 #define ECC_Map ECC_GameTraceChannel1
 #define ECC_SelectableUnit ECC_GameTraceChannel2
-#define ECC_Enemy ECC_GameTraceChannel3
+#define ECC_Pawn ECC_GameTraceChannel3
 
 enum class EAbilityInputID : uint8
 {

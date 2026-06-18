@@ -9,9 +9,53 @@
  * 
  */
 
-#define OFFSET (CellSize / 2)
+class ANGPawnBase;
+class ANGPlayerState;
 
-class ANGUnitCharacter;
+UENUM(BlueprintType)
+enum class EGridType : uint8 {
+	None,
+	Combat,
+	Wait,
+	EnemyWait,
+};
+
+USTRUCT(BlueprintType)
+struct FGridAddress
+{
+	GENERATED_BODY()
+	
+	UPROPERTY()
+	FIntVector2 GridIndex;
+
+	UPROPERTY()
+	EGridType GridType;
+	
+	UPROPERTY()
+	TObjectPtr<ANGPlayerState> GridOwnerPS;
+	
+	UPROPERTY()
+	uint8 DirtyFlag;
+	
+	FGridAddress()
+		: GridIndex(FIntVector2::ZeroValue)
+		, GridType(EGridType::Combat)
+		, GridOwnerPS(nullptr)
+		, DirtyFlag(0) // 기본값 0 세팅
+	{}
+
+	FGridAddress(FIntVector2 InGridIndex, EGridType InGridType, ANGPlayerState* InOwnerPS, uint8 InDirtyFlag)
+		: GridIndex(InGridIndex)
+		, GridType(InGridType)
+		, GridOwnerPS(InOwnerPS)
+		, DirtyFlag(InDirtyFlag)
+	{}
+	
+	bool operator==(const FGridAddress& Other) const
+	{
+		return GridIndex == Other.GridIndex && GridType == Other.GridType && GridOwnerPS == Other.GridOwnerPS;
+	}
+};
 
 USTRUCT(BlueprintType)
 struct FGridData
@@ -19,28 +63,39 @@ struct FGridData
 	GENERATED_BODY()
 
 	UPROPERTY()
-	TObjectPtr<ANGUnitCharacter> PlacedCharacter;
+	TObjectPtr<ANGPawnBase> PlacedPawn;
 	
 	void Reset()
 	{
-		PlacedCharacter = nullptr;
+		PlacedPawn = nullptr;
 	}
 };
 
 USTRUCT(BlueprintType)
-struct PROJECTNG_API FGridMap
+struct PROJECTNG_API FGridMapBase
 {
 	GENERATED_BODY()
+
+	void Internal_Initialize(int32 InW, int32 InH, float InCellSize, const FVector& InPivot, EGridType InGridType);
 	
-public:
-	FGridMap();
-	void InitializeMap(int32 InSizeX, int32 InSizeY, float InCellSize, const FVector& InPivot = FVector::ZeroVector);
+	bool IsValidIndex(const FIntVector2 GridIndex) const;
+	int32 ConvertPointToIndex(const FIntVector2 GridIndex) const;
+	FIntVector2 ConvertIndexToPoint(int32 Index) const;
+
+	void SetGridData(FIntVector2 GridIndex, const FGridData& GridData);
+	void EmptyGridMap(const FIntVector2& GridIndex);
+	FGridData GetGridData(const FIntVector2 GridIndex) const;
+    
+	void ResetGrid();
+    
+	bool IsGridIndexEmpty(const FIntVector2& GridIndex) const;
+	TOptional<FIntVector2> GetEmptyGridIndex() const;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 Width;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 CountX;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 CountY;
+	int32 Height;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float CellSize;
@@ -48,28 +103,58 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FVector Pivot;
 	
-	// 특정 그리드 인덱스(GridX, GridY)를 로컬 벡터로 변환
-	FVector GetRelativeLocation(const FIntVector2 GridIndex) const;
-	FVector GetWorldLocation(const FIntVector2 GridIndex) const;
-	FIntVector2 GetCellIndex(const FVector& Location) const;
-	FIntVector2 GetCellIndex(const FVector2D& Location) const;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EGridType GridType;
+
+	UPROPERTY()
+	TArray<FGridData> GridInfo;
+
+	UPROPERTY()
+	float Offset;
+};
+
+USTRUCT(BlueprintType)
+struct PROJECTNG_API FHexGridMap : public FGridMapBase
+{
+	GENERATED_BODY()
+
+	FHexGridMap();
 	
-	// 인덱스가 유효한지 검사
-	bool IsValidIndex(const FIntVector2 GridIndex) const;	
-	void SetGridData(FIntVector2 GridIndex, const FGridData& GridData);
-	void EmptyGridMap(const FIntVector2& GridIndex);
-	void ResetGridInfo();
+	void InitializeMap(int32 InW, int32 InH, float InCellSize, const FVector& InPivot);
+	
+};
 
-	void RemoveEmptyGridIndex(const FIntVector2& GridIndex);
-	void ResetEmptyGridIndex();
-	FGridData GetGridData(const FIntVector2 GridIndex);
-	TOptional<FIntVector2> GetEmptyGridIndex();
-	bool IsGridIndexEmpty(const FIntVector2& GridIndex) const;
+USTRUCT(BlueprintType)
+struct PROJECTNG_API FQuadGridMap : public FGridMapBase
+{
+	GENERATED_BODY()
 
-protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
-	TArray<FIntVector2> EmptyGridIndex;
+	FQuadGridMap();
+	void InitializeMap(int32 InW, int32 InH, float InCellSize, const FVector& InPivot);
+	
+};
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
-	TMap<FIntVector2, FGridData> GridInfo;
+UCLASS()
+class PROJECTNG_API UGridMapHelper : public UObject
+{
+	GENERATED_BODY()
+
+public:
+	static FVector GetRelativeLocation(FGridAddress GridAddress);
+	static FVector GetWorldLocation(FGridAddress GridAddress);
+	static FIntVector2 GetCellIndex(EGridType GridType, const FVector& Location, ANGPlayerState* PS);
+	static EGridType GetGridType(const FVector& GridLocation, ANGPlayerState* PS);
+	
+	static void GetHexNeighborIndexInRange(FIntVector2 MidIndex, int32 Range, TArray<FIntVector2>& OutNeighborNodes, FGridMapBase* GridMap);
+	static void GetHexNeighborIndexAtExactRange(FIntVector2 MidIndex, int32 Range, TArray<FIntVector2>& OutRingNodes, FGridMapBase* GridMap);
+	
+	static FGridMapBase* GetGridMap(FGridAddress GridAddress);
+
+	static const FIntVector2 GetMirroredIndex(const FGridMapBase& GridMap, FIntVector2 OriginIndex);
+    
+	static int32 GetDistance(FIntVector2 A, FIntVector2 B);
+	static FIntVector2 RectToAxial(int32 Col, int32 Row);
+	static FIntVector GetCubeIndex(const FIntVector2 AxialIndex);
+	
+	static void DrawDebugGrid(const UObject* WorldContextObject, FGridAddress GridAddress);
 };

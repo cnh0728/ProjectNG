@@ -1,9 +1,9 @@
 // Copyright (c) 2025 TeamNG. All Rights Reserved.
 #include "AbilitySystem/NGAttributeSet.h"
 
-#include "Character/NGCharacterBase.h"
 #include "Net/UnrealNetwork.h"
 #include "GameplayEffectExtension.h"
+#include "Pawn/NGPawnBase.h"
 
 #define DEFAULT_REPLICATION_IMPLEMENTATION(ClassName, Name) \
 	void ClassName::OnRep_##Name(const FGameplayAttributeData& OldValue) \
@@ -27,6 +27,7 @@ void UNGAttributeSet::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>
 	DOREPLIFETIME_CONDITION_NOTIFY(UNGAttributeSet, AttackSpeed, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UNGAttributeSet, TargetCount, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UNGAttributeSet, Income, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UNGAttributeSet, MoveSpeed, COND_None, REPNOTIFY_Always);
 }
 
 DEFAULT_REPLICATION_IMPLEMENTATION(UNGAttributeSet, Health)
@@ -43,6 +44,8 @@ DEFAULT_REPLICATION_IMPLEMENTATION(UNGAttributeSet, AttackRange)
 DEFAULT_REPLICATION_IMPLEMENTATION(UNGAttributeSet, AttackSpeed)
 DEFAULT_REPLICATION_IMPLEMENTATION(UNGAttributeSet, TargetCount)
 DEFAULT_REPLICATION_IMPLEMENTATION(UNGAttributeSet, Income)
+DEFAULT_REPLICATION_IMPLEMENTATION(UNGAttributeSet, MoveSpeed)
+DEFAULT_REPLICATION_IMPLEMENTATION(UNGAttributeSet, Star)
 
 void UNGAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
 {
@@ -50,7 +53,7 @@ void UNGAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallback
 	
 	if (Data.EvaluatedData.Attribute == GetHealthAttribute() && GetHealth() <= 0.f)
 	{
-		if (ANGCharacterBase* TargetCharacter = Cast<ANGCharacterBase>(Data.Target.GetAvatarActor()))
+		if (ANGPawnBase* TargetCharacter = Cast<ANGPawnBase>(Data.Target.GetAvatarActor()))
 		{
 			TargetCharacter->Die();
 		}
