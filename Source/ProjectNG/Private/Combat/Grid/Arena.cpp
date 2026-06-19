@@ -222,6 +222,8 @@ void AArena::HighlightSpecificGrid(const FGridAddress& GridAddress, float Highli
 {
 	if (FGridMapBase* GridMap = UGridMapHelper::GetGridMap(GridAddress))
 	{
+		if (!GridMap->IsValidIndex(GridAddress.GridIndex)) return;
+		
 		int32 GridIndex = GridMap->ConvertPointToIndex(GridAddress.GridIndex);
 		// UE_LOG(LogTemp, Log, TEXT("Highlight %s %f"), *GridAddress.GridIndex.ToString(), HighlightFactor);
 

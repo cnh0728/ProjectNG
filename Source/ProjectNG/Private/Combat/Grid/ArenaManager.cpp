@@ -37,30 +37,34 @@ void AArenaManager::MigrationUnits(const FArenaAddress& NewAddress) const
 		
 		if (PocketOwnerPS)
 		{
-			UNGPocketComponent* PocketComponent = PocketOwnerPS->GetPlayerPocket();
-			for (ANGPawnBase* Unit : PocketComponent->GetOwnedUnitPocket())
+			if (UNGPocketComponent* PocketComponent = PocketOwnerPS->GetPlayerPocket())
 			{
-				FGridAddress GridAddress = Unit->GetGridAddress();
-				FIntVector2 MirroredIdx = UGridMapHelper::GetMirroredIndex(*UGridMapHelper::GetGridMap(GridAddress), GridAddress.GridIndex);
-				
-				FGridAddress NewGridAddress(MirroredIdx, EGridType::Combat, NewPS, GridAddress.DirtyFlag);
-				// 돌아올때는 그리드 리셋을 시키기 때문에 Wait만 
-				
-				if (NewAddress.PossessArenaIdentification == EPossessArenaIdentification::Home && GridAddress.GridType == EGridType::Combat)
+				for (ANGPawnBase* Unit : PocketComponent->GetOwnedUnitPocket())
 				{
-					//전투 종료시 (Home으로 돌아가는 Combat) CombatGrid는 Snapshot으로 리셋이기 때문에 배치하지 않음.
-					continue;
+					if (!IsValid(Unit))	continue;
+					
+					FGridAddress GridAddress = Unit->GetGridAddress();
+					FIntVector2 MirroredIdx = UGridMapHelper::GetMirroredIndex(*UGridMapHelper::GetGridMap(GridAddress), GridAddress.GridIndex);
+					
+					FGridAddress NewGridAddress(MirroredIdx, EGridType::Combat, NewPS, GridAddress.DirtyFlag);
+					// 돌아올때는 그리드 리셋을 시키기 때문에 Wait만 
+					
+					if (NewAddress.PossessArenaIdentification == EPossessArenaIdentification::Home && GridAddress.GridType == EGridType::Combat)
+					{
+						//전투 종료시 (Home으로 돌아가는 Combat) CombatGrid는 Snapshot으로 리셋이기 때문에 배치하지 않음.
+						continue;
+					}
+					
+					if (GridAddress.GridType == EGridType::EnemyWait)
+					{
+						NewGridAddress.GridType = EGridType::Wait;
+					}
+					else if (GridAddress.GridType == EGridType::Wait)
+					{
+						NewGridAddress.GridType = EGridType::EnemyWait;
+					}
+					Unit->SetPawnOnGrid(NewGridAddress);
 				}
-				
-				if (GridAddress.GridType == EGridType::EnemyWait)
-				{
-					NewGridAddress.GridType = EGridType::Wait;
-				}
-				else if (GridAddress.GridType == EGridType::Wait)
-				{
-					NewGridAddress.GridType = EGridType::EnemyWait;
-				}
-				Unit->SetPawnOnGrid(NewGridAddress);
 			}
 		}
 		

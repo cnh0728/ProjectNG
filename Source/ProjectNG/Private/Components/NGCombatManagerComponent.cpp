@@ -94,7 +94,7 @@ void UNGCombatManagerComponent::ProcessPlayerFlee(ANGPlayerController* PlayerCon
 	{
 		// UE_LOG(LogTemp, Log, TEXT("ProcessPlayerFlee"));
 		//TODO: 돈 구현하고 돈 넘겨주는거 만들기
-		NotifyEndCombat(PS);
+		NotifyEndCombat(PS, ECombatResult::Lose);
 	}
 }
 
@@ -129,7 +129,7 @@ void UNGCombatManagerComponent::ReturnSpectatorHome(ANGPlayerState* AwayPlayer)
 	}
 }
 
-void UNGCombatManagerComponent::NotifyEndCombat(const ANGPlayerState* LoseEndPlayer)
+void UNGCombatManagerComponent::NotifyEndCombat(const ANGPlayerState* TargetPlayer, ECombatResult Result)
 {
 	//폰이 죽었을때 자기가 졌는지 확인하고 호출하는애라 CombatDatas에서 찾아서 반대편에 애는 승리처리
 	if (!GetOwner()->HasAuthority())	return;
@@ -137,19 +137,19 @@ void UNGCombatManagerComponent::NotifyEndCombat(const ANGPlayerState* LoseEndPla
 	UE_LOG(LogTemp, Log, TEXT("NotifyEndCombat"));
 	
 	int32 FoundDataIndex = INDEX_NONE;
-	int32 LoserPlayerIndex = INDEX_NONE;
+	int32 TargetPlayerIndex = INDEX_NONE;
 	
 	for (int32 i = 0; i < CombatDatas.Num(); ++i)
 	{
-		if (CombatDatas[i].Players.IsValidIndex(0) && CombatDatas[i].Players[0] == LoseEndPlayer) { FoundDataIndex = i; LoserPlayerIndex = 0; break; }
-		if (CombatDatas[i].Players.IsValidIndex(1) && CombatDatas[i].Players[1] == LoseEndPlayer) { FoundDataIndex = i; LoserPlayerIndex = 1; break; }
+		if (CombatDatas[i].Players.IsValidIndex(0) && CombatDatas[i].Players[0] == TargetPlayer) { FoundDataIndex = i; TargetPlayerIndex = 0; break; }
+		if (CombatDatas[i].Players.IsValidIndex(1) && CombatDatas[i].Players[1] == TargetPlayer) { FoundDataIndex = i; TargetPlayerIndex = 1; break; }
 	}
 	
 	bool bIsNewNotification = false;
 	
 	if (FoundDataIndex != INDEX_NONE)
 	{
-		int32 WinnerPlayerIndex = 1 - LoserPlayerIndex;
+		int32 WinnerPlayerIndex = Result == ECombatResult::Win ? TargetPlayerIndex : 1 - TargetPlayerIndex;
 		const FCombatSettingData& TargetCombat = CombatDatas[FoundDataIndex];
 		
 		if (TargetCombat.Players.IsValidIndex(WinnerPlayerIndex))
@@ -169,6 +169,8 @@ void UNGCombatManagerComponent::NotifyEndCombat(const ANGPlayerState* LoseEndPla
 				Winner->FinishCombat();
 			}
 		}
+		
+		int32 LoserPlayerIndex = 1 - WinnerPlayerIndex;
 		
 		if (TargetCombat.Players.IsValidIndex(LoserPlayerIndex))
 		{
@@ -267,7 +269,7 @@ void UNGCombatManagerComponent::NotifyPawnDied(ANGPawnBase* DeadPawn)
 		
 		if (OwnerPS->IsCPUCombatFinished())
 		{
-			NotifyEndCombat(OwnerPS);
+			NotifyEndCombat(OwnerPS, ECombatResult::Win);
 		}
 		//적 사망 이벤트
 		//적 사망 델리게이트 만들어서 구독시키게 하고 델리게이트 호출도 나쁘지 않을듯
@@ -280,7 +282,7 @@ void UNGCombatManagerComponent::NotifyPawnDied(ANGPawnBase* DeadPawn)
 		{
 			if (Pocket->IsAnnihilated())
 			{
-				NotifyEndCombat(OwnerPS);
+				NotifyEndCombat(OwnerPS, ECombatResult::Lose);
 			}
 		}
 	}

@@ -38,6 +38,8 @@ void UUnitDetailsWidgetController::SetTargetUnit(ANGUnitPawn* NewUnit)
 		
 		for (const FUnitAttributeInfo& Info : AttributeInfo->AttributeInformation)
 		{
+			if (!Info.Attribute.IsValid()) continue;
+			
 			FDelegateHandle Handle = ASC->GetGameplayAttributeValueChangeDelegate(Info.Attribute)
 				.AddUObject(this, &ThisClass::OnAnyAttributeChanged);
             
@@ -62,9 +64,9 @@ void UUnitDetailsWidgetController::ClearTargetUnit()
 		{
 			TargetUnit->GetAbilitySystemComponent()->GetGameplayAttributeValueChangeDelegate(HandlePair.Key).Remove(HandlePair.Value);
 		}
-		AttributeDelegateHandles.Empty();
 	}
 	
+	AttributeDelegateHandles.Empty();
 	TargetUnit.Reset();
 }
 

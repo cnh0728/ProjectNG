@@ -127,6 +127,8 @@ protected:
 	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadOnly, Category = "Pawn|GameplayTag")
 	FGameplayTag IdentificationTag;
 	
+	FGameplayTagContainer ActiveLooseTags;
+	
 	UPROPERTY(VisibleAnywhere, Category = "Collision")
 	UCapsuleComponent* CapsuleComponent;
 
@@ -206,6 +208,9 @@ public:
 	FGameplayTag GetIdentificationTag() const { return IdentificationTag; };
 	
 	void SetIdentificationTag(const FGameplayTag InIdentificationTag) { IdentificationTag = InIdentificationTag; }
+	
+	void SetUnitName(const FName& InUnitName) { UnitName = InUnitName; }
+	FName GetUnitName() const { return UnitName; }
 	
 private:
 	void UpdateHPBar();

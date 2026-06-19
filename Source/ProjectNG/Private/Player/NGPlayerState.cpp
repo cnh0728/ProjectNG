@@ -113,6 +113,7 @@ void ANGPlayerState::OnEnterGameState(const EGameState& NewState)
 					for (ANGPawnBase* Pawn : OwnedPawns)
 					{
 						GM->ReturnUnitToPool(Pawn->GetUnitName());
+						Pawn->Destroy();
 					}
 					
 					OwnedPawns.Empty();
