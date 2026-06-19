@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 TeamNG. All Rights Reserved.
+// Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 
 #include "Game/NGGameState.h"
@@ -20,6 +20,9 @@ void ANGGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
+	DOREPLIFETIME(ANGGameState, CurrentPhase);
+	DOREPLIFETIME(ANGGameState, CurrentTurn);
+	DOREPLIFETIME(ANGGameState, RemainingTime);
 }
 
 uint8 ANGGameState::GetPlayerId(const ANGPlayerState* InPS)

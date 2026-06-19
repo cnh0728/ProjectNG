@@ -8,8 +8,4 @@
 void UNGGameInstance::Init()
 {
 	Super::Init();
-	
-	FNGGameplayTags::InitializeNativeTags();
-	
-	UE_LOG(LogTemp, Log, TEXT("GameInstance Init: Gameplay Tags Initialized"));
 }

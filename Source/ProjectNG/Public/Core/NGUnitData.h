@@ -32,6 +32,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Identity", DisplayName = "UI 표시 이름")
 	FText UnitName = FText();
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Identity", DisplayName = "유닛 코스트")
+	FGameplayTag CostTag = FGameplayTag();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Identity", DisplayName = "기본 등급")
 	EUnitTier Tier = EUnitTier::Tier1;

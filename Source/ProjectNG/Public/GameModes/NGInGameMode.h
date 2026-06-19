@@ -29,6 +29,19 @@ public:
 	void OnCombatFinished(const FCombatResultData& ResultData);
 	void ReportPawnDeath(ANGPawnBase* DeadPawn) const;
 	
+	// Game Flow
+	void StartTurn();
+	void StartNodeSelection();
+	void OnNodeSelectionTimerTick();
+	void ProcessNodeSelection(AController* Controller, int32 NodeID);
+	void CheckAllPlayersReadyForNodeSelection();
+	
+	void StartActionPhase();
+	void OnActionPhaseTimerTick();
+	void CheckAllPlayersFinishedAction();
+	
+	void EndTurn();
+	
 	virtual void BeginPlay() override;
 
 public:
@@ -68,7 +81,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Game|DataTable")
 	TObjectPtr<UDataTable> UnitDataTable;
 	
-	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Managers")
 	TObjectPtr<UNGCombatManagerComponent> CombatManagerComponent;
+
+	FTimerHandle PhaseTimerHandle;
 };

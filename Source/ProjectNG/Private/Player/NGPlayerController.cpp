@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 TeamNG. All Rights Reserved.
+// Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 
 #include "Player/NGPlayerController.h"
@@ -404,6 +404,14 @@ void ANGPlayerController::Server_RequestBuyUnit_Implementation(FName UnitName)
 			PlayerPocket->AddUnitToBuyingPocket(UnitName);
 			UE_LOG(LogTemp, Display, TEXT("BuyUnitFromPocket Success"));
 		}
+	}
+}
+
+void ANGPlayerController::Server_SelectNode_Implementation(int32 NodeID)
+{
+	if (ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>())
+	{
+		GM->ProcessNodeSelection(this, NodeID);
 	}
 }
 

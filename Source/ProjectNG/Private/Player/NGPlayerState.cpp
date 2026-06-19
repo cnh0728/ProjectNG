@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 TeamNG. All Rights Reserved.
+// Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 #include "Player/NGPlayerState.h"
 
@@ -38,6 +38,11 @@ void ANGPlayerState::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>&
 	DOREPLIFETIME(ANGPlayerState, HomeArena);
 	DOREPLIFETIME(ANGPlayerState, PlayerLevel);
 	DOREPLIFETIME(ANGPlayerState, CurrentGameState);
+
+	DOREPLIFETIME(ANGPlayerState, CurrentNodeID);
+	DOREPLIFETIME(ANGPlayerState, TargetNodeID);
+	DOREPLIFETIME(ANGPlayerState, bHasSelectedNode);
+	DOREPLIFETIME(ANGPlayerState, bIsActionFinished);
 }
 
 void ANGPlayerState::SpawnGridMapManager()

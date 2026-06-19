@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 TeamNG. All Rights Reserved.
+// Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 #pragma once
 
@@ -121,6 +121,9 @@ protected:
 public:
 	UFUNCTION(Server, Reliable)
 	void Server_RequestBuyUnit(FName UnitName);
+
+	UFUNCTION(Server, Reliable)
+	void Server_SelectNode(int32 NodeID);
 	
 	UNGPocketComponent* GetPlayerPocket() const;
 	void EnterPhase(EGamePhase Phase);

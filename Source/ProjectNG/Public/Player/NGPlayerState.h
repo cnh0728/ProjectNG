@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 TeamNG. All Rights Reserved.
+// Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 #pragma once
 
@@ -68,6 +68,18 @@ public:
 	void SetGameState(EGameState NewState);
 	EGameState GetGameState() const { return CurrentGameState; }
 	void OnCombatEnd(ECombatResult CombatResult);
+
+	int32 GetCurrentNodeID() const { return CurrentNodeID; }
+	void SetCurrentNodeID(int32 NewNodeID) { CurrentNodeID = NewNodeID; }
+
+	int32 GetTargetNodeID() const { return TargetNodeID; }
+	void SetTargetNodeID(int32 NewNodeID) { TargetNodeID = NewNodeID; }
+
+	bool HasSelectedNode() const { return bHasSelectedNode; }
+	void SetHasSelectedNode(bool bSelected) { bHasSelectedNode = bSelected; }
+
+	bool IsActionFinished() const { return bIsActionFinished; }
+	void SetActionFinished(bool bFinished) { bIsActionFinished = bFinished; }
 	
 protected:
 	void OnCombatWin();
@@ -79,6 +91,18 @@ protected:
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite)
 	FGameplayTag CurrentZoneTag;
 	
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Game|Turn")
+	int32 CurrentNodeID = -1;
+
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Game|Turn")
+	int32 TargetNodeID = -1;
+
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Game|Turn")
+	bool bHasSelectedNode = false;
+
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Game|Turn")
+	bool bIsActionFinished = false;
+
 /*************************************/
 /*		전투 및 Pocket 관련			 */
 /*************************************/
