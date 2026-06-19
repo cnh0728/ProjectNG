@@ -212,7 +212,7 @@ public:
 	void SetUnitName(const FName& InUnitName) { UnitName = InUnitName; }
 	FName GetUnitName() const { return UnitName; }
 	
-private:
+protected:
 	void UpdateHPBar();
 	
 	void InitAbilityData(const FUnitAbilityData& AbilityData);

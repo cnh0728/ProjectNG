@@ -11,7 +11,7 @@
 #include "Components/NGPathFindingComponent.h"
 #include "Components/NGPocketComponent.h"
 #include "Components/WidgetComponent.h"
-#include "Game/NGUnitDataManager.h"
+#include "Game/NGPawnDataManager.h"
 #include "Core/NGDeveloperSettings.h"
 #include "GameModes/NGInGameMode.h"
 #include "Net/UnrealNetwork.h"
@@ -164,25 +164,7 @@ void ANGPawnBase::PossessedBy(AController* NewController)
 
 void ANGPawnBase::Activate()
 {
-	if (HasAuthority())
-	{
-		//이거를 Enemy랑 Unit이랑 분기쳐서 따로하기
-		
-		Multicast_Activate();
-
-		if (UNGUnitDataManager* UnitDataManager = GetWorld()->GetGameInstance()->GetSubsystem<UNGUnitDataManager>())
-		{
-			if (const FUnitAbilityData* UnitData = UnitDataManager->GetUnitAbilityData(IdentificationTag))
-			{
-				InitAbilityData(*UnitData);
-			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("[%s] 데이터 테이블에서 태그(%s)를 찾을 수 없습니다!"), *GetName(), *IdentificationTag.ToString());
-			}
-		}
-	}
-	else
+	if (!HasAuthority())
 	{
 		SetActorHiddenInGame(false);
 		SetActorEnableCollision(true);

@@ -1,14 +1,17 @@
 // Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 
-#include "Game/NGUnitDataManager.h"
+#include "Game/NGPawnDataManager.h"
 
-void UNGUnitDataManager::Initialize(FSubsystemCollectionBase& Collection)
+void UNGPawnDataManager::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
 	const FString AbilityDataTablePath = TEXT("/Game/DataTables/DT_UnitAbilityData.DT_UnitAbilityData"); 
 	UnitAbilityDataTable = LoadObject<UDataTable>(nullptr, *AbilityDataTablePath);
+	
+	const FString EnemyAbilityDataTablePath = TEXT("/Game/DataTables/DT_EnemyAbilityData.DT_EnemyAbilityData"); 
+	EnemyAbilityDataTable = LoadObject<UDataTable>(nullptr, *EnemyAbilityDataTablePath);
 	
 	const FString UnitDataTablePath = TEXT("/Game/DataTables/DT_UnitData_kr.DT_UnitData_kr"); 
 	UnitDataTable = LoadObject<UDataTable>(nullptr, *UnitDataTablePath);
@@ -27,6 +30,22 @@ void UNGUnitDataManager::Initialize(FSubsystemCollectionBase& Collection)
 		}
         
 		UE_LOG(LogTemp, Log, TEXT("유닛 능력치 데이터 테이블 캐싱 완료! 총 %d개"), TagToUnitAbilityDataMap.Num());
+	}
+	
+	if (EnemyAbilityDataTable)
+	{
+		TArray<FEnemyAbilityData*> AllRows;
+		EnemyAbilityDataTable->GetAllRows<FEnemyAbilityData>(TEXT("InitializeEnemyMap"), AllRows);
+
+		for (FEnemyAbilityData* RowData : AllRows)
+		{
+			if (RowData && RowData->IdentificationTag.IsValid())
+			{
+				TagToEnemyAbilityDataMap.Add(RowData->IdentificationTag, RowData);
+			}
+		}
+        
+		UE_LOG(LogTemp, Log, TEXT("적 능력치 데이터 테이블 캐싱 완료! 총 %d개"), TagToEnemyAbilityDataMap.Num());
 	}
 	
 	if (UnitDataTable)
@@ -59,7 +78,7 @@ void UNGUnitDataManager::Initialize(FSubsystemCollectionBase& Collection)
 	}
 }
 
-const FUnitAbilityData* UNGUnitDataManager::GetUnitAbilityData(const FGameplayTag IdentificationTag)
+const FUnitAbilityData* UNGPawnDataManager::GetUnitAbilityData(const FGameplayTag IdentificationTag)
 {
 	if (!IdentificationTag.IsValid()) return nullptr;
 	
@@ -72,7 +91,20 @@ const FUnitAbilityData* UNGUnitDataManager::GetUnitAbilityData(const FGameplayTa
 	return nullptr;
 }
 
-const FUnitData* UNGUnitDataManager::GetUnitData(const FGameplayTag IdentificationTag)
+const FEnemyAbilityData* UNGPawnDataManager::GetEnemyAbilityData(const FGameplayTag IdentificationTag)
+{
+	if (!IdentificationTag.IsValid()) return nullptr;
+	
+	if (FEnemyAbilityData* const* FoundData = TagToEnemyAbilityDataMap.Find(IdentificationTag))
+	{
+		return *FoundData; // 포인터의 포인터이므로 한 번 역참조해서 반환
+	}
+	
+	UE_LOG(LogTemp, Warning, TEXT("해당 태그(%s)를 가진 적 데이터가 없습니다!"), *IdentificationTag.ToString());
+	return nullptr;
+}
+
+const FUnitData* UNGPawnDataManager::GetUnitData(const FGameplayTag IdentificationTag)
 {
 	if (!IdentificationTag.IsValid()) return nullptr;
 	
@@ -85,7 +117,7 @@ const FUnitData* UNGUnitDataManager::GetUnitData(const FGameplayTag Identificati
 	return nullptr;
 }
 
-FName UNGUnitDataManager::GetUnitName(const FGameplayTag IdentificationTag) const
+FName UNGPawnDataManager::GetUnitName(const FGameplayTag IdentificationTag) const
 {
 	if (const FName* FoundRowName = TagToUnitNameDataMap.Find(IdentificationTag))
 	{
@@ -94,7 +126,7 @@ FName UNGUnitDataManager::GetUnitName(const FGameplayTag IdentificationTag) cons
 	return NAME_None;
 }
 
-FGameplayTag UNGUnitDataManager::GetBaseTierTag(const FGameplayTag IdentificationTag) const
+FGameplayTag UNGPawnDataManager::GetBaseTierTag(const FGameplayTag IdentificationTag) const
 {
 	if (!IdentificationTag.IsValid()) return FGameplayTag();
 
@@ -111,7 +143,7 @@ FGameplayTag UNGUnitDataManager::GetBaseTierTag(const FGameplayTag Identificatio
 	return GetBaseTierTag((*FoundData)->PrevTierTag);
 }
 
-int32 UNGUnitDataManager::GetDecomposedBaseUnitCount(const FGameplayTag IdentificationTag) const
+int32 UNGPawnDataManager::GetDecomposedBaseUnitCount(const FGameplayTag IdentificationTag) const
 {
 	if (!IdentificationTag.IsValid()) return 0;
 

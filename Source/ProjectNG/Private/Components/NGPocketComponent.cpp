@@ -8,7 +8,7 @@
 #include "Core/NGSpawnHelper.h"
 #include "Core/NGUnitData.h"
 #include "Game/NGGameState.h"
-#include "Game/NGUnitDataManager.h"
+#include "Game/NGPawnDataManager.h"
 #include "GameModes/NGInGameMode.h"
 #include "Net/UnrealNetwork.h"
 #include "Pawn/NGPawnBase.h"
@@ -107,7 +107,7 @@ void UNGPocketComponent::CheckAndMergeUnit(FGameplayTag IdentificationTag)
 		return;
 	}
 	
-	UNGUnitDataManager* DataManager = GetWorld()->GetGameInstance()->GetSubsystem<UNGUnitDataManager>();
+	UNGPawnDataManager* DataManager = GetWorld()->GetGameInstance()->GetSubsystem<UNGPawnDataManager>();
 	if (!DataManager) return;
 	
 	
@@ -197,7 +197,7 @@ void UNGPocketComponent::Server_SellUnit_Implementation(ANGPawnBase* UnitToSell)
 	// 내 소유 유닛인지 검증
 	if (!OwnedUnitPocket.Contains(UnitToSell)) return;
 
-	UNGUnitDataManager* DataManager = GetWorld()->GetGameInstance()->GetSubsystem<UNGUnitDataManager>();
+	UNGPawnDataManager* DataManager = GetWorld()->GetGameInstance()->GetSubsystem<UNGPawnDataManager>();
 	ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>();
 	UNGPoolSubSystem* Pool = GetWorld()->GetSubsystem<UNGPoolSubSystem>();
 	if (!DataManager || !GM || !Pool) return;
@@ -226,7 +226,7 @@ void UNGPocketComponent::Server_SellUnit_Implementation(ANGPawnBase* UnitToSell)
 
 void UNGPocketComponent::DecomposeToBaseUnits(const FGameplayTag& UnitTag, TArray<FName>& OutBaseUnitNames) const
 {
-	UNGUnitDataManager* DataManager = GetWorld()->GetGameInstance()->GetSubsystem<UNGUnitDataManager>();
+	UNGPawnDataManager* DataManager = GetWorld()->GetGameInstance()->GetSubsystem<UNGPawnDataManager>();
 	if (!DataManager) return;
 
 	const FUnitData* UnitData = DataManager->GetUnitData(UnitTag);
