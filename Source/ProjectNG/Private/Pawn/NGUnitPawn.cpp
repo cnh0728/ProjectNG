@@ -105,7 +105,6 @@ void ANGUnitPawn::Activate()
 
 }
 
-
 void ANGUnitPawn::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();

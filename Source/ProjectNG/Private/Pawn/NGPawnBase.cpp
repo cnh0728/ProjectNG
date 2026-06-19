@@ -166,26 +166,27 @@ void ANGPawnBase::Activate()
 {
 	if (HasAuthority())
 	{
+		//이거를 Enemy랑 Unit이랑 분기쳐서 따로하기
+		
 		Multicast_Activate();
+
+		if (UNGUnitDataManager* UnitDataManager = GetWorld()->GetGameInstance()->GetSubsystem<UNGUnitDataManager>())
+		{
+			if (const FUnitAbilityData* UnitData = UnitDataManager->GetUnitAbilityData(IdentificationTag))
+			{
+				InitAbilityData(*UnitData);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("[%s] 데이터 테이블에서 태그(%s)를 찾을 수 없습니다!"), *GetName(), *IdentificationTag.ToString());
+			}
+		}
 	}
 	else
 	{
 		SetActorHiddenInGame(false);
 		SetActorEnableCollision(true);
 		SetActorTickEnabled(true);
-	}
-	
-	UNGUnitDataManager* UnitDataManager = GetWorld()->GetGameInstance()->GetSubsystem<UNGUnitDataManager>();
-	if (!UnitDataManager) return;
-	
-	const FUnitAbilityData* UnitData = UnitDataManager->GetUnitAbilityData(IdentificationTag);
-	if (UnitData)
-	{
-		InitAbilityData(*UnitData);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("[%s] 데이터 테이블에서 태그(%s)를 찾을 수 없습니다!"), *GetName(), *IdentificationTag.ToString());
 	}
 }
 
@@ -948,15 +949,22 @@ void ANGPawnBase::HighlightRangeIndicator(FGridAddress PivotAddress) const
 		CombatArena->HighlightAttackRange(PivotAddress, HighlightRange);
 	}
 }
+
 void ANGPawnBase::InitAbilityData(const FUnitAbilityData& AbilityData)
 {
 	if (!AbilitySystemComponent || !AttributeSet) return;
 	
 	if (HasAuthority())
 	{
+		if (ActiveLooseTags.Num() > 0)
+		{
+			AbilitySystemComponent->RemoveLooseGameplayTags(ActiveLooseTags);
+		}
+		
 		// Setup Tag
 		IdentificationTag = AbilityData.IdentificationTag;
 		AbilitySystemComponent->AddLooseGameplayTags(AbilityData.OwnedTags);
+		ActiveLooseTags = AbilityData.OwnedTags;
 		
 		// Initialize Stat
 		for (const auto& Stat : AbilityData.DefaultStats)

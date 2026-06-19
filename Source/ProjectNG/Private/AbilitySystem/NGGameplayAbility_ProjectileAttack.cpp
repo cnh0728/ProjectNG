@@ -34,8 +34,8 @@ void UNGGameplayAbility_ProjectileAttack::OnReleaseProjectile(FGameplayEventData
 	if (!K2_HasAuthority())	return;
 
 	//DamageEffectClass를 Instigator의 DamageEffect를 가져와서 넣어야하는거 아닌가?
-	TWeakObjectPtr<AActor> TargetActor = Payload.TargetData.Get(0)->GetActors()[0];
-	if (Payload.TargetData.Num() > 0 && TargetActor != nullptr)
+	TWeakObjectPtr<AActor> TargetActor = (Payload.TargetData.Num() > 0 && Payload.TargetData.Get(0) && Payload.TargetData.Get(0)->GetActors().Num() > 0) ? Payload.TargetData.Get(0)->GetActors()[0] : nullptr;
+	if (TargetActor.IsValid())
 	{
 		if (ANGPawnBase* NewTarget = Cast<ANGPawnBase>(TargetActor.Get()))
 		{

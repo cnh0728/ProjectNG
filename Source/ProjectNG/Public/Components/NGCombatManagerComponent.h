@@ -37,7 +37,7 @@ protected:
 public:
 	void StartCombat();
 	void ReturnSpectatorHome(ANGPlayerState* AwayPlayer);
-	void NotifyEndCombat(const ANGPlayerState* LoseEndPlayer);
+	void NotifyEndCombat(const ANGPlayerState* TargetPlayer, ECombatResult Result);
 
 	void NotifyPawnDied(ANGPawnBase* DeadPawn);
 

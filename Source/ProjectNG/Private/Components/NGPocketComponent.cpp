@@ -31,10 +31,10 @@ void UNGPocketComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProper
 void UNGPocketComponent::RequestRoll()
 {
 	AActor* MyOwner = GetOwner();
-	FString RoleStr = MyOwner->HasAuthority() ? TEXT("[SERVER]") : TEXT("[CLIENT]");
+	FString RoleStr = MyOwner ? MyOwner->HasAuthority() ? TEXT("[SERVER]") : TEXT("[CLIENT]") : TEXT("");
     
+	bool bHasConnection = MyOwner && (MyOwner->GetNetConnection() != nullptr);
 	// 1. 내 주인(PC)이 서버와 연결된 소켓(NetConnection)을 가지고 있는지 확인!
-	bool bHasConnection = (MyOwner->GetNetConnection() != nullptr);
     
 	UE_LOG(LogTemp, Warning, TEXT("%s [RequestRoll] Addr: %p | Has NetConnection: %s"), 
 		*RoleStr, this, bHasConnection ? TEXT("TRUE") : TEXT("FALSE"));
@@ -299,12 +299,10 @@ void UNGPocketComponent::ControlPocketSelling(ANGPawnBase* NewPawn)
 
 void UNGPocketComponent::AddUnitFromPocket(ANGPawnBase* NewPawn)
 {
+	if (!NewPawn)	return;
+	
 	OwnedUnitPocket.AddUnique(NewPawn);
-
-	if (NewPawn)
-	{
-		TryMergeUnit(NewPawn->GetIdentificationTag());
-	}
+	TryMergeUnit(NewPawn->GetIdentificationTag());
 }
 
 void UNGPocketComponent::RemoveUnitFromPocket(ANGPawnBase* Unit)
