@@ -3,6 +3,7 @@
 
 #include "UI/NGShopControlWidget.h"
 #include "Components/Button.h"
+#include "Components/TextBlock.h"
 #include "Player/NGPlayerController.h"
 
 void UNGShopControlWidget::NativeConstruct()
@@ -30,6 +31,14 @@ void UNGShopControlWidget::OnFleeButtonClicked()
 	}
 }
 
-void UNGShopControlWidget::OnGoldChanged(float NewGold)
+void UNGShopControlWidget::UpdateGoldText(float NewGold)
 {
+	if (GoldText)
+	{
+		FText GoldNumberText = FText::AsNumber(FMath::FloorToInt(NewGold));
+
+		FText FinalGoldText = FText::Format(NSLOCTEXT("UI", "GoldFormat", "Gold: {0}"), GoldNumberText);
+        
+		GoldText->SetText(FinalGoldText);
+	}
 }

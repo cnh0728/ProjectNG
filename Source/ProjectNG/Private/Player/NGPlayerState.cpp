@@ -2,9 +2,9 @@
 
 #include "Player/NGPlayerState.h"
 
+#include "AbilitySystem/NGPlayerAttributeSet.h"
 #include "Combat/Grid/Arena.h"
 #include "Combat/Grid/ArenaManager.h"
-#include "Components/NGCombatManagerComponent.h"
 #include "Components/NGPocketComponent.h"
 #include "Core/NGDeveloperSettings.h"
 #include "Game/NGGameState.h"
@@ -24,6 +24,8 @@ ANGPlayerState::ANGPlayerState() : PlayerLevel(1), CurrentGameState(EGameState::
 	AbilitySystemComponent->SetIsReplicated(true);
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 	
+	AttributeSet = CreateDefaultSubobject<UNGPlayerAttributeSet>(TEXT("PlayerAttributeSet"));
+	
 	PlayerPocket = CreateDefaultSubobject<UNGPocketComponent>("PocketComponent");
 }
 
@@ -38,6 +40,17 @@ void ANGPlayerState::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>&
 	DOREPLIFETIME(ANGPlayerState, HomeArena);
 	DOREPLIFETIME(ANGPlayerState, PlayerLevel);
 	DOREPLIFETIME(ANGPlayerState, CurrentGameState);
+}
+
+void ANGPlayerState::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	if (AbilitySystemComponent)
+	{
+		// AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+		// 	AttributeSet->GetGoldAttribute()).AddUObject(this, &ANGPlayerState::OnGoldChanged);
+	}
 }
 
 void ANGPlayerState::SpawnGridMapManager()
@@ -138,9 +151,31 @@ void ANGPlayerState::SetGameState(EGameState NewState)
 	
 }
 
-void ANGPlayerState::OnCombatEnd(ECombatResult CombatResult)
+void ANGPlayerState::EarnGold(float EarnedGold)
 {
-	switch (CombatResult)
+	if(!AbilitySystemComponent)	return;
+
+	UGameplayEffect* GoldEffect = NewObject<UGameplayEffect>(GetTransientPackage(), FName(TEXT("InstantGoldEffect")));
+	GoldEffect->DurationPolicy = EGameplayEffectDurationType::Instant;
+	
+	int32 ModifierIndex = GoldEffect->Modifiers.Num();
+	GoldEffect->Modifiers.Add(FGameplayModifierInfo());
+	FGameplayModifierInfo& ModInfo = GoldEffect->Modifiers[ModifierIndex];
+	
+	ModInfo.Attribute = UNGPlayerAttributeSet::GetGoldAttribute();
+	ModInfo.ModifierOp = EGameplayModOp::AddBase;
+	
+	ModInfo.ModifierMagnitude = FGameplayEffectModifierMagnitude(FScalableFloat(EarnedGold));
+	
+	FGameplayEffectSpec Spec(GoldEffect, FGameplayEffectContextHandle(), 1.f);
+	AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(Spec);
+}
+
+void ANGPlayerState::OnCombatEnd(FCombatResultData CombatResult)
+{
+	EarnGold(CombatResult.EarnedGold);
+	
+	switch (CombatResult.WinResult)
 	{
 	case ECombatResult::Draw:
 		{
@@ -158,6 +193,16 @@ void ANGPlayerState::OnCombatEnd(ECombatResult CombatResult)
 			break;
 		}
 	}
+}
+
+float ANGPlayerState::GetOwnedGold() const
+{
+	if (AttributeSet)
+	{
+		return AttributeSet->GetGold();
+	}
+	
+	return 0.f;
 }
 
 void ANGPlayerState::OnCombatWin()

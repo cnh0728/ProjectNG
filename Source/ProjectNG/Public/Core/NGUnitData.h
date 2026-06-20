@@ -57,4 +57,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Pool", DisplayName = "유닛 총 개수", meta=(ClampMin = "-1", ToolTip="-1 이면 제한 없음으로 사용할 수 있습니다."))
 	int32 TotalCountInPool = -1;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Price")
+	float Price = 10.f;
 };

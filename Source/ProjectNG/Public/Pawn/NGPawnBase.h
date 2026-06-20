@@ -15,7 +15,7 @@ struct FUnitAbilityData;
 class UNGHPBarWidgetComponent;
 class UNGPathFindingComponent;
 class UCapsuleComponent;
-class UNGAttributeSet;
+class UNGPawnAttributeSet;
 class ANGCharacterBase;
 class ANGEnemyPawn;
 class USphereComponent;
@@ -179,7 +179,7 @@ protected:
 	
 protected:
 	UPROPERTY(BlueprintReadOnly, Category = "GAS|AbilitySystemComponent")
-	TObjectPtr<UNGAttributeSet> AttributeSet;
+	TObjectPtr<UNGPawnAttributeSet> AttributeSet;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|AbilitySystemComponent")
 	TObjectPtr<UDataTable> DefaultAttributeTable;

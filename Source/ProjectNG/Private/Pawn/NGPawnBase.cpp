@@ -4,7 +4,7 @@
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystem/NGAbilitySystemComponent.h"
-#include "AbilitySystem/NGAttributeSet.h"
+#include "AbilitySystem/NGPawnAttributeSet.h"
 #include "Combat/Grid/Arena.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/NGHPBarWidgetComponent.h"
@@ -53,7 +53,7 @@ ANGPawnBase::ANGPawnBase() : SpeedScale(100.f), RotationInterpSpeed(10.f)
 	
 	AbilitySystemComponent = CreateDefaultSubobject<UNGAbilitySystemComponent>(TEXT("Ability System Component"));
 
-	AttributeSet = CreateDefaultSubobject<UNGAttributeSet>(TEXT("AttributeSet"));
+	AttributeSet = CreateDefaultSubobject<UNGPawnAttributeSet>(TEXT("AttributeSet"));
 	
 	PathFindingComponent = CreateDefaultSubobject<UNGPathFindingComponent>(TEXT("PathFindingComp"));
 	
@@ -617,7 +617,7 @@ bool ANGPawnBase::IsDead()
 {
 	if (AbilitySystemComponent)
 	{
-		float CurrentHP = AbilitySystemComponent->GetNumericAttribute(UNGAttributeSet::GetHealthAttribute());
+		float CurrentHP = AbilitySystemComponent->GetNumericAttribute(UNGPawnAttributeSet::GetHealthAttribute());
 		
 		return CurrentHP <= 0.f;
 	}
@@ -646,8 +646,8 @@ void ANGPawnBase::UpdateHPBar()
 {
 	if (UUserWidget* HPWidget = HPBarComponent->GetUserWidgetObject())
 	{
-		float CurrentHP = AbilitySystemComponent->GetNumericAttribute(UNGAttributeSet::GetHealthAttribute());
-		float MaxHP = AbilitySystemComponent->GetNumericAttribute(UNGAttributeSet::GetMaxHealthAttribute());
+		float CurrentHP = AbilitySystemComponent->GetNumericAttribute(UNGPawnAttributeSet::GetHealthAttribute());
+		float MaxHP = AbilitySystemComponent->GetNumericAttribute(UNGPawnAttributeSet::GetMaxHealthAttribute());
 		
 		float Percent = (MaxHP > 0.f) ? CurrentHP / MaxHP : 0.f;
 		

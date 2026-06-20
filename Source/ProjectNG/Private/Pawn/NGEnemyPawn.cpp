@@ -4,7 +4,7 @@
 #include "Pawn/NGEnemyPawn.h"
 
 #include "AbilitySystem/NGAbilitySystemComponent.h"
-#include "AbilitySystem/NGAttributeSet.h"
+#include "AbilitySystem/NGPawnAttributeSet.h"
 #include "Components/CapsuleComponent.h"
 #include "Core/EnemyAbilityData.h"
 #include "Game/NGPawnDataManager.h"

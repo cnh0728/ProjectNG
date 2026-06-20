@@ -13,6 +13,7 @@
 #include "Pawn/SelectableInterface.h"
 #include "Core/NGBlueprintLibrary.h"
 #include "Core/NGSpawnHelper.h"
+#include "Game/NGPawnDataManager.h"
 #include "GameModes/NGInGameMode.h"
 #include "Input/NGInputComponent.h"
 #include "Player/NGPlayerState.h"
@@ -398,11 +399,17 @@ void ANGPlayerController::Server_RequestBuyUnit_Implementation(FName UnitName)
 {
 	if (ANGPlayerState* PS = GetPlayerState<ANGPlayerState>())
 	{
-		if (UNGSpawnHelper::SpawnUnitPawn(this, UnitName))
-		{
-			UNGPocketComponent* PlayerPocket = PS->GetPlayerPocket();
-			PlayerPocket->AddUnitToBuyingPocket(UnitName);
-			UE_LOG(LogTemp, Display, TEXT("BuyUnitFromPocket Success"));
+		ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>();
+		if (!GM)	return;
+		
+		if (GM->CanBuyUnit(UnitName, PS->GetOwnedGold()))
+		{			
+			if (UNGSpawnHelper::SpawnUnitPawn(this, UnitName))
+			{
+				UNGPocketComponent* PlayerPocket = PS->GetPlayerPocket();
+				PlayerPocket->AddUnitToBuyingPocket(UnitName);
+				UE_LOG(LogTemp, Display, TEXT("BuyUnitFromPocket Success"));
+			}
 		}
 	}
 }

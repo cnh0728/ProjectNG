@@ -5,7 +5,7 @@
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 
 #include "AbilitySystemComponent.h"
-#include "AbilitySystem/NGAttributeSet.h"
+#include "AbilitySystem/NGPawnAttributeSet.h"
 #include "Pawn/NGPawnBase.h"
 
 UNGGameplayAbility::UNGGameplayAbility()
@@ -41,7 +41,7 @@ void UNGGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 
 	UAnimMontage* MontageToPlay = Unit->GetAttackMontage();
 	
-	float CurrentAS = GetAbilitySystemComponentFromActorInfo()->GetNumericAttribute(UNGAttributeSet::GetAttackSpeedAttribute());
+	float CurrentAS = GetAbilitySystemComponentFromActorInfo()->GetNumericAttribute(UNGPawnAttributeSet::GetAttackSpeedAttribute());
 	
 	if (MontageToPlay)
 	{

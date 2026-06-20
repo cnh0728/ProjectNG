@@ -3,6 +3,8 @@
 
 #include "UI/WidgetController/NGRollShopWidgetController.h"
 
+#include "AbilitySystemBlueprintLibrary.h"
+#include "AbilitySystem/NGPlayerAttributeSet.h"
 #include "Components/NGPocketComponent.h"
 #include "Player/NGPlayerController.h"
 
@@ -15,7 +17,15 @@ void UNGRollShopWidgetController::BroadcastInitialValues()
 
 void UNGRollShopWidgetController::BindCallbacksToDependencies()
 {
-	
+	if (UAbilitySystemComponent* ASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(PlayerState))
+	{
+		ASC->GetGameplayAttributeValueChangeDelegate(UNGPlayerAttributeSet::GetGoldAttribute()).AddLambda(
+			[this](const FOnAttributeChangeData& Data)
+			{
+				OnGoldChanged.Broadcast(Data.NewValue);
+			}
+		);
+	}
 }
 
 void UNGRollShopWidgetController::GetPlayerRollPocket(TArray<FName>& RollPockets) const

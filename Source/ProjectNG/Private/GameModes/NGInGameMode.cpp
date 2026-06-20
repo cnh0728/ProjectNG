@@ -103,15 +103,6 @@ void ANGInGameMode::BeginPlay()
 	InitializeUnitPool();
 }
 
-int32 ANGInGameMode::SellUnit(ANGUnitPawn* Unit)
-{
-	int32 UnitSellValue = 1;
-	
-	//DataTable참조해서 유닛의 가격이랑 성보고 돈 계산 후 반환
-	
-	return UnitSellValue;
-}
-
 int32 ANGInGameMode::GrabUnitFromPool(FName UnitRowName)
 {
 	if (!HasAuthority()) return false;
@@ -176,6 +167,27 @@ TSubclassOf<ANGUnitPawn> ANGInGameMode::GetUnitClass(FName UnitName) const
 	if (!FoundRow)	return nullptr;
 	
 	return FoundRow->UnitClass;
+}
+
+float ANGInGameMode::SellUnit(ANGUnitPawn* Unit)
+{
+	const FUnitData* UnitData = GetUnitData(Unit->GetUnitName());
+	if (!UnitData) return false;
+	
+	float UnitSellValue = UnitData->Price;
+	
+	//TODO: DataTable참조해서 유닛의 가격이랑 성보고 돈 계산 후 반환
+	return UnitSellValue;
+}
+
+bool ANGInGameMode::CanBuyUnit(FName UnitName, float OwnedGold) const
+{
+	const FUnitData* UnitData = GetUnitData(UnitName);
+	if (!UnitData) return false;
+	
+	if (UnitData->Price > OwnedGold)	return false;
+	
+	return true;
 }
 
 const FUnitData* ANGInGameMode::GetUnitData(FName UnitName) const

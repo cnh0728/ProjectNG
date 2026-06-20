@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Combat/NGCombatData.h"
 #include "Core/NGEnemyDataAsset.h"
 #include "NGCombatManagerComponent.generated.h"
 
@@ -11,15 +12,6 @@ class ANGPlayerController;
 class ANGPawnBase;
 class ANGPlayerState;
 struct FCombatSettingData;
-
-UENUM(BlueprintType)
-enum class ECombatResult : uint8
-{
-	None = 0,
-	Win = 1,
-	Lose = 2,
-	Draw = 3,
-};
 
 UCLASS()
 class PROJECTNG_API UNGCombatManagerComponent : public UActorComponent
@@ -65,7 +57,7 @@ protected:
 	TArray<FCombatSettingData> CombatDatas;
 	
 	UPROPERTY()
-	TMap<ANGPlayerState*, ECombatResult> CombatResultDictionary;
+	TMap<ANGPlayerState*, FCombatResultData> CombatResultDictionary;
 	
 	UPROPERTY()
 	int32 FinishedCombatCount;

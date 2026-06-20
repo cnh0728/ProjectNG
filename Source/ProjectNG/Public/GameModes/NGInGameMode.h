@@ -34,7 +34,7 @@ public:
 public:
 	
 	//유닛을 팔고(반환까지 진행) 유닛의 값을 리턴
-	int32 SellUnit(ANGUnitPawn* Unit);
+	float SellUnit(ANGUnitPawn* Unit);
 	
 	/** 유닛풀에서 유닛 카운트를 하나 감소시킵니다. 이후 감소된 카운트를 반환합니다.
  *  반환할 수 없다면 -1을 반환합니다.
@@ -53,6 +53,9 @@ public:
 	FName GetRandomUnitByTier(EUnitTier Tier);
 
 	TSubclassOf<ANGUnitPawn> GetUnitClass(FName UnitName) const;
+	
+	bool CanBuyUnit(FName UnitName, float OwnedGold) const;
+	
 	const FUnitData* GetUnitData(FName UnitName) const;
 
 	UNGCombatManagerComponent* GetCombatManagerComponent() { return CombatManagerComponent; };	

@@ -6,6 +6,8 @@
 #include "UI/NGWidgetController.h"
 #include "NGRollShopWidgetController.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGoldChangedSignature, float, NewGold);
+
 /**
  * 
  */
@@ -29,4 +31,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Game|Shop")
 	void BuyUnitFromPocket(FName UnitName);
+	
+	UPROPERTY(BlueprintAssignable, Category = "Game|Shop")
+	FOnGoldChangedSignature OnGoldChanged;
 };

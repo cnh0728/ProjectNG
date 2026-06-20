@@ -160,3 +160,13 @@ int32 UNGPawnDataManager::GetDecomposedBaseUnitCount(const FGameplayTag Identifi
 	const int32 MergeCount = FMath::Max((*FoundData)->MergeRequiredCount, 3);
 	return MergeCount * GetDecomposedBaseUnitCount((*FoundData)->PrevTierTag);
 }
+
+float UNGPawnDataManager::GetUnitPrice(const FGameplayTag IdentificationTag) const
+{
+	if (!IdentificationTag.IsValid()) return 0;
+
+	FUnitData* const* FoundData = TagToUnitDataMap.Find(IdentificationTag);
+	if (!FoundData || !(*FoundData)) return 0;
+
+	return (*FoundData)->Price;
+}
