@@ -120,7 +120,7 @@ protected:
 /*************************************/
 public:
 	UFUNCTION(Server, Reliable)
-	void Server_RequestBuyUnit(FName UnitName);
+	void Server_RequestBuyUnit(FGameplayTag UnitTag);
 
 	UFUNCTION(Server, Reliable)
 	void Server_SelectNode(int32 NodeID);

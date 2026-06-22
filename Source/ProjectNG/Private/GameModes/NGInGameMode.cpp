@@ -7,6 +7,7 @@
 #include "Core/NGDeveloperSettings.h"
 #include "Core/NGUnitData.h"
 #include "Game/NGGameState.h"
+#include "Game/NGUnitDataManager.h"
 #include "Pawn/NGUnitPawn.h"
 #include "Player/NGPlayerState.h"
 
@@ -332,11 +333,11 @@ int32 ANGInGameMode::SellUnit(ANGUnitPawn* Unit)
 	return UnitSellValue;
 }
 
-int32 ANGInGameMode::GrabUnitFromPool(FName UnitRowName)
+int32 ANGInGameMode::GrabUnitFromPool(FGameplayTag UnitTag)
 {
-	if (!HasAuthority()) return false;
+	if (!HasAuthority()) return -1;
 	
-	if (int32* Count = UnitPool.Find(UnitRowName))
+	if (int32* Count = UnitPool.Find(UnitTag))
 	{
 		if (*Count > 0)
 		{
@@ -347,37 +348,51 @@ int32 ANGInGameMode::GrabUnitFromPool(FName UnitRowName)
 	return -1;
 }
 
-bool ANGInGameMode::IsExistUnit(FName UnitRowName)
+bool ANGInGameMode::IsExistUnit(FGameplayTag UnitTag)
 {
-	return *UnitPool.Find(UnitRowName) > 0;
+	if (int32* Count = UnitPool.Find(UnitTag))
+	{
+		return *Count > 0;
+	}
+	return false;
 }
 
-bool ANGInGameMode::IsExistUnitDataTable()
+bool ANGInGameMode::IsExistUnitDataTable() const
 {
-	return UnitDataTable != nullptr;
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UNGUnitDataManager* UnitDataManager = GI->GetSubsystem<UNGUnitDataManager>())
+		{
+			return UnitDataManager->IsExistUnitDataTable();
+		}
+	}
+	return false;
 }
 
-void ANGInGameMode::ReturnUnitToPool(FName UnitRowName, int32 UnitCount)
+void ANGInGameMode::ReturnUnitToPool(FGameplayTag UnitTag, int32 UnitCount)
 {
-	if (int32* Count = UnitPool.Find(UnitRowName))
+	if (int32* Count = UnitPool.Find(UnitTag))
 	{
 		(*Count) += UnitCount;
 	}
 }
 
-FName ANGInGameMode::GetRandomUnitByTier(EUnitTier Tier)
+FGameplayTag ANGInGameMode::GetRandomUnitByTier(EUnitTier Tier)
 {
 	if (TieredUnitPool.Contains(Tier))
 	{
-		TArray<FName> AvailableUnits;
-		const TArray<FName>& UnitsInTier = TieredUnitPool[Tier];
+		TArray<FGameplayTag> AvailableUnits;
+		const TArray<FGameplayTag>& UnitsInTier = TieredUnitPool[Tier];
 
 		// 현재 남아 있는 유닛만 필터링
-		for (FName UnitRowName : UnitsInTier)
+		for (FGameplayTag UnitTag : UnitsInTier)
 		{
-			if (UnitPool.Contains(UnitRowName) && UnitPool[UnitRowName] > 0)
+			if (int32* Count = UnitPool.Find(UnitTag))
 			{
-				AvailableUnits.Add(UnitRowName);
+				if (*Count > 0)
+				{
+					AvailableUnits.Add(UnitTag);
+				}
 			}
 		}
 
@@ -387,41 +402,51 @@ FName ANGInGameMode::GetRandomUnitByTier(EUnitTier Tier)
 			return AvailableUnits[RandomIndex];
 		}
 	}
-	return NAME_None;
+	return FGameplayTag();
 }
 
-TSubclassOf<ANGUnitPawn> ANGInGameMode::GetUnitClass(FName UnitName) const
+TSubclassOf<ANGUnitPawn> ANGInGameMode::GetUnitClass(FGameplayTag UnitTag) const
 {
-	const FUnitData* FoundRow = GetUnitData(UnitName);
+	const FUnitData* FoundRow = GetUnitData(UnitTag);
 	if (!FoundRow)	return nullptr;
 	
 	return FoundRow->UnitClass;
 }
 
-const FUnitData* ANGInGameMode::GetUnitData(FName UnitName) const
+const FUnitData* ANGInGameMode::GetUnitData(FGameplayTag UnitTag) const
 {
-	if (!UnitDataTable) return nullptr;
-	
-	return UnitDataTable->FindRow<FUnitData>(UnitName, TEXT(""));
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UNGUnitDataManager* UnitDataManager = GI->GetSubsystem<UNGUnitDataManager>())
+		{
+			return UnitDataManager->GetUnitData(UnitTag);
+		}
+	}
+	return nullptr;
 }
 
 void ANGInGameMode::InitializeUnitPool()
 {
-	if (!IsValid(UnitDataTable.Get())) return;
-
-	TArray<FName> RowNames = UnitDataTable.Get()->GetRowNames();
-	for (const FName& RowName : RowNames)
+	if (UGameInstance* GI = GetGameInstance())
 	{
-		FString ContextString;
-		FUnitData* Row = UnitDataTable.Get()->FindRow<FUnitData>(RowName, ContextString);
-		if (Row && Row->UnitClass)
+		if (UNGUnitDataManager* UnitDataManager = GI->GetSubsystem<UNGUnitDataManager>())
 		{
-			// 총 개수 추가
-			UnitPool.Add(RowName, Row->TotalCountInPool);
+			const TMap<FGameplayTag, FUnitData*>& AllUnitData = UnitDataManager->GetAllUnitDataMap();
+			for (const auto& Pair : AllUnitData)
+			{
+				FGameplayTag UnitTag = Pair.Key;
+				FUnitData* Row = Pair.Value;
 
-			// 등급별로 유닛 클래스 추가
-			TieredUnitPool.FindOrAdd(Row->Tier).Add(RowName);
+				if (Row && Row->UnitClass)
+				{
+					// 총 개수 추가
+					UnitPool.Add(UnitTag, Row->TotalCountInPool);
+
+					// 등급별로 유닛 클래스 추가
+					TieredUnitPool.FindOrAdd(Row->Tier).Add(UnitTag);
+				}
+			}
+			UE_LOG(LogTemp, Warning, TEXT("Unit Pool Initialized on Server using UnitDataManager."));
 		}
 	}
-	UE_LOG(LogTemp, Warning, TEXT("Unit Pool Initialized on Server."));
 }

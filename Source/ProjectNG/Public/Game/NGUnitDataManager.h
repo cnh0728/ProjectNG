@@ -31,9 +31,13 @@ public:
 	/** 해당 유닛을 판매할 때 공용 풀로 반환해야 할 1성 유닛 수를 계산합니다 */
 	int32 GetDecomposedBaseUnitCount(const FGameplayTag IdentificationTag) const;
 
+	bool IsExistUnitDataTable() const { return UnitDataTable != nullptr; }
+	
 	const UDataTable* GetUnitDataTable() { return UnitDataTable; };
 	
 	const UDataTable* GetUnitAbilityDataTable() { return UnitAbilityDataTable; };
+	
+	const TMap<FGameplayTag, FUnitData*>& GetAllUnitDataMap() const { return TagToUnitDataMap; }
 	
 private:
 	UPROPERTY()

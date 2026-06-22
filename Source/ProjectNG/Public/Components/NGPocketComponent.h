@@ -34,12 +34,12 @@ public:
 	void RequestRoll();
 
 	UFUNCTION(BlueprintPure, Category = "Game|Shop")
-	const TArray<FName>& GetRollPocket() const { return RollShopPocket; }
+	const TArray<FGameplayTag>& GetRollPocket() const { return RollShopPocket; }
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Game|Shop")
 	int32 PlayerLevel = 1; // TODO. 어빌리티 시스템으로 처리해야함. 현재 디버깅용으로 임시 변수
 
-	void AddUnitToBuyingPocket(FName UnitName);
+	void AddUnitToBuyingPocket(FGameplayTag UnitTag);
 	void TryMergeUnit(FGameplayTag IdentificationTag);
 
 	/** 유닛을 판매합니다. 상급 유닛일 경우 구성 1성 유닛을 재귀적으로 공용 풀에 반환합니다. */
@@ -62,10 +62,10 @@ protected:
 	void Server_SellUnit(ANGPawnBase* UnitToSell);
 
 	/**
-	 * 유닛 태그를 재귀적으로 분해하여 1성 유닛의 FName 목록을 반환합니다.
-	 * 2성 → 1성 FName × 3, 3성 → 1성 FName × 9
+	 * 유닛 태그를 재귀적으로 분해하여 1성 유닛의 Tag 목록을 반환합니다.
+	 * 2성 → 1성 Tag × 3, 3성 → 1성 Tag × 9
 	 */
-	void DecomposeToBaseUnits(const FGameplayTag& UnitTag, TArray<FName>& OutBaseUnitNames) const;
+	void DecomposeToBaseUnits(const FGameplayTag& UnitTag, TArray<FGameplayTag>& OutBaseUnitTags) const;
 	
 	UFUNCTION(NetMulticast, Unreliable)
 	void Multicast_PlayMergeEffect(FVector EffectLocation, EUnitTier UnitTier);
@@ -75,7 +75,7 @@ protected:
 
 private:
 	UPROPERTY(VisibleAnywhere, ReplicatedUsing = OnRep_RollPocket, Category = "Game|Shop")
-	TArray<FName> RollShopPocket; // 플레이어의 상점에 표시된 유닛 목록
+	TArray<FGameplayTag> RollShopPocket; // 플레이어의 상점에 표시된 유닛 목록
 	
 	UPROPERTY(Replicated, VisibleAnywhere)
 	EShopActionType LastShopAction;

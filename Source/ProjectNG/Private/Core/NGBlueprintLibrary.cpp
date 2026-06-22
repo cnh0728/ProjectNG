@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 TeamNG. All Rights Reserved.
+// Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 
 #include "Core/NGBlueprintLibrary.h"
@@ -7,6 +7,7 @@
 #include "Player/NGPlayerState.h"
 #include "UI/NGWidgetController.h"
 #include "UI/HUD/NGHUD.h"
+#include "Game/NGUnitDataManager.h"
 
 ANGHUD* UNGBlueprintLibrary::GetNGHUD(const UObject* WorldContextObject)
 {
@@ -45,4 +46,44 @@ UUnitDetailsWidgetController* UNGBlueprintLibrary::GetUnitDetailsWidgetControlle
 		// return NGHUD->GetUnitDetailsWidgetController(WParams);
 	}
 	return nullptr;
+}
+
+void UNGBlueprintLibrary::GetUnitDataRowByTag(const UObject* WorldContextObject, FGameplayTag UnitTag, EGetDataTableRowResult& OutResult, FUnitData& OutRow)
+{
+	if (WorldContextObject)
+	{
+		if (UGameInstance* GI = WorldContextObject->GetWorld()->GetGameInstance())
+		{
+			if (UNGUnitDataManager* UnitDataManager = GI->GetSubsystem<UNGUnitDataManager>())
+			{
+				if (const FUnitData* FoundData = UnitDataManager->GetUnitData(UnitTag))
+				{
+					OutRow = *FoundData;
+					OutResult = EGetDataTableRowResult::RowFound;
+					return;
+				}
+			}
+		}
+	}
+
+	OutResult = EGetDataTableRowResult::RowNotFound;
+}
+
+void UNGBlueprintLibrary::GetUnitDataRowFromTableByTag(UDataTable* DataTable, FGameplayTag UnitTag, EGetDataTableRowResult& OutResult, FUnitData& OutRow)
+{
+	if (DataTable && UnitTag.IsValid())
+	{
+		for (auto& Pair : DataTable->GetRowMap())
+		{
+			FUnitData* RowData = (FUnitData*)Pair.Value;
+			if (RowData && RowData->IdentificationTag == UnitTag)
+			{
+				OutRow = *RowData;
+				OutResult = EGetDataTableRowResult::RowFound;
+				return;
+			}
+		}
+	}
+
+	OutResult = EGetDataTableRowResult::RowNotFound;
 }

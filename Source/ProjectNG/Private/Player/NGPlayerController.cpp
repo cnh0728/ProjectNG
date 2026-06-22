@@ -394,14 +394,14 @@ void ANGPlayerController::ResetHoveringUnit()
 	}
 }
 
-void ANGPlayerController::Server_RequestBuyUnit_Implementation(FName UnitName)
+void ANGPlayerController::Server_RequestBuyUnit_Implementation(FGameplayTag UnitTag)
 {
 	if (ANGPlayerState* PS = GetPlayerState<ANGPlayerState>())
 	{
-		if (UNGSpawnHelper::SpawnUnitPawn(this, UnitName))
+		if (UNGSpawnHelper::SpawnUnitPawn(this, UnitTag))
 		{
 			UNGPocketComponent* PlayerPocket = PS->GetPlayerPocket();
-			PlayerPocket->AddUnitToBuyingPocket(UnitName);
+			PlayerPocket->AddUnitToBuyingPocket(UnitTag);
 			UE_LOG(LogTemp, Display, TEXT("BuyUnitFromPocket Success"));
 		}
 	}

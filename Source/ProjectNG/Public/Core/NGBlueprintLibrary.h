@@ -1,14 +1,23 @@
-﻿// Copyright (c) 2025 TeamNG. All Rights Reserved.
+// Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Kismet/BlueprintFunctionLibrary.h"
+#include "Core/NGUnitData.h"
+#include "GameplayTagContainer.h"
 #include "NGBlueprintLibrary.generated.h"
 
 struct FWidgetParams;
 class UUnitDetailsWidgetController;
 class ANGHUD;
+
+UENUM(BlueprintType)
+enum class EGetDataTableRowResult : uint8
+{
+	RowFound,
+	RowNotFound
+};
+
 /**
  * 
  */
@@ -41,4 +50,10 @@ public:
 	
 	UFUNCTION(BlueprintPure, Category = "NG|Utility", meta = (DefaultToSelf = "WorldContextObject"))
 	static UUnitDetailsWidgetController* GetUnitDetailsWidgetController(const UObject* WorldContextObject);
+
+	UFUNCTION(BlueprintCallable, Category = "NG|Data", meta = (WorldContext = "WorldContextObject", ExpandEnumAsExecs = "OutResult"))
+	static void GetUnitDataRowByTag(const UObject* WorldContextObject, FGameplayTag UnitTag, EGetDataTableRowResult& OutResult, FUnitData& OutRow);
+
+	UFUNCTION(BlueprintCallable, Category = "NG|Data", meta = (ExpandEnumAsExecs = "OutResult"))
+	static void GetUnitDataRowFromTableByTag(UDataTable* DataTable, FGameplayTag UnitTag, EGetDataTableRowResult& OutResult, FUnitData& OutRow);
 };

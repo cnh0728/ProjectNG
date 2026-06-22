@@ -18,7 +18,7 @@ void UNGRollShopWidgetController::BindCallbacksToDependencies()
 	
 }
 
-void UNGRollShopWidgetController::GetPlayerRollPocket(TArray<FName>& RollPockets) const
+void UNGRollShopWidgetController::GetPlayerRollPocket(TArray<FGameplayTag>& RollPockets) const
 {
 	if (ANGPlayerController* NGP = Cast<ANGPlayerController>(PlayerController))
 	{
@@ -55,13 +55,13 @@ int32 UNGRollShopWidgetController::GainPlayerLevel() const
 	return 1;
 }
 
-void UNGRollShopWidgetController::BuyUnitFromPocket(FName UnitName)
+void UNGRollShopWidgetController::BuyUnitFromPocket(FGameplayTag UnitTag)
 {
 	if (ANGPlayerController* NGP = Cast<ANGPlayerController>(PlayerController))
 	{
 		if (NGP->IsLocalController())
 		{
-			NGP->Server_RequestBuyUnit(UnitName);
+			NGP->Server_RequestBuyUnit(UnitTag);
 		}
 	}
 }
