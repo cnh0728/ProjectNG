@@ -12,7 +12,13 @@ class ANGGameState;
 
 void UNGRollShopWidgetController::BroadcastInitialValues()
 {
-	
+	if (UAbilitySystemComponent* ASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(PlayerState))
+	{
+		if (const UNGPlayerAttributeSet* Asset = ASC->GetSet<UNGPlayerAttributeSet>())
+		{
+			OnGoldChanged.Broadcast(Asset->GetGold());
+		}
+	}
 }
 
 void UNGRollShopWidgetController::BindCallbacksToDependencies()
@@ -22,6 +28,7 @@ void UNGRollShopWidgetController::BindCallbacksToDependencies()
 		ASC->GetGameplayAttributeValueChangeDelegate(UNGPlayerAttributeSet::GetGoldAttribute()).AddLambda(
 			[this](const FOnAttributeChangeData& Data)
 			{
+				UE_LOG(LogTemp, Log, TEXT("New Gold Value: %f"), Data.NewValue);
 				OnGoldChanged.Broadcast(Data.NewValue);
 			}
 		);

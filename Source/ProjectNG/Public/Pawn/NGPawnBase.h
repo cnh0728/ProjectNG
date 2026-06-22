@@ -67,6 +67,8 @@ public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	//~End IAbilitySystemInterface
 
+	UNGAbilitySystemComponent* GetNGAbilitySystemComponent() const { return AbilitySystemComponent; }
+	
 	virtual void HandleGameplayCue(UObject* Self, FGameplayTag GameplayCueTag, EGameplayCueEvent::Type EventType, const FGameplayCueParameters& Parameters) override;
 
 	FORCEINLINE USkeletalMeshComponent* GetMesh() const { return UnitMesh; }
@@ -210,7 +212,11 @@ public:
 	void SetIdentificationTag(const FGameplayTag InIdentificationTag) { IdentificationTag = InIdentificationTag; }
 	
 	void SetUnitName(const FName& InUnitName) { UnitName = InUnitName; }
-	FName GetUnitName() const { return UnitName; }
+	FName GetUnitName() const
+	{
+		UE_LOG(LogTemp, Log, TEXT("UnitName: %s"), *UnitName.ToString());
+		return UnitName;
+	}
 	
 protected:
 	void UpdateHPBar();

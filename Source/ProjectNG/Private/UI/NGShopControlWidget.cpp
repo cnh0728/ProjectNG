@@ -12,6 +12,7 @@ void UNGShopControlWidget::NativeConstruct()
 	
 	if (FleeButton)
 	{
+		UE_LOG(LogTemp, Log, TEXT("FleeButton"));
 		FleeButton->OnClicked.AddDynamic(this, &UNGShopControlWidget::OnFleeButtonClicked);
 	}
 }

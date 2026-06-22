@@ -46,7 +46,8 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UNGUnitAttributeInfoDataAsset> AttributeInfo;
 	
-	TWeakObjectPtr<ANGUnitPawn> TargetUnit;
 	TMap<FGameplayAttribute, FDelegateHandle> AttributeDelegateHandles;
-	
+		
+	UPROPERTY(BlueprintReadWrite, Category = "UI|Context", meta = (ExposeOnSpawn = true))
+	TObjectPtr<ANGUnitPawn> TargetUnit;	
 };

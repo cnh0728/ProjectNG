@@ -88,6 +88,9 @@ protected:
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite)
 	FGameplayTag CurrentZoneTag;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|AbilitySystemComponent")
+	TObjectPtr<UDataTable> DefaultPlayerAttributeTable;
+	
 /*************************************/
 /*		전투 및 Pocket 관련			 */
 /*************************************/

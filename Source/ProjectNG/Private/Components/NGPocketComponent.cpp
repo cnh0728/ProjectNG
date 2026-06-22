@@ -3,11 +3,11 @@
 
 #include "Components/NGPocketComponent.h"
 
+#include "AbilitySystem/NGPawnAttributeSet.h"
 #include "Core/NGPoolSubSystem.h"
 #include "Core/NGShopProbability.h"
 #include "Core/NGSpawnHelper.h"
 #include "Core/NGUnitData.h"
-#include "Game/NGGameState.h"
 #include "Game/NGPawnDataManager.h"
 #include "GameModes/NGInGameMode.h"
 #include "Net/UnrealNetwork.h"
@@ -46,12 +46,6 @@ void UNGPocketComponent::RequestRoll()
 	}
 
 	Server_RequestRoll();
-}
-
-void UNGPocketComponent::AddUnitToBuyingPocket(FName UnitName)
-{
-	LastShopAction = EShopActionType::Buy;
-	RollShopPocket.Remove(UnitName);
 }
 
 void UNGPocketComponent::TryMergeUnit(FGameplayTag IdentificationTag)
@@ -109,7 +103,6 @@ void UNGPocketComponent::CheckAndMergeUnit(FGameplayTag IdentificationTag)
 	
 	UNGPawnDataManager* DataManager = GetWorld()->GetGameInstance()->GetSubsystem<UNGPawnDataManager>();
 	if (!DataManager) return;
-	
 	
 	TArray<ANGPawnBase*> SameUnits;
 	for (ANGPawnBase* Unit : OwnedUnitPocket)
@@ -171,57 +164,34 @@ void UNGPocketComponent::CheckAndMergeUnit(FGameplayTag IdentificationTag)
 			if (ANGPlayerController* PC = Cast<ANGPlayerController>(PS->GetPlayerController()))
 			{
 				// 이 스폰이 성공하면 다시 ControlPocketSpawning이 호출되며 연쇄 작용 일어남
-				bool bSpawned = UNGSpawnHelper::SpawnUnitPawnAtGrid(PC, NextUnitRowName, MergeGridAddress);
-				if (bSpawned)
+				if (ANGUnitPawn* NewPawn = UNGSpawnHelper::SpawnUnitPawnAtGrid(PC, NextUnitRowName, MergeGridAddress))
 				{
 					// 클라이언트 RPC 연출 호출
-					const FUnitData* NextData = DataManager->GetUnitData(UnitData->NextTierTag);
-					if (NextData) Multicast_PlayMergeEffect(MergeLocation, NextData->Tier);
+					if (const FUnitData* NextData = DataManager->GetUnitData(UnitData->NextTierTag))
+					{
+						Multicast_PlayMergeEffect(MergeLocation, NextData->Tier);
+					}
 				}
 			}
 		}
 	}
 }
 
-void UNGPocketComponent::RequestSellUnit(ANGPawnBase* UnitToSell)
+void UNGPocketComponent::SellUnit(ANGPawnBase* UnitToSell)
 {
-	if (!UnitToSell) return;
-	Server_SellUnit(UnitToSell);
-}
-
-void UNGPocketComponent::Server_SellUnit_Implementation(ANGPawnBase* UnitToSell)
-{
-	if (!GetOwner()->HasAuthority()) return;
 	if (!UnitToSell) return;
 
 	// 내 소유 유닛인지 검증
 	if (!OwnedUnitPocket.Contains(UnitToSell)) return;
 
 	UNGPawnDataManager* DataManager = GetWorld()->GetGameInstance()->GetSubsystem<UNGPawnDataManager>();
-	ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>();
 	UNGPoolSubSystem* Pool = GetWorld()->GetSubsystem<UNGPoolSubSystem>();
-	if (!DataManager || !GM || !Pool) return;
-
-	const FGameplayTag UnitTag = UnitToSell->GetIdentificationTag();
-
-	// 1. 재귀적으로 1성 유닛 목록 분해
-	TArray<FName> BaseUnitNames;
-	DecomposeToBaseUnits(UnitTag, BaseUnitNames);
-
-	// 2. 분해된 1성 유닛들을 상점 공용 풀로 반환
-	for (const FName& BaseName : BaseUnitNames)
-	{
-		GM->ReturnUnitToPool(BaseName, 1);
-	}
-
-	UE_LOG(LogTemp, Log, TEXT("[판매] %s 판매 → 1성 유닛 %d개 공용 풀 반환"), *UnitTag.ToString(), BaseUnitNames.Num());
+	if (!DataManager || !Pool) return;
 
 	// 3. 판매 대상 유닛을 소유 목록에서 제거 + 오브젝트 풀로 반환
 	UnitToSell->UnSetPawnOnGrid(UnitToSell->GetGridAddress());
 	ControlPocketSelling(UnitToSell);
 	Pool->ReleaseSegment(UnitToSell);
-
-	// TODO: 골드 환불 로직 (Tier에 따른 판매 가격)
 }
 
 void UNGPocketComponent::DecomposeToBaseUnits(const FGameplayTag& UnitTag, TArray<FName>& OutBaseUnitNames) const
@@ -289,12 +259,48 @@ bool UNGPocketComponent::IsAnnihilated()
 
 void UNGPocketComponent::ControlPocketSpawning(ANGPawnBase* NewPawn)
 {
+	RemoveUnitFromShop(NewPawn->GetUnitName());
+	
 	AddUnitFromPocket(NewPawn);
 }
 
 void UNGPocketComponent::ControlPocketSelling(ANGPawnBase* NewPawn)
 {
+	ReturnUnitToShop(NewPawn);
+
 	RemoveUnitFromPocket(NewPawn);
+}
+
+void UNGPocketComponent::RemoveUnitFromShop(FName UnitName)
+{
+	LastShopAction = EShopActionType::Buy;
+	RollShopPocket.Remove(UnitName);
+}
+
+void UNGPocketComponent::ReturnUnitToShop(ANGPawnBase* NewPawn)
+{
+	if (!NewPawn) return;
+
+	UNGAbilitySystemComponent* ASC = NewPawn->GetNGAbilitySystemComponent();
+	const UNGPawnAttributeSet* AttributeSet = ASC->GetSet<UNGPawnAttributeSet>();
+	ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>();
+	if (!GM || !ASC || !AttributeSet) return;
+	
+	LastShopAction = EShopActionType::Sell;
+
+	const FGameplayTag UnitTag = NewPawn->GetIdentificationTag();
+
+	// 1. 재귀적으로 1성 유닛 목록 분해
+	TArray<FName> BaseUnitNames;
+	DecomposeToBaseUnits(UnitTag, BaseUnitNames);
+
+	UE_LOG(LogTemp, Log, TEXT("[판매] %s 판매 → 1성 유닛 %d개 공용 풀 반환"), *UnitTag.ToString(), BaseUnitNames.Num());
+
+	// 2. 분해된 1성 유닛들을 상점 공용 풀로 반환
+	for (const FName& BaseName : BaseUnitNames)
+	{
+		GM->ReturnUnitToPool(BaseName, 1);
+	}
 }
 
 void UNGPocketComponent::AddUnitFromPocket(ANGPawnBase* NewPawn)

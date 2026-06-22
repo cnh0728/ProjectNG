@@ -13,13 +13,13 @@
 #include "Pawn/SelectableInterface.h"
 #include "Core/NGBlueprintLibrary.h"
 #include "Core/NGSpawnHelper.h"
-#include "Game/NGPawnDataManager.h"
 #include "GameModes/NGInGameMode.h"
 #include "Input/NGInputComponent.h"
 #include "Player/NGPlayerState.h"
 
 #include "ProjectNG/ProjectNG.h"
 #include "UI/NGUnitInfoWidget.h"
+#include "UI/HUD/NGHUD.h"
 #include "UI/WidgetController/UnitDetailsWidgetController.h"
 
 ANGPlayerController::ANGPlayerController() : DragThreshold(10.f), DragHeightOffset(20.f), DragInterpSpeed(20.f)
@@ -282,27 +282,6 @@ void ANGPlayerController::HandleClickReleased(const FInputActionValue& Value)
 	}
 }
 
-void ANGPlayerController::UpdateUnitWidget(ANGPawnBase* NewUnit)
-{
-	//위젯이 없는 상태면 생성
-	if (!UnitInfoWidgetInstance && UnitInfoWidgetClass)
-	{
-		UnitInfoWidgetInstance = CreateWidget<UNGUnitInfoWidget>(this, UnitInfoWidgetClass);
-		if (UnitInfoWidgetInstance)
-		{
-			UnitInfoWidgetInstance->AddToViewport();
-			UnitInfoWidgetInstance->SetVisibility(ESlateVisibility::Collapsed); //일단 숨김
-		}
-	}
-		
-	//위젯 켜고 데이터 주입
-	if (IsValid(UnitInfoWidgetInstance))
-	{
-		UnitInfoWidgetInstance->SetTargetUnit(NewUnit);
-		UnitInfoWidgetInstance->SetVisibility(ESlateVisibility::Visible);
-	}
-}
-
 void ANGPlayerController::SetSelectedUnit(ANGPawnBase* InSelectedUnit)
 {
 	ResetSelectUnit();
@@ -316,12 +295,21 @@ void ANGPlayerController::SetSelectedUnit(ANGPawnBase* InSelectedUnit)
 			ISelectableInterface::Execute_OnSelected(SelectedUnit.Get());
 		}
 		
-		UpdateUnitWidget(SelectedUnit);
-		
-		// if (UUnitDetailsWidgetController* UnitDetailsWidgetController = UNGBlueprintLibrary::GetUnitDetailsWidgetController(this))
-		// {
-		// 	UnitDetailsWidgetController->SetTargetUnit(SelectedUnit.Get());
-		// }
+		if (ANGHUD* MyNGHUD = GetHUD<ANGHUD>())
+		{
+			if (ANGUnitPawn* UnitPawn = Cast<ANGUnitPawn>(SelectedUnit.Get()))
+			{
+				if (UUnitDetailsWidgetController* DetailsWidgetController = MyNGHUD->GetUnitDetailsWidgetController())
+				{
+					DetailsWidgetController->SetTargetUnit(UnitPawn);
+				}
+
+				if (UNGUnitInfoWidget* UnitInfoWidget = MyNGHUD->GetUnitInfoWidget())
+				{
+					UnitInfoWidget->UpdateUnitWidget(UnitPawn);
+				}
+			}
+		}
 	}
 }
 
@@ -336,7 +324,7 @@ void ANGPlayerController::ResetSelectUnit()
 		
 		if (UnitInfoWidgetInstance)
 		{
-			UnitInfoWidgetInstance->ClearTargetUnit();
+			UnitInfoWidgetInstance->ClearUnitDataOnUI();
 			UnitInfoWidgetInstance->SetVisibility(ESlateVisibility::Collapsed);
 		}
 		
@@ -395,19 +383,39 @@ void ANGPlayerController::ResetHoveringUnit()
 	}
 }
 
-void ANGPlayerController::Server_RequestBuyUnit_Implementation(FName UnitName)
+void ANGPlayerController::Server_RequestSellUnit_Implementation(ANGUnitPawn* NewPawn)
 {
+	ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>();
+	if (!GM)	return;
+	
 	if (ANGPlayerState* PS = GetPlayerState<ANGPlayerState>())
 	{
-		ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>();
-		if (!GM)	return;
-		
+		if (UNGPocketComponent* Pocket = PS->GetPlayerPocket())
+		{
+			float UnitPrice = GM->GetUnitPrice(NewPawn);
+			PS->EarnGold(UnitPrice);
+			Pocket->SellUnit(NewPawn);
+			UE_LOG(LogTemp, Display, TEXT("SellUnitFromPocket Success"));
+		}
+	}
+}
+
+void ANGPlayerController::Server_RequestBuyUnit_Implementation(FName UnitName)
+{
+	ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>();
+	if (!GM)	return;
+
+	// UNGPawnDataManager* DataManager = GetWorld()->GetGameInstance()->GetSubsystem<UNGPawnDataManager>();
+	// if (!DataManager) return;
+	
+	if (ANGPlayerState* PS = GetPlayerState<ANGPlayerState>())
+	{
 		if (GM->CanBuyUnit(UnitName, PS->GetOwnedGold()))
 		{			
-			if (UNGSpawnHelper::SpawnUnitPawn(this, UnitName))
+			if (ANGUnitPawn* NewPawn = UNGSpawnHelper::SpawnUnitPawn(this, UnitName))
 			{
-				UNGPocketComponent* PlayerPocket = PS->GetPlayerPocket();
-				PlayerPocket->AddUnitToBuyingPocket(UnitName);
+				float UnitPrice = GM->GetUnitPrice(NewPawn);
+				PS->EarnGold(-UnitPrice);
 				UE_LOG(LogTemp, Display, TEXT("BuyUnitFromPocket Success"));
 			}
 		}

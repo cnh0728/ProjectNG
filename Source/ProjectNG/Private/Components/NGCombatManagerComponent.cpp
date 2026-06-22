@@ -82,7 +82,7 @@ void UNGCombatManagerComponent::RequestSpawnSquadByPlayer(ANGPlayerController* R
 	
 	for (const FEnemySpawnInfo& EnemySpawnInfo : SquadData.SpawnUnits)
 	{
-		if (UNGSpawnHelper::SpawnEnemyPawn(RequestingPC, EnemySpawnInfo))
+		if (ANGEnemyPawn* EnemyPawn = UNGSpawnHelper::SpawnEnemyPawn(RequestingPC, EnemySpawnInfo))
 		{
 		}
 	}

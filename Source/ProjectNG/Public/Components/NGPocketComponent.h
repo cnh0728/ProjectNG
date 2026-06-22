@@ -18,6 +18,7 @@ enum class EShopActionType : uint8
 	None,
 	Roll,
 	Buy,
+	Sell,
 };
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -39,12 +40,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Game|Shop")
 	int32 PlayerLevel = 1; // TODO. 어빌리티 시스템으로 처리해야함. 현재 디버깅용으로 임시 변수
 
-	void AddUnitToBuyingPocket(FName UnitName);
+	void RemoveUnitFromShop(FName UnitName);
 	void TryMergeUnit(FGameplayTag IdentificationTag);
 
-	/** 유닛을 판매합니다. 상급 유닛일 경우 구성 1성 유닛을 재귀적으로 공용 풀에 반환합니다. */
-	UFUNCTION(BlueprintCallable, Category = "Game|Shop")
-	void RequestSellUnit(ANGPawnBase* UnitToSell);
+	void SellUnit(ANGPawnBase* UnitToSell);
 
 protected:
 	UFUNCTION(Server, Reliable)
@@ -57,9 +56,6 @@ protected:
 	void UpdateRollUnit();
 	
 	void CheckAndMergeUnit(FGameplayTag IdentificationTag);
-
-	UFUNCTION(Server, Reliable)
-	void Server_SellUnit(ANGPawnBase* UnitToSell);
 
 	/**
 	 * 유닛 태그를 재귀적으로 분해하여 1성 유닛의 FName 목록을 반환합니다.
@@ -90,6 +86,7 @@ public:
 	
 	void ControlPocketSpawning(ANGPawnBase* NewPawn);
 	void ControlPocketSelling(ANGPawnBase* NewPawn);
+	void ReturnUnitToShop(ANGPawnBase* NewPawn);
 	void AddUnitFromPocket(ANGPawnBase* NewPawn);
 
 	void RemoveUnitFromPocket(ANGPawnBase* Unit);

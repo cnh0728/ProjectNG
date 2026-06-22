@@ -13,7 +13,7 @@
 #include "Pawn/NGUnitPawn.h"
 #include "Player/NGPlayerController.h"
 
-ANGPlayerState::ANGPlayerState() : PlayerLevel(1), CurrentGameState(EGameState::Maintaining), CurrentZoneTag(FGameplayTag::RequestGameplayTag(FName("Zone.Area.A")))
+ANGPlayerState::ANGPlayerState() : CurrentGameState(EGameState::Maintaining), PlayerLevel(1), CurrentZoneTag(FGameplayTag::RequestGameplayTag(FName("Zone.Area.A")))
 {
 	PrimaryActorTick.bCanEverTick = false;
 	
@@ -48,8 +48,11 @@ void ANGPlayerState::BeginPlay()
 	
 	if (AbilitySystemComponent)
 	{
-		// AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
-		// 	AttributeSet->GetGoldAttribute()).AddUObject(this, &ANGPlayerState::OnGoldChanged);
+		if (AbilitySystemComponent)
+		{
+			AbilitySystemComponent->InitStats(UNGPlayerAttributeSet::StaticClass(), DefaultPlayerAttributeTable);
+		}
+		
 	}
 }
 
@@ -163,12 +166,14 @@ void ANGPlayerState::EarnGold(float EarnedGold)
 	FGameplayModifierInfo& ModInfo = GoldEffect->Modifiers[ModifierIndex];
 	
 	ModInfo.Attribute = UNGPlayerAttributeSet::GetGoldAttribute();
-	ModInfo.ModifierOp = EGameplayModOp::AddBase;
+	ModInfo.ModifierOp = EGameplayModOp::Additive;
 	
 	ModInfo.ModifierMagnitude = FGameplayEffectModifierMagnitude(FScalableFloat(EarnedGold));
 	
 	FGameplayEffectSpec Spec(GoldEffect, FGameplayEffectContextHandle(), 1.f);
 	AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(Spec);
+	
+	UE_LOG(LogTemp, Log, TEXT("Price: %f New Gold : %f"), EarnedGold, AttributeSet->GetGold());
 }
 
 void ANGPlayerState::OnCombatEnd(FCombatResultData CombatResult)

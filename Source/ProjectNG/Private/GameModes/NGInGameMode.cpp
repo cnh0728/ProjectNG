@@ -169,14 +169,14 @@ TSubclassOf<ANGUnitPawn> ANGInGameMode::GetUnitClass(FName UnitName) const
 	return FoundRow->UnitClass;
 }
 
-float ANGInGameMode::SellUnit(ANGUnitPawn* Unit)
+float ANGInGameMode::GetUnitPrice(ANGUnitPawn* Unit) const
 {
 	const FUnitData* UnitData = GetUnitData(Unit->GetUnitName());
-	if (!UnitData) return false;
+	if (!UnitData) return 0.f;
 	
 	float UnitSellValue = UnitData->Price;
+	UE_LOG(LogTemp, Log, TEXT("Price: %f"), UnitSellValue);
 	
-	//TODO: DataTable참조해서 유닛의 가격이랑 성보고 돈 계산 후 반환
 	return UnitSellValue;
 }
 

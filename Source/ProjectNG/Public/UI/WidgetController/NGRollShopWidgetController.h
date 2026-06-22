@@ -19,7 +19,7 @@ class PROJECTNG_API UNGRollShopWidgetController : public UNGWidgetController
 public:
 	virtual void BroadcastInitialValues() override;
 	virtual void BindCallbacksToDependencies() override;
-
+	
 	UFUNCTION(BlueprintCallable, Category = "Game|Shop")
 	void GetPlayerRollPocket(TArray<FName>& RollPockets) const;
 

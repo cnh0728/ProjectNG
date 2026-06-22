@@ -7,10 +7,16 @@
 #include "AbilitySystem/NGPawnAttributeSet.h"
 #include "Pawn/NGUnitPawn.h"
 
-void UNGUnitInfoWidget::SetTargetUnit(ANGPawnBase* NewUnit)
+void UNGUnitInfoWidget::UpdateUnitWidget(ANGPawnBase* NewUnit)
+{
+	SetUnitDataOnUI(NewUnit);
+	SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+}
+
+void UNGUnitInfoWidget::SetUnitDataOnUI(ANGPawnBase* NewUnit)
 {
 	//기존 바인딩 해제
-	ClearTargetUnit();
+	ClearUnitDataOnUI();
 	
 	if (!NewUnit)	return;
 	
@@ -37,7 +43,7 @@ void UNGUnitInfoWidget::SetTargetUnit(ANGPawnBase* NewUnit)
 	
 }
 
-void UNGUnitInfoWidget::ClearTargetUnit()
+void UNGUnitInfoWidget::ClearUnitDataOnUI()
 {
 	if (TargetASC.IsValid())
 	{
