@@ -15,7 +15,7 @@ struct FUnitAbilityData;
 class UNGHPBarWidgetComponent;
 class UNGPathFindingComponent;
 class UCapsuleComponent;
-class UNGAttributeSet;
+class UNGPawnAttributeSet;
 class ANGCharacterBase;
 class ANGEnemyPawn;
 class USphereComponent;
@@ -67,6 +67,8 @@ public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	//~End IAbilitySystemInterface
 
+	UNGAbilitySystemComponent* GetNGAbilitySystemComponent() const { return AbilitySystemComponent; }
+	
 	virtual void HandleGameplayCue(UObject* Self, FGameplayTag GameplayCueTag, EGameplayCueEvent::Type EventType, const FGameplayCueParameters& Parameters) override;
 
 	FORCEINLINE USkeletalMeshComponent* GetMesh() const { return UnitMesh; }
@@ -179,7 +181,7 @@ protected:
 	
 protected:
 	UPROPERTY(BlueprintReadOnly, Category = "GAS|AbilitySystemComponent")
-	TObjectPtr<UNGAttributeSet> AttributeSet;
+	TObjectPtr<UNGPawnAttributeSet> AttributeSet;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|AbilitySystemComponent")
 	TObjectPtr<UDataTable> DefaultAttributeTable;
@@ -210,9 +212,13 @@ public:
 	void SetIdentificationTag(const FGameplayTag InIdentificationTag) { IdentificationTag = InIdentificationTag; }
 	
 	void SetUnitName(const FName& InUnitName) { UnitName = InUnitName; }
-	FName GetUnitName() const { return UnitName; }
+	FName GetUnitName() const
+	{
+		UE_LOG(LogTemp, Log, TEXT("UnitName: %s"), *UnitName.ToString());
+		return UnitName;
+	}
 	
-private:
+protected:
 	void UpdateHPBar();
 	
 	void InitAbilityData(const FUnitAbilityData& AbilityData);

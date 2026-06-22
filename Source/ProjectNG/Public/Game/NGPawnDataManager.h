@@ -3,16 +3,17 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Core/EnemyAbilityData.h"
 #include "Core/NGUnitData.h"
 #include "Core/UnitAbilityDataRow.h"
 #include "Subsystems/GameInstanceSubsystem.h"
-#include "NGUnitDataManager.generated.h"
+#include "NGPawnDataManager.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PROJECTNG_API UNGUnitDataManager : public UGameInstanceSubsystem
+class PROJECTNG_API UNGPawnDataManager : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 	
@@ -20,6 +21,7 @@ public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	
 	const FUnitAbilityData* GetUnitAbilityData(const FGameplayTag IdentificationTag);
+	const FEnemyAbilityData* GetEnemyAbilityData(const FGameplayTag IdentificationTag);
 	
 	const FUnitData* GetUnitData(const FGameplayTag IdentificationTag);
 	
@@ -30,19 +32,26 @@ public:
 
 	/** 해당 유닛을 판매할 때 공용 풀로 반환해야 할 1성 유닛 수를 계산합니다 */
 	int32 GetDecomposedBaseUnitCount(const FGameplayTag IdentificationTag) const;
+	float GetUnitPrice(FGameplayTag IdentificationTag) const;
 
 	const UDataTable* GetUnitDataTable() { return UnitDataTable; };
 	
 	const UDataTable* GetUnitAbilityDataTable() { return UnitAbilityDataTable; };
+	const UDataTable* GetEnemyAbilityDataTable() { return EnemyAbilityDataTable; };
 	
 private:
 	UPROPERTY()
 	TObjectPtr<UDataTable> UnitAbilityDataTable;
+
+	UPROPERTY()
+	TObjectPtr<UDataTable> EnemyAbilityDataTable;
 	
 	UPROPERTY()
 	TObjectPtr<UDataTable> UnitDataTable;
 	
 	TMap<FGameplayTag, FUnitAbilityData*> TagToUnitAbilityDataMap;
+
+	TMap<FGameplayTag, FEnemyAbilityData*> TagToEnemyAbilityDataMap;
 	
 	TMap<FGameplayTag, FUnitData*> TagToUnitDataMap;
 	

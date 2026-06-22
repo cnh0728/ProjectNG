@@ -10,6 +10,7 @@
 #include "GameFramework/PlayerState.h"
 #include "NGPlayerState.generated.h"
 
+class UNGPlayerAttributeSet;
 class AArenaManager;
 class AArena;
 class UNGPocketComponent;
@@ -44,6 +45,8 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
+	virtual void BeginPlay() override;
+
 	UNGAbilitySystemComponent* GetNGAbilitySystemComponent() const { return AbilitySystemComponent; }
 	
 	void InitializePostLogin();
@@ -57,6 +60,9 @@ public:
 protected:
 	UPROPERTY()
 	TObjectPtr<UNGAbilitySystemComponent> AbilitySystemComponent;
+	
+	UPROPERTY()
+	TObjectPtr<UNGPlayerAttributeSet> AttributeSet;
 
 /*************************************/
 /*			WorldMap Phase 관련		 */
@@ -66,8 +72,11 @@ public:
 	const FGameplayTag& GetCurrentZoneTag() const { return CurrentZoneTag; }
 
 	void SetGameState(EGameState NewState);
+	void EarnGold(float EarnedGold);
 	EGameState GetGameState() const { return CurrentGameState; }
-	void OnCombatEnd(ECombatResult CombatResult);
+	void OnCombatEnd(FCombatResultData CombatResult);
+	
+	float GetOwnedGold() const;
 	
 protected:
 	void OnCombatWin();
@@ -78,6 +87,9 @@ protected:
 	
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite)
 	FGameplayTag CurrentZoneTag;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|AbilitySystemComponent")
+	TObjectPtr<UDataTable> DefaultPlayerAttributeTable;
 	
 /*************************************/
 /*		전투 및 Pocket 관련			 */
@@ -85,9 +97,6 @@ protected:
 	
 public:
 	UNGPocketComponent* GetPlayerPocket() { return PlayerPocket; }
-
-	int32 GetPlayerLevel() const { return PlayerLevel; }
-	void SetPlayerLevel(int32 InPlayerLevel) { PlayerLevel = InPlayerLevel; }
 	
 	int32 GetUserIndex();
 	
@@ -106,9 +115,6 @@ public:
 protected:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Game|Pocket")
 	TObjectPtr<UNGPocketComponent> PlayerPocket;
-	
-	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadOnly, Category = "Game")
-	int32 PlayerLevel;
 	
 	UPROPERTY()
 	int32 CurrentCPUEnemyCount;

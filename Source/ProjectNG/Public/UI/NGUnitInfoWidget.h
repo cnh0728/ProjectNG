@@ -7,6 +7,7 @@
 #include "Pawn/NGPawnBase.h"
 #include "NGUnitInfoWidget.generated.h"
 
+class UButton;
 struct FOnAttributeChangeData;
 class ANGUnitPawn;
 class UNGAbilitySystemComponent;
@@ -20,8 +21,9 @@ class PROJECTNG_API UNGUnitInfoWidget : public UNGUserWidget
 	
 public:
 	UFUNCTION(BlueprintCallable)
-	void SetTargetUnit(ANGPawnBase* NewUnit);
-	void ClearTargetUnit();
+	void SetUnitDataOnUI(ANGPawnBase* NewUnit);
+	void ClearUnitDataOnUI();
+	void UpdateUnitWidget(ANGPawnBase* NewUnit);
 
 protected:
 
@@ -36,4 +38,7 @@ private:
 	
 	void OnHealthChanged(const FOnAttributeChangeData& Data);
 	void OnStrengthChanged(const FOnAttributeChangeData& Data);
+	
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> SellButton;
 };

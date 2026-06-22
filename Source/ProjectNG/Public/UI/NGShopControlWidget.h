@@ -6,6 +6,7 @@
 #include "NGUserWidget.h"
 #include "NGShopControlWidget.generated.h"
 
+class UTextBlock;
 class UNGWidgetController;
 class UButton;
 /**
@@ -22,9 +23,12 @@ protected:
 	UFUNCTION()
 	void OnFleeButtonClicked();
 	
-	UFUNCTION()
-	void OnGoldChanged(float NewGold);
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	void UpdateGoldText(float NewGold);
 	
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> FleeButton;
+	
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> GoldText;
 };

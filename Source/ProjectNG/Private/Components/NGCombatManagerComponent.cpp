@@ -82,7 +82,7 @@ void UNGCombatManagerComponent::RequestSpawnSquadByPlayer(ANGPlayerController* R
 	
 	for (const FEnemySpawnInfo& EnemySpawnInfo : SquadData.SpawnUnits)
 	{
-		if (UNGSpawnHelper::SpawnEnemyPawn(RequestingPC, EnemySpawnInfo))
+		if (ANGEnemyPawn* EnemyPawn = UNGSpawnHelper::SpawnEnemyPawn(RequestingPC, EnemySpawnInfo))
 		{
 		}
 	}
@@ -156,14 +156,19 @@ void UNGCombatManagerComponent::NotifyEndCombat(const ANGPlayerState* TargetPlay
 		{
 			if (ANGPlayerState* Winner = TargetCombat.Players[WinnerPlayerIndex].Get())
 			{
+				FCombatResultData ResultData;
+				ResultData.EarnedGold = 100.f;
+				
 				if (CombatResultDictionary.Find(Winner) == nullptr)
 				{
-					CombatResultDictionary.Add(Winner, ECombatResult::Win);
+					ResultData.WinResult = ECombatResult::Win;
+					CombatResultDictionary.Add(Winner, ResultData);
 					bIsNewNotification = true;
 				}else
 				{
-					uint8 WinCombinedResult = static_cast<uint8>(CombatResultDictionary[Winner]) | static_cast<uint8>(ECombatResult::Win);
-					CombatResultDictionary[Winner] = static_cast<ECombatResult>(WinCombinedResult);
+					uint8 WinCombinedResult = static_cast<uint8>(CombatResultDictionary[Winner].WinResult) | static_cast<uint8>(ECombatResult::Win);
+					ResultData.WinResult = static_cast<ECombatResult>(WinCombinedResult);
+					CombatResultDictionary[Winner] = ResultData;
 				}
 				
 				Winner->FinishCombat();
@@ -176,14 +181,20 @@ void UNGCombatManagerComponent::NotifyEndCombat(const ANGPlayerState* TargetPlay
 		{
 			if (ANGPlayerState* Loser = TargetCombat.Players[LoserPlayerIndex].Get())
 			{
+				FCombatResultData ResultData;
+				// 여기서 싸움 전 체력이랑 끝났을때 남은체력 비교해서 최소20%에서 최대 90%로 돈 뺏어가기
+				ResultData.EarnedGold = -100.f;
+				
 				if (CombatResultDictionary.Find(Loser) == nullptr)
 				{
-					CombatResultDictionary.Add(Loser, ECombatResult::Lose);
+					ResultData.WinResult = ECombatResult::Lose;
+					CombatResultDictionary.Add(Loser, ResultData);
 					bIsNewNotification = true;
 				}else
 				{
-					uint8 LoseCombinedResult = static_cast<uint8>(CombatResultDictionary[Loser]) | static_cast<uint8>(ECombatResult::Lose);
-					CombatResultDictionary[Loser] = static_cast<ECombatResult>(LoseCombinedResult);
+					uint8 LoseCombinedResult = static_cast<uint8>(CombatResultDictionary[Loser].WinResult) | static_cast<uint8>(ECombatResult::Lose);
+					ResultData.WinResult = static_cast<ECombatResult>(LoseCombinedResult);
+					CombatResultDictionary[Loser] = ResultData;
 				}
 				
 				Loser->FinishCombat();

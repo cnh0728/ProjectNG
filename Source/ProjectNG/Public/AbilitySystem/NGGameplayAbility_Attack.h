@@ -23,4 +23,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability")
 	TSubclassOf<UGameplayEffect> DamageEffectClass;
 	
+	UPROPERTY()
+	FGameplayEventData TossTargetData;
+
 };
