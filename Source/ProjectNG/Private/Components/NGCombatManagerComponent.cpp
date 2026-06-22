@@ -94,6 +94,8 @@ void UNGCombatManagerComponent::ProcessPlayerFlee(ANGPlayerController* PlayerCon
 	{
 		// UE_LOG(LogTemp, Log, TEXT("ProcessPlayerFlee"));
 		//TODO: 돈 구현하고 돈 넘겨주는거 만들기
+		// 
+		
 		NotifyEndCombat(PS, ECombatResult::Lose);
 	}
 }

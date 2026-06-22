@@ -186,9 +186,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|AbilitySystemComponent")
 	TObjectPtr<UDataTable> DefaultAttributeTable;
 	
-	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
-	FName UnitName;
-	
 	virtual void InitializeAttributes();
 	
 public:
@@ -210,13 +207,6 @@ public:
 	FGameplayTag GetIdentificationTag() const { return IdentificationTag; };
 	
 	void SetIdentificationTag(const FGameplayTag InIdentificationTag) { IdentificationTag = InIdentificationTag; }
-	
-	void SetUnitName(const FName& InUnitName) { UnitName = InUnitName; }
-	FName GetUnitName() const
-	{
-		UE_LOG(LogTemp, Log, TEXT("UnitName: %s"), *UnitName.ToString());
-		return UnitName;
-	}
 	
 protected:
 	void UpdateHPBar();

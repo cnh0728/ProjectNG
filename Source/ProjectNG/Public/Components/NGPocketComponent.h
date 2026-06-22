@@ -41,7 +41,6 @@ public:
 	int32 PlayerLevel = 1; // TODO. 어빌리티 시스템으로 처리해야함. 현재 디버깅용으로 임시 변수
 
 	void RemoveUnitFromShop(FGameplayTag UnitTag);
-	void AddUnitToBuyingPocket(FGameplayTag UnitTag);
 	void TryMergeUnit(FGameplayTag IdentificationTag);
 
 	void SellUnit(ANGPawnBase* UnitToSell);
