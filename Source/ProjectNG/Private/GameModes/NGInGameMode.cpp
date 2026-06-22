@@ -7,6 +7,7 @@
 #include "Core/NGDeveloperSettings.h"
 #include "Core/NGUnitData.h"
 #include "Game/NGGameState.h"
+#include "Game/NGPawnDataManager.h"
 #include "Pawn/NGUnitPawn.h"
 #include "Player/NGPlayerState.h"
 
@@ -63,6 +64,12 @@ void ANGInGameMode::OnGameStart()
 {
 	ANGGameState* GS = GetGameState<ANGGameState>();
 	NotifyGameStartToPlayer(GS);
+
+	if (GS)
+	{
+		GS->CurrentTurn = 0;
+		StartTurn();
+	}
 }
 
 void ANGInGameMode::NotifyGameStartToPlayer(ANGGameState* GS)
@@ -84,6 +91,8 @@ void ANGInGameMode::OnCombatFinished(const FCombatResultData& ResultData)
 		
 	//ResultData로 점수나 그런거 반영하기
 	
+	// 각 플레이어가 전투 끝났음을 표시
+	CheckAllPlayersFinishedAction();
 }
 
 void ANGInGameMode::ReportPawnDeath(ANGPawnBase* DeadPawn) const
@@ -92,7 +101,219 @@ void ANGInGameMode::ReportPawnDeath(ANGPawnBase* DeadPawn) const
 	{
 		CombatManagerComponent->NotifyPawnDied(DeadPawn);
 	}
+}
+
+void ANGInGameMode::StartTurn()
+{
+	ANGGameState* GS = GetGameState<ANGGameState>();
+	if (!GS) return;
+
+	GS->CurrentTurn++;
+	if (GS->CurrentTurn > 10)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Max turns (10) reached. Ending game."));
+		// TODO: Game Over 로직
+		return;
+	}
+
+	for (APlayerState* RawPS : GS->PlayerArray)
+	{
+		if (ANGPlayerState* PS = Cast<ANGPlayerState>(RawPS))
+		{
+			PS->SetHasSelectedNode(false);
+			PS->SetActionFinished(false);
+		}
+	}
+
+	StartNodeSelection();
+}
+
+void ANGInGameMode::StartNodeSelection()
+{
+	ANGGameState* GS = GetGameState<ANGGameState>();
+	if (!GS) return;
+
+	GS->CurrentPhase = EGameplayPhase::NodeSelection;
+	GS->RemainingTime = 15.f;
+
+	GetWorldTimerManager().SetTimer(PhaseTimerHandle, this, &ThisClass::OnNodeSelectionTimerTick, 1.0f, true);
+	UE_LOG(LogTemp, Warning, TEXT("=== Turn %d: Node Selection Phase Started (15s) ==="), GS->CurrentTurn);
+}
+
+void ANGInGameMode::OnNodeSelectionTimerTick()
+{
+	ANGGameState* GS = GetGameState<ANGGameState>();
+	if (!GS) return;
 	
+	if (GS->RemainingTime > 0.f)
+	{
+		GS->RemainingTime -= 1.f;
+	}
+	else
+	{
+		GetWorldTimerManager().ClearTimer(PhaseTimerHandle);
+		StartActionPhase();
+	}
+}
+
+void ANGInGameMode::ProcessNodeSelection(AController* Controller, int32 NodeID)
+{
+	ANGPlayerState* PS = Controller->GetPlayerState<ANGPlayerState>();
+	if (PS && !PS->HasSelectedNode())
+	{
+		PS->SetTargetNodeID(NodeID);
+		PS->SetHasSelectedNode(true);
+		
+		CheckAllPlayersReadyForNodeSelection();
+	}
+}
+
+void ANGInGameMode::CheckAllPlayersReadyForNodeSelection()
+{
+	ANGGameState* GS = GetGameState<ANGGameState>();
+	if (!GS) return;
+
+	for (APlayerState* RawPS : GS->PlayerArray)
+	{
+		if (ANGPlayerState* PS = Cast<ANGPlayerState>(RawPS))
+		{
+			if (!PS->HasSelectedNode())
+			{
+				return;
+			}
+		}
+	}
+	
+	GetWorldTimerManager().ClearTimer(PhaseTimerHandle);
+	StartActionPhase();
+}
+
+void ANGInGameMode::StartActionPhase()
+{
+	ANGGameState* GS = GetGameState<ANGGameState>();
+	if (!GS) return;
+
+	GS->CurrentPhase = EGameplayPhase::ActionPhase;
+	GS->RemainingTime = 60.f;
+
+	UE_LOG(LogTemp, Warning, TEXT("=== Action Phase Started (60s) ==="));
+
+	TArray<ANGPlayerState*> PlayingPlayers;
+	for (APlayerState* RawPS : GS->PlayerArray)
+	{
+		if (ANGPlayerState* PS = Cast<ANGPlayerState>(RawPS))
+		{
+			PlayingPlayers.Add(PS);
+		}
+	}
+
+	TArray<ANGPlayerState*> HandledPlayers;
+
+	// 거리 계산 로직 (거리 <= 1칸)
+	// 현재 맵 제네레이터 정보가 없으므로 ID 차이가 1 이하인 경우로 임시 판별 (이후 ConnectedNodes 로직으로 대체 필요)
+	for (int32 i = 0; i < PlayingPlayers.Num(); ++i)
+	{
+		ANGPlayerState* PlayerA = PlayingPlayers[i];
+		if (HandledPlayers.Contains(PlayerA)) continue;
+
+		for (int32 j = i + 1; j < PlayingPlayers.Num(); ++j)
+		{
+			ANGPlayerState* PlayerB = PlayingPlayers[j];
+			if (HandledPlayers.Contains(PlayerB)) continue;
+
+			// 임시 인접 판별 로직
+			bool bIsAdjacent = FMath::Abs(PlayerA->GetTargetNodeID() - PlayerB->GetTargetNodeID()) <= 1;
+
+			if (bIsAdjacent)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("PvP Matched: Player %s vs Player %s"), *PlayerA->GetPlayerName(), *PlayerB->GetPlayerName());
+				CombatManagerComponent->EnqueueCombatPhase(PlayerA);
+				CombatManagerComponent->EnqueueCombatPhase(PlayerB);
+				HandledPlayers.Add(PlayerA);
+				HandledPlayers.Add(PlayerB);
+				break;
+			}
+		}
+	}
+
+	// 1:1:1 등 홀수 상황에서 남은 유저는 CPU 전투(복제 유닛 전투) 진행
+	for (ANGPlayerState* PS : PlayingPlayers)
+	{
+		if (!HandledPlayers.Contains(PS))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("CPU Match (Clone): Player %s"), *PS->GetPlayerName());
+			// 원래는 1vs1 대상의 복제 유닛 데이터를 Enqueue 해야 함. 임시로 CPU전 세팅
+			TSoftObjectPtr<UNGEnemyDataAsset> SoftPath = GetDefault<UNGDeveloperSettings>()->EnemyDataAsset;
+			UNGEnemyDataAsset* LoadedAsset = SoftPath.LoadSynchronous();
+			if (LoadedAsset)
+			{
+				FEnemySquadData SelectedData;
+				if (LoadedAsset->GetRandomSquadForZone(PS->GetCurrentZoneTag(), SelectedData))
+				{
+					CombatManagerComponent->EnqueueCombatPhase(PS, &SelectedData);
+				}
+			}
+			HandledPlayers.Add(PS);
+		}
+	}
+
+	// 노드 이동 적용
+	for (ANGPlayerState* PS : PlayingPlayers)
+	{
+		PS->SetCurrentNodeID(PS->GetTargetNodeID());
+	}
+
+	CombatManagerComponent->MatchingCombatUser();
+	CombatManagerComponent->StartCountingCombat();
+
+	GetWorldTimerManager().SetTimer(PhaseTimerHandle, this, &ThisClass::OnActionPhaseTimerTick, 1.0f, true);
+}
+
+void ANGInGameMode::OnActionPhaseTimerTick()
+{
+	ANGGameState* GS = GetGameState<ANGGameState>();
+	if (!GS) return;
+	
+	if (GS->RemainingTime > 0.f)
+	{
+		GS->RemainingTime -= 1.f;
+	}
+	else
+	{
+		GetWorldTimerManager().ClearTimer(PhaseTimerHandle);
+		EndTurn();
+	}
+}
+
+void ANGInGameMode::CheckAllPlayersFinishedAction()
+{
+	ANGGameState* GS = GetGameState<ANGGameState>();
+	if (!GS) return;
+
+	for (APlayerState* RawPS : GS->PlayerArray)
+	{
+		if (ANGPlayerState* PS = Cast<ANGPlayerState>(RawPS))
+		{
+			if (!PS->IsActionFinished())
+			{
+				return;
+			}
+		}
+	}
+	
+	GetWorldTimerManager().ClearTimer(PhaseTimerHandle);
+	EndTurn();
+}
+
+void ANGInGameMode::EndTurn()
+{
+	ANGGameState* GS = GetGameState<ANGGameState>();
+	if (!GS) return;
+
+	GS->CurrentPhase = EGameplayPhase::TurnEnd;
+	UE_LOG(LogTemp, Warning, TEXT("=== Turn %d Ended ==="), GS->CurrentTurn);
+	
+	StartTurn();
 }
 
 void ANGInGameMode::BeginPlay()
@@ -103,11 +324,20 @@ void ANGInGameMode::BeginPlay()
 	InitializeUnitPool();
 }
 
-int32 ANGInGameMode::GrabUnitFromPool(FName UnitRowName)
+int32 ANGInGameMode::SellUnit(ANGUnitPawn* Unit)
 {
-	if (!HasAuthority()) return false;
+	int32 UnitSellValue = 1;
 	
-	if (int32* Count = UnitPool.Find(UnitRowName))
+	//DataTable참조해서 유닛의 가격이랑 성보고 돈 계산 후 반환
+	
+	return UnitSellValue;
+}
+
+int32 ANGInGameMode::GrabUnitFromPool(FGameplayTag UnitTag)
+{
+	if (!HasAuthority()) return -1;
+	
+	if (int32* Count = UnitPool.Find(UnitTag))
 	{
 		if (*Count > 0)
 		{
@@ -118,37 +348,51 @@ int32 ANGInGameMode::GrabUnitFromPool(FName UnitRowName)
 	return -1;
 }
 
-bool ANGInGameMode::IsExistUnit(FName UnitRowName)
+bool ANGInGameMode::IsExistUnit(FGameplayTag UnitTag)
 {
-	return *UnitPool.Find(UnitRowName) > 0;
+	if (int32* Count = UnitPool.Find(UnitTag))
+	{
+		return *Count > 0;
+	}
+	return false;
 }
 
-bool ANGInGameMode::IsExistUnitDataTable()
+bool ANGInGameMode::IsExistUnitDataTable() const
 {
-	return UnitDataTable != nullptr;
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UNGPawnDataManager* UnitDataManager = GI->GetSubsystem<UNGPawnDataManager>())
+		{
+			return UnitDataManager->IsExistUnitDataTable();
+		}
+	}
+	return false;
 }
 
-void ANGInGameMode::ReturnUnitToPool(FName UnitRowName, int32 UnitCount)
+void ANGInGameMode::ReturnUnitToPool(FGameplayTag UnitTag, int32 UnitCount)
 {
-	if (int32* Count = UnitPool.Find(UnitRowName))
+	if (int32* Count = UnitPool.Find(UnitTag))
 	{
 		(*Count) += UnitCount;
 	}
 }
 
-FName ANGInGameMode::GetRandomUnitByTier(EUnitTier Tier)
+FGameplayTag ANGInGameMode::GetRandomUnitByTier(EUnitTier Tier)
 {
 	if (TieredUnitPool.Contains(Tier))
 	{
-		TArray<FName> AvailableUnits;
-		const TArray<FName>& UnitsInTier = TieredUnitPool[Tier];
+		TArray<FGameplayTag> AvailableUnits;
+		const TArray<FGameplayTag>& UnitsInTier = TieredUnitPool[Tier];
 
 		// 현재 남아 있는 유닛만 필터링
-		for (FName UnitRowName : UnitsInTier)
+		for (FGameplayTag UnitTag : UnitsInTier)
 		{
-			if (UnitPool.Contains(UnitRowName) && UnitPool[UnitRowName] > 0)
+			if (int32* Count = UnitPool.Find(UnitTag))
 			{
-				AvailableUnits.Add(UnitRowName);
+				if (*Count > 0)
+				{
+					AvailableUnits.Add(UnitTag);
+				}
 			}
 		}
 
@@ -158,12 +402,12 @@ FName ANGInGameMode::GetRandomUnitByTier(EUnitTier Tier)
 			return AvailableUnits[RandomIndex];
 		}
 	}
-	return NAME_None;
+	return FGameplayTag();
 }
 
-TSubclassOf<ANGUnitPawn> ANGInGameMode::GetUnitClass(FName UnitName) const
+TSubclassOf<ANGUnitPawn> ANGInGameMode::GetUnitClass(FGameplayTag UnitTag) const
 {
-	const FUnitData* FoundRow = GetUnitData(UnitName);
+	const FUnitData* FoundRow = GetUnitData(UnitTag);
 	if (!FoundRow)	return nullptr;
 	
 	return FoundRow->UnitClass;
@@ -171,7 +415,7 @@ TSubclassOf<ANGUnitPawn> ANGInGameMode::GetUnitClass(FName UnitName) const
 
 float ANGInGameMode::GetUnitPrice(ANGUnitPawn* Unit) const
 {
-	const FUnitData* UnitData = GetUnitData(Unit->GetUnitName());
+	const FUnitData* UnitData = GetUnitData(Unit->GetIdentificationTag());
 	if (!UnitData) return 0.f;
 	
 	float UnitSellValue = UnitData->Price;
@@ -180,9 +424,9 @@ float ANGInGameMode::GetUnitPrice(ANGUnitPawn* Unit) const
 	return UnitSellValue;
 }
 
-bool ANGInGameMode::CanBuyUnit(FName UnitName, float OwnedGold) const
+bool ANGInGameMode::CanBuyUnit(FGameplayTag UnitTag, float OwnedGold) const
 {
-	const FUnitData* UnitData = GetUnitData(UnitName);
+	const FUnitData* UnitData = GetUnitData(UnitTag);
 	if (!UnitData) return false;
 	
 	if (UnitData->Price > OwnedGold)	return false;
@@ -190,30 +434,40 @@ bool ANGInGameMode::CanBuyUnit(FName UnitName, float OwnedGold) const
 	return true;
 }
 
-const FUnitData* ANGInGameMode::GetUnitData(FName UnitName) const
+const FUnitData* ANGInGameMode::GetUnitData(FGameplayTag UnitTag) const
 {
-	if (!UnitDataTable) return nullptr;
-	
-	return UnitDataTable->FindRow<FUnitData>(UnitName, TEXT(""));
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UNGPawnDataManager* UnitDataManager = GI->GetSubsystem<UNGPawnDataManager>())
+		{
+			return UnitDataManager->GetUnitData(UnitTag);
+		}
+	}
+	return nullptr;
 }
 
 void ANGInGameMode::InitializeUnitPool()
 {
-	if (!IsValid(UnitDataTable.Get())) return;
-
-	TArray<FName> RowNames = UnitDataTable.Get()->GetRowNames();
-	for (const FName& RowName : RowNames)
+	if (UGameInstance* GI = GetGameInstance())
 	{
-		FString ContextString;
-		FUnitData* Row = UnitDataTable.Get()->FindRow<FUnitData>(RowName, ContextString);
-		if (Row && Row->UnitClass)
+		if (UNGPawnDataManager* UnitDataManager = GI->GetSubsystem<UNGPawnDataManager>())
 		{
-			// 총 개수 추가
-			UnitPool.Add(RowName, Row->TotalCountInPool);
+			const TMap<FGameplayTag, FUnitData*>& AllUnitData = UnitDataManager->GetAllUnitDataMap();
+			for (const auto& Pair : AllUnitData)
+			{
+				FGameplayTag UnitTag = Pair.Key;
+				FUnitData* Row = Pair.Value;
 
-			// 등급별로 유닛 클래스 추가
-			TieredUnitPool.FindOrAdd(Row->Tier).Add(RowName);
+				if (Row && Row->UnitClass)
+				{
+					// 총 개수 추가
+					UnitPool.Add(UnitTag, Row->TotalCountInPool);
+
+					// 등급별로 유닛 클래스 추가
+					TieredUnitPool.FindOrAdd(Row->Tier).Add(UnitTag);
+				}
+			}
+			UE_LOG(LogTemp, Warning, TEXT("Unit Pool Initialized on Server using UnitDataManager."));
 		}
 	}
-	UE_LOG(LogTemp, Warning, TEXT("Unit Pool Initialized on Server."));
 }

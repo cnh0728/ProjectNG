@@ -34,10 +34,14 @@ public:
 	int32 GetDecomposedBaseUnitCount(const FGameplayTag IdentificationTag) const;
 	float GetUnitPrice(FGameplayTag IdentificationTag) const;
 
+	bool IsExistUnitDataTable() const { return UnitDataTable != nullptr; }
+	
 	const UDataTable* GetUnitDataTable() { return UnitDataTable; };
 	
 	const UDataTable* GetUnitAbilityDataTable() { return UnitAbilityDataTable; };
 	const UDataTable* GetEnemyAbilityDataTable() { return EnemyAbilityDataTable; };
+	
+	const TMap<FGameplayTag, FUnitData*>& GetAllUnitDataMap() const { return TagToUnitDataMap; }
 	
 private:
 	UPROPERTY()

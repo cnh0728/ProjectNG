@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 TeamNG. All Rights Reserved.
+// Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 
 #include "Player/NGPlayerController.h"
@@ -400,25 +400,32 @@ void ANGPlayerController::Server_RequestSellUnit_Implementation(ANGUnitPawn* New
 	}
 }
 
-void ANGPlayerController::Server_RequestBuyUnit_Implementation(FName UnitName)
+void ANGPlayerController::Server_RequestBuyUnit_Implementation(FGameplayTag UnitTag)
 {
 	ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>();
 	if (!GM)	return;
 
-	// UNGPawnDataManager* DataManager = GetWorld()->GetGameInstance()->GetSubsystem<UNGPawnDataManager>();
-	// if (!DataManager) return;
-	
 	if (ANGPlayerState* PS = GetPlayerState<ANGPlayerState>())
 	{
-		if (GM->CanBuyUnit(UnitName, PS->GetOwnedGold()))
-		{			
-			if (ANGUnitPawn* NewPawn = UNGSpawnHelper::SpawnUnitPawn(this, UnitName))
+		if (GM->CanBuyUnit(UnitTag, PS->GetOwnedGold()))
+		{
+			if (ANGUnitPawn* NewPawn = UNGSpawnHelper::SpawnUnitPawn(this, UnitTag))
 			{
 				float UnitPrice = GM->GetUnitPrice(NewPawn);
 				PS->EarnGold(-UnitPrice);
+				UNGPocketComponent* PlayerPocket = PS->GetPlayerPocket();
+				PlayerPocket->AddUnitToBuyingPocket(UnitTag);
 				UE_LOG(LogTemp, Display, TEXT("BuyUnitFromPocket Success"));
 			}
 		}
+	}
+}
+
+void ANGPlayerController::Server_SelectNode_Implementation(int32 NodeID)
+{
+	if (ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>())
+	{
+		GM->ProcessNodeSelection(this, NodeID);
 	}
 }
 

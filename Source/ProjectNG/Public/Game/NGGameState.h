@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 TeamNG. All Rights Reserved.
+// Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 #pragma once
 
@@ -9,6 +9,16 @@
 class ANGPlayerState;
 class AArena;
 class UNGCombatManagerComponent;
+
+UENUM(BlueprintType)
+enum class EGameplayPhase : uint8
+{
+	None,
+	NodeSelection,
+	ActionPhase,
+	TurnEnd
+};
+
 /**
  * 
  */
@@ -28,4 +38,12 @@ public:
 	
 	float GridMargin;
 	
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Game|Turn")
+	EGameplayPhase CurrentPhase = EGameplayPhase::None;
+
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Game|Turn")
+	int32 CurrentTurn = 0;
+
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Game|Turn")
+	float RemainingTime = 0.f;
 };

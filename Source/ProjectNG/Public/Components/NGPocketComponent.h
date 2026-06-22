@@ -1,4 +1,4 @@
-// Copyright (c) 2025 TeamNG. All Rights Reserved.
+﻿// Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 #pragma once
 
@@ -35,12 +35,13 @@ public:
 	void RequestRoll();
 
 	UFUNCTION(BlueprintPure, Category = "Game|Shop")
-	const TArray<FName>& GetRollPocket() const { return RollShopPocket; }
+	const TArray<FGameplayTag>& GetRollPocket() const { return RollShopPocket; }
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Game|Shop")
 	int32 PlayerLevel = 1; // TODO. 어빌리티 시스템으로 처리해야함. 현재 디버깅용으로 임시 변수
 
-	void RemoveUnitFromShop(FName UnitName);
+	void RemoveUnitFromShop(FGameplayTag UnitTag);
+	void AddUnitToBuyingPocket(FGameplayTag UnitTag);
 	void TryMergeUnit(FGameplayTag IdentificationTag);
 
 	void SellUnit(ANGPawnBase* UnitToSell);
@@ -58,10 +59,10 @@ protected:
 	void CheckAndMergeUnit(FGameplayTag IdentificationTag);
 
 	/**
-	 * 유닛 태그를 재귀적으로 분해하여 1성 유닛의 FName 목록을 반환합니다.
-	 * 2성 → 1성 FName × 3, 3성 → 1성 FName × 9
+	 * 유닛 태그를 재귀적으로 분해하여 1성 유닛의 Tag 목록을 반환합니다.
+	 * 2성 → 1성 Tag × 3, 3성 → 1성 Tag × 9
 	 */
-	void DecomposeToBaseUnits(const FGameplayTag& UnitTag, TArray<FName>& OutBaseUnitNames) const;
+	void DecomposeToBaseUnits(const FGameplayTag& UnitTag, TArray<FGameplayTag>& OutBaseUnitTags) const;
 	
 	UFUNCTION(NetMulticast, Unreliable)
 	void Multicast_PlayMergeEffect(FVector EffectLocation, EUnitTier UnitTier);
@@ -71,7 +72,7 @@ protected:
 
 private:
 	UPROPERTY(VisibleAnywhere, ReplicatedUsing = OnRep_RollPocket, Category = "Game|Shop")
-	TArray<FName> RollShopPocket; // 플레이어의 상점에 표시된 유닛 목록
+	TArray<FGameplayTag> RollShopPocket; // 플레이어의 상점에 표시된 유닛 목록
 	
 	UPROPERTY(Replicated, VisibleAnywhere)
 	EShopActionType LastShopAction;

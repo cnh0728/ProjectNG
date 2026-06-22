@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 TeamNG. All Rights Reserved.
+// Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 #pragma once
 
@@ -122,7 +122,10 @@ public:
 	void Server_RequestSellUnit(ANGUnitPawn* NewPawn);
 	
 	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Game|Shop")
-	void Server_RequestBuyUnit(FName UnitName);
+	void Server_RequestBuyUnit(FGameplayTag UnitTag);
+
+	UFUNCTION(Server, Reliable)
+	void Server_SelectNode(int32 NodeID);
 	
 	UNGPocketComponent* GetPlayerPocket() const;
 	void EnterPhase(EGamePhase Phase);

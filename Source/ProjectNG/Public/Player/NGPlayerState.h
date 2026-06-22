@@ -74,6 +74,18 @@ public:
 	void SetGameState(EGameState NewState);
 	void EarnGold(float EarnedGold);
 	EGameState GetGameState() const { return CurrentGameState; }
+
+	int32 GetCurrentNodeID() const { return CurrentNodeID; }
+	void SetCurrentNodeID(int32 NewNodeID) { CurrentNodeID = NewNodeID; }
+
+	int32 GetTargetNodeID() const { return TargetNodeID; }
+	void SetTargetNodeID(int32 NewNodeID) { TargetNodeID = NewNodeID; }
+
+	bool HasSelectedNode() const { return bHasSelectedNode; }
+	void SetHasSelectedNode(bool bSelected) { bHasSelectedNode = bSelected; }
+
+	bool IsActionFinished() const { return bIsActionFinished; }
+	void SetActionFinished(bool bFinished) { bIsActionFinished = bFinished; }
 	void OnCombatEnd(FCombatResultData CombatResult);
 	
 	float GetOwnedGold() const;
@@ -91,6 +103,18 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|AbilitySystemComponent")
 	TObjectPtr<UDataTable> DefaultPlayerAttributeTable;
 	
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Game|Turn")
+	int32 CurrentNodeID = -1;
+
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Game|Turn")
+	int32 TargetNodeID = -1;
+
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Game|Turn")
+	bool bHasSelectedNode = false;
+
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Game|Turn")
+	bool bIsActionFinished = false;
+
 /*************************************/
 /*		전투 및 Pocket 관련			 */
 /*************************************/

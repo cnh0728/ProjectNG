@@ -13,7 +13,7 @@
 #include "Player/NGPlayerController.h"
 #include "ProjectNG/ProjectNG.h"
 
-ANGUnitPawn* UNGSpawnHelper::SpawnUnitPawn(ANGPlayerController* OwnerController, FName UnitName)
+ANGUnitPawn* UNGSpawnHelper::SpawnUnitPawn(ANGPlayerController* OwnerController, FGameplayTag UnitTag)
 {
 	if (!OwnerController) return nullptr;
 	
@@ -28,10 +28,10 @@ ANGUnitPawn* UNGSpawnHelper::SpawnUnitPawn(ANGPlayerController* OwnerController,
 
 	FGridAddress SpawnGridAddress(EmptyGridIndex.GetValue(), EGridType::Wait, PS, 0);
 
-	return SpawnUnitPawnAtGrid(OwnerController, UnitName, SpawnGridAddress);
+	return SpawnUnitPawnAtGrid(OwnerController, UnitTag, SpawnGridAddress);
 }
 
-ANGUnitPawn* UNGSpawnHelper::SpawnUnitPawnAtGrid(ANGPlayerController* OwnerController, FName UnitName,
+ANGUnitPawn* UNGSpawnHelper::SpawnUnitPawnAtGrid(ANGPlayerController* OwnerController, FGameplayTag UnitTag,
                                                  const FGridAddress& SpawnGridAddress)
 {
 	if (!OwnerController || !OwnerController->HasAuthority()) return nullptr;
@@ -54,7 +54,7 @@ ANGUnitPawn* UNGSpawnHelper::SpawnUnitPawnAtGrid(ANGPlayerController* OwnerContr
 	ANGInGameMode* GM = World->GetAuthGameMode<ANGInGameMode>();
 	if (!GM) return nullptr;
 
-	const FUnitData* UnitData = GM->GetUnitData(UnitName);
+	const FUnitData* UnitData = GM->GetUnitData(UnitTag);
 	if (!UnitData || !UnitData->IdentificationTag.IsValid()) return nullptr;
 
 	TSubclassOf<ANGPawnBase> UnitClass = UnitData->UnitClass;

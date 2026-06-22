@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "UI/NGWidgetController.h"
 #include "NGRollShopWidgetController.generated.h"
 
@@ -21,7 +22,7 @@ public:
 	virtual void BindCallbacksToDependencies() override;
 	
 	UFUNCTION(BlueprintCallable, Category = "Game|Shop")
-	void GetPlayerRollPocket(TArray<FName>& RollPockets) const;
+	void GetPlayerRollPocket(TArray<FGameplayTag>& RollPockets) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Game|Shop")
 	void RequestPlayerRollPocket() const;
@@ -30,7 +31,7 @@ public:
 	int32 GainPlayerLevel() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Game|Shop")
-	void BuyUnitFromPocket(FName UnitName);
+	void BuyUnitFromPocket(FGameplayTag UnitTag);
 	
 	UPROPERTY(BlueprintAssignable, Category = "Game|Shop")
 	FOnGoldChangedSignature OnGoldChanged;
