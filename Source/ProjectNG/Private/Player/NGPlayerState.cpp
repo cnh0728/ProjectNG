@@ -13,7 +13,7 @@
 #include "Pawn/NGUnitPawn.h"
 #include "Player/NGPlayerController.h"
 
-ANGPlayerState::ANGPlayerState() : CurrentGameState(EGameState::Maintaining), PlayerLevel(1), CurrentZoneTag(FGameplayTag::RequestGameplayTag(FName("Zone.Area.A")))
+ANGPlayerState::ANGPlayerState() : CurrentGameState(EGameState::Maintaining), CurrentZoneTag(FGameplayTag::RequestGameplayTag(FName("Zone.Area.A")))
 {
 	PrimaryActorTick.bCanEverTick = false;
 	
@@ -38,7 +38,6 @@ void ANGPlayerState::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>&
 	DOREPLIFETIME(ANGPlayerState, EnemyWaitGridMap);
 	DOREPLIFETIME(ANGPlayerState, PlayerPocket);
 	DOREPLIFETIME(ANGPlayerState, HomeArena);
-	DOREPLIFETIME(ANGPlayerState, PlayerLevel);
 	DOREPLIFETIME(ANGPlayerState, CurrentGameState);
 }
 

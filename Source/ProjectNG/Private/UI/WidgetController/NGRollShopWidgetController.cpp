@@ -63,9 +63,17 @@ int32 UNGRollShopWidgetController::GainPlayerLevel() const
 	{
 		if (ANGPlayerState* PS = NGP->GetPlayerState<ANGPlayerState>())
 		{
-			int32 NewLevel = FMath::Clamp(PS->GetPlayerLevel() + 1, 1, 5);
-			PS->SetPlayerLevel(NewLevel);
-			return NewLevel;
+			if (UNGAbilitySystemComponent* ASC = PS->GetNGAbilitySystemComponent())
+			{
+				if (const UNGPlayerAttributeSet* AttributeSet = ASC->GetSet<UNGPlayerAttributeSet>())
+				{
+					int32 CurrentLevel = FMath::RoundToInt(AttributeSet->GetLevel());
+					int32 NewLevel = FMath::Clamp(CurrentLevel + 1, 1, 5);
+					ASC->SetNumericAttributeBase(UNGPlayerAttributeSet::GetLevelAttribute(), static_cast<float>(NewLevel));
+        
+					return NewLevel;
+				}
+			}
 		}
 	}
 	

@@ -5,6 +5,7 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystem/NGAbilitySystemComponent.h"
 #include "AbilitySystem/NGPawnAttributeSet.h"
+#include "AbilitySystem/NGPlayerAttributeSet.h"
 #include "Combat/Grid/Arena.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/NGHPBarWidgetComponent.h"
@@ -661,17 +662,22 @@ void ANGPawnBase::UpdateHPBar()
 
 bool ANGPawnBase::CanAddUnitOnCombatGrid(EGridType NewGridType) const
 {
-	if (CurrentGridAddress.GridType == EGridType::Wait && NewGridType == EGridType::Combat)
+	UNGAbilitySystemComponent* ASC = CurrentGridAddress.GridOwnerPS ? CurrentGridAddress.GridOwnerPS->GetNGAbilitySystemComponent() : nullptr;
+	if (const UNGPlayerAttributeSet* MyPlayerAttributeSet = ASC ? ASC->GetSet<UNGPlayerAttributeSet>() : nullptr)
 	{
-		TArray<ANGPawnBase*> PlacedUnitPocket;
-		CurrentGridAddress.GridOwnerPS->GetPlayerPocket()->GetPlacedUnits(PlacedUnitPocket);
-
-		if (PlacedUnitPocket.Num() >= CurrentGridAddress.GridOwnerPS->GetPlayerLevel())
+		if (CurrentGridAddress.GridType == EGridType::Wait && NewGridType == EGridType::Combat)
 		{
-			return false;
+			TArray<ANGPawnBase*> PlacedUnitPocket;
+			CurrentGridAddress.GridOwnerPS->GetPlayerPocket()->GetPlacedUnits(PlacedUnitPocket);
+
+			if (PlacedUnitPocket.Num() < MyPlayerAttributeSet->GetLevel())
+			{
+				return true;
+			}
 		}
 	}
-	return true;
+	
+	return false;
 }
 
 void ANGPawnBase::TryMoveTo(const FVector& TargetLocation)

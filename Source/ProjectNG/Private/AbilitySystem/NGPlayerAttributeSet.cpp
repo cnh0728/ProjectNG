@@ -10,9 +10,11 @@ void UNGPlayerAttributeSet::GetLifetimeReplicatedProps(TArray<class FLifetimePro
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
 	DOREPLIFETIME_CONDITION_NOTIFY(UNGPlayerAttributeSet, Gold, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UNGPlayerAttributeSet, Level, COND_None, REPNOTIFY_Always);
 }
 
 DEFAULT_REPLICATION_IMPLEMENTATION(UNGPlayerAttributeSet, Gold)
+DEFAULT_REPLICATION_IMPLEMENTATION(UNGPlayerAttributeSet, Level)
 
 void UNGPlayerAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data)
 {

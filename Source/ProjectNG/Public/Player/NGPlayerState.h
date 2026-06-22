@@ -97,9 +97,6 @@ protected:
 	
 public:
 	UNGPocketComponent* GetPlayerPocket() { return PlayerPocket; }
-
-	int32 GetPlayerLevel() const { return PlayerLevel; }
-	void SetPlayerLevel(int32 InPlayerLevel) { PlayerLevel = InPlayerLevel; }
 	
 	int32 GetUserIndex();
 	
@@ -118,9 +115,6 @@ public:
 protected:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Game|Pocket")
 	TObjectPtr<UNGPocketComponent> PlayerPocket;
-	
-	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadOnly, Category = "Game")
-	int32 PlayerLevel;
 	
 	UPROPERTY()
 	int32 CurrentCPUEnemyCount;

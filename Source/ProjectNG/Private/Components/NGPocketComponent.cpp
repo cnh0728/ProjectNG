@@ -4,6 +4,7 @@
 #include "Components/NGPocketComponent.h"
 
 #include "AbilitySystem/NGPawnAttributeSet.h"
+#include "AbilitySystem/NGPlayerAttributeSet.h"
 #include "Core/NGPoolSubSystem.h"
 #include "Core/NGShopProbability.h"
 #include "Core/NGSpawnHelper.h"
@@ -328,10 +329,11 @@ void UNGPocketComponent::Server_RequestRoll_Implementation()
 	if (!GM) return;
 	
 	ANGPlayerState* PS = GetOwner<ANGPlayerState>();
-	if (!PS) return;
+	UNGAbilitySystemComponent* ASC = PS ? PS->GetNGAbilitySystemComponent() : nullptr;
+	const UNGPlayerAttributeSet* AttributeSet = ASC ? ASC->GetSet<UNGPlayerAttributeSet>() : nullptr;
 	
 	// 레벨에 맞는 확률 데이터 가져오기
-	FString RowName = FString::FromInt(PS->GetPlayerLevel());
+	FString RowName = FString::FromInt(AttributeSet ? AttributeSet->GetLevel() : 1);
 	FShopProbability* ProbabilityData = ProbabilityTable->FindRow<FShopProbability>(*RowName, TEXT(""));
 	
 	if (!ProbabilityData)

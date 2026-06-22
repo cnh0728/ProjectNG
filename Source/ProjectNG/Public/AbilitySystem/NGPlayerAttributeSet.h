@@ -21,5 +21,11 @@ public:
 	ATTRIBUTE_ACCESSORS(UNGPlayerAttributeSet, Gold)
 	UFUNCTION()
 	void OnRep_Gold(const FGameplayAttributeData& OldValue);
-	
+
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes|Vital", ReplicatedUsing = OnRep_Level)
+	FGameplayAttributeData Level;
+	ATTRIBUTE_ACCESSORS(UNGPlayerAttributeSet, Level)
+	UFUNCTION()
+	void OnRep_Level(const FGameplayAttributeData& OldValue);
+
 };
