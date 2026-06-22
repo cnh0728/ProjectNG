@@ -1,55 +1,65 @@
 // Copyright (c) 2025 TeamNG. All Rights Reserved.
 
-
 #include "UI/HUD/NGHUD.h"
-
 #include "Blueprint/UserWidget.h"
+#include "UI/NGUnitInfoWidget.h"
 #include "UI/NGUserWidget.h"
 #include "UI/WidgetController/NGRollShopWidgetController.h"
 #include "UI/WidgetController/UnitDetailsWidgetController.h"
 
-UNGRollShopWidgetController* ANGHUD::GetRollShopWidgetController(const FWidgetParams& WidgetControllerParams)
+UNGRollShopWidgetController* ANGHUD::CreateRollShopWidgetController(const FWidgetParams& WidgetControllerParams)
 {
-	if (RollShopWidgetController == nullptr)
-	{
-		RollShopWidgetController = NewObject<UNGRollShopWidgetController>(this, RollShopWidgetControllerClass);
-		RollShopWidgetController->AssignWidgetControllerParams(WidgetControllerParams);
-		RollShopWidgetController->BindCallbacksToDependencies();
-	}
-	
-	return RollShopWidgetController;
+    if (RollShopWidgetController == nullptr)
+    {
+       RollShopWidgetController = NewObject<UNGRollShopWidgetController>(this, RollShopWidgetControllerClass);
+       RollShopWidgetController->AssignWidgetControllerParams(WidgetControllerParams);
+       RollShopWidgetController->BindCallbacksToDependencies();
+    }
+    
+    return RollShopWidgetController;
 }
 
-UUnitDetailsWidgetController* ANGHUD::GetUnitDetailsWidgetController(const FWidgetParams& WidgetControllerParams)
+UUnitDetailsWidgetController* ANGHUD::CreateUnitDetailsWidgetController(const FWidgetParams& WidgetControllerParams)
 {
-	if (UnitDetailsWidgetController == nullptr)
-	{
-		UnitDetailsWidgetController = NewObject<UUnitDetailsWidgetController>(this, UnitDetailsWidgetControllerClass);
-		UnitDetailsWidgetController->AssignWidgetControllerParams(WidgetControllerParams);
-		UnitDetailsWidgetController->BindCallbacksToDependencies();
-		UnitDetailsWidgetController->SetAttributeInfo(AttributeInfo);
-	}
-	
-	return UnitDetailsWidgetController;
+    if (UnitDetailsWidgetController == nullptr)
+    {
+        UnitDetailsWidgetController = NewObject<UUnitDetailsWidgetController>(this, UnitDetailsWidgetControllerClass);
+        UnitDetailsWidgetController->AssignWidgetControllerParams(WidgetControllerParams);
+        UnitDetailsWidgetController->BindCallbacksToDependencies();
+        UnitDetailsWidgetController->SetAttributeInfo(AttributeInfo);
+    }
+    
+    return UnitDetailsWidgetController;
 }
 
 void ANGHUD::InitializeHUD(APlayerController* PC, APlayerState* PS)
 {
-	checkf(MainWidgetClass, TEXT("[HUD] MainWidgetClass not initialized"));
-	checkf(RollShopWidgetControllerClass, TEXT("[HUD] RollShopWidgetController not initialized"));
-	
-	UUserWidget* Widget = CreateWidget<UUserWidget>(GetWorld(), MainWidgetClass);
-	MainWidget = Cast<UNGUserWidget>(Widget);
+    checkf(MainWidgetClass, TEXT("[HUD] MainWidgetClass not initialized"));
+    checkf(RollShopWidgetControllerClass, TEXT("[HUD] RollShopWidgetController not initialized"));
+    checkf(UnitInfoWidgetClass, TEXT("[HUD] UnitInfoWidgetClass not initialized"));
+    
+    UUserWidget* Widget = CreateWidget<UUserWidget>(GetWorld(), MainWidgetClass);
+    MainWidget = Cast<UNGUserWidget>(Widget);
 
-	const FWidgetParams WidgetParams(PC, PS);
-	UNGRollShopWidgetController* MainWidgetC = GetRollShopWidgetController(WidgetParams); // TODO. 테스트용 롤링샵 UI 출력중, 나중에 메인 위젯으로 다시 변경 필요.
-
-	// 위젯 컨트롤러 연결
-	MainWidget->ConnectWidgetController(MainWidgetC);
-	MainWidgetC->BroadcastInitialValues();
-
-	// UnitDetail 위젯컨트롤러 생성
-	// UUnitDetailsWidgetController* UnitDetailsWidgetC = GetUnitDetailsWidgetController(WidgetParams);
-	
-	Widget->AddToViewport();
+    const FWidgetParams WidgetParams(PC, PS);
+    UNGRollShopWidgetController* MainWidgetC = CreateRollShopWidgetController(WidgetParams); 
+    MainWidget->ConnectWidgetController(MainWidgetC);
+    MainWidgetC->BroadcastInitialValues();
+    
+    UnitInfoWidget = CreateWidget<UNGUnitInfoWidget>(GetWorld(), UnitInfoWidgetClass);
+    
+    if (UnitInfoWidget)
+    {
+        UUnitDetailsWidgetController* UnitDetailsWidgetC = CreateUnitDetailsWidgetController(WidgetParams);
+        UnitInfoWidget->ConnectWidgetController(UnitDetailsWidgetC);
+        UnitDetailsWidgetC->BroadcastInitialValues();
+        
+        UnitInfoWidget->AddToViewport();
+        UnitInfoWidget->SetVisibility(ESlateVisibility::Collapsed);
+    }
+    
+    if (Widget)
+    {
+        Widget->AddToViewport();
+    }
 }

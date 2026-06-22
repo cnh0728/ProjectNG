@@ -4,9 +4,10 @@
 #include "Pawn/NGUnitPawn.h"
 
 #include "AbilitySystem/NGAbilitySystemComponent.h"
-#include "AbilitySystem/NGAttributeSet.h"
+#include "AbilitySystem/NGPawnAttributeSet.h"
 #include "AbilitySystem/NGGameplayAbility.h"
 #include "Combat/Weapon/NGWeaponData.h"
+#include "Game/NGPawnDataManager.h"
 #include "Player/NGPlayerController.h"
 #include "ProjectNG/ProjectNG.h"
 
@@ -94,6 +95,23 @@ void ANGUnitPawn::BeginPlay()
 void ANGUnitPawn::Activate()
 {
 	Super::Activate();
+	
+	if (HasAuthority())
+	{
+		Multicast_Activate();
+
+		if (UNGPawnDataManager* UnitDataManager = GetWorld()->GetGameInstance()->GetSubsystem<UNGPawnDataManager>())
+		{
+			if (const FUnitAbilityData* UnitData = UnitDataManager->GetUnitAbilityData(IdentificationTag))
+			{
+				InitAbilityData(*UnitData);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("[%s] 데이터 테이블에서 태그(%s)를 찾을 수 없습니다!"), *GetName(), *IdentificationTag.ToString());
+			}
+		}
+	}
 	
 	InitAbilityActorInfo();
 	

@@ -8,6 +8,7 @@
 #include "GameFramework/PlayerController.h"
 #include "NGPlayerController.generated.h"
 
+class ANGUnitPawn;
 enum class EGamePhase : uint8;
 class ANGHUD;
 class AGridMapManager;
@@ -65,8 +66,6 @@ protected:
 	void HandleClickPressed(const FInputActionValue& Value);
 	void HandleClickReleased(const FInputActionValue& Value);
 	
-	void UpdateUnitWidget(ANGPawnBase* NewUnit);
-
 	void SetSelectedUnit(ANGPawnBase* InSelectedUnit);
 	void ResetSelectUnit();
 	
@@ -119,7 +118,10 @@ protected:
 /*				리롤 관련			 */
 /*************************************/
 public:
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Game|Shop")
+	void Server_RequestSellUnit(ANGUnitPawn* NewPawn);
+	
+	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Game|Shop")
 	void Server_RequestBuyUnit(FGameplayTag UnitTag);
 
 	UFUNCTION(Server, Reliable)

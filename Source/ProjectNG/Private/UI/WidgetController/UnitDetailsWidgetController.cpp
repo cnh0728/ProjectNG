@@ -9,7 +9,7 @@
 
 void UUnitDetailsWidgetController::BroadcastInitialValues()
 {
-	if (!TargetUnit.IsValid() || AttributeInfo == nullptr) return;
+	if (!TargetUnit || AttributeInfo == nullptr) return;
 	
 	UAbilitySystemComponent* ASC = TargetUnit->GetAbilitySystemComponent();
 	if (!ASC) return;
@@ -32,7 +32,7 @@ void UUnitDetailsWidgetController::SetTargetUnit(ANGUnitPawn* NewUnit)
 	
 	TargetUnit = NewUnit;
 	
-	if (TargetUnit.IsValid() && AttributeInfo != nullptr)
+	if (TargetUnit && AttributeInfo != nullptr)
 	{
 		UAbilitySystemComponent* ASC = TargetUnit->GetAbilitySystemComponent();
 		
@@ -58,7 +58,7 @@ void UUnitDetailsWidgetController::SetTargetUnit(ANGUnitPawn* NewUnit)
 
 void UUnitDetailsWidgetController::ClearTargetUnit()
 {
-	if (TargetUnit.IsValid() && TargetUnit->GetAbilitySystemComponent())
+	if (TargetUnit && TargetUnit->GetAbilitySystemComponent())
 	{
 		for (const auto& HandlePair : AttributeDelegateHandles)
 		{
@@ -67,7 +67,7 @@ void UUnitDetailsWidgetController::ClearTargetUnit()
 	}
 	
 	AttributeDelegateHandles.Empty();
-	TargetUnit.Reset();
+	TargetUnit = nullptr;
 }
 
 void UUnitDetailsWidgetController::OnAnyAttributeChanged(const FOnAttributeChangeData& Data)

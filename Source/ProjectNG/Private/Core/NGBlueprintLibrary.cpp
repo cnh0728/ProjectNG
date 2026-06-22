@@ -1,4 +1,4 @@
-// Copyright (c) 2025 TeamNG. All Rights Reserved.
+﻿// Copyright (c) 2025 TeamNG. All Rights Reserved.
 
 
 #include "Core/NGBlueprintLibrary.h"
@@ -7,7 +7,7 @@
 #include "Player/NGPlayerState.h"
 #include "UI/NGWidgetController.h"
 #include "UI/HUD/NGHUD.h"
-#include "Game/NGUnitDataManager.h"
+#include "Game/NGPawnDataManager.h"
 
 ANGHUD* UNGBlueprintLibrary::GetNGHUD(const UObject* WorldContextObject)
 {
@@ -54,7 +54,7 @@ void UNGBlueprintLibrary::GetUnitDataRowByTag(const UObject* WorldContextObject,
 	{
 		if (UGameInstance* GI = WorldContextObject->GetWorld()->GetGameInstance())
 		{
-			if (UNGUnitDataManager* UnitDataManager = GI->GetSubsystem<UNGUnitDataManager>())
+			if (UNGPawnDataManager* UnitDataManager = GI->GetSubsystem<UNGPawnDataManager>())
 			{
 				if (const FUnitData* FoundData = UnitDataManager->GetUnitData(UnitTag))
 				{

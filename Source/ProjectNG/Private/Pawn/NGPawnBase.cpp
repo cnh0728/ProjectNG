@@ -4,14 +4,15 @@
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystem/NGAbilitySystemComponent.h"
-#include "AbilitySystem/NGAttributeSet.h"
+#include "AbilitySystem/NGPawnAttributeSet.h"
+#include "AbilitySystem/NGPlayerAttributeSet.h"
 #include "Combat/Grid/Arena.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/NGHPBarWidgetComponent.h"
 #include "Components/NGPathFindingComponent.h"
 #include "Components/NGPocketComponent.h"
 #include "Components/WidgetComponent.h"
-#include "Game/NGUnitDataManager.h"
+#include "Game/NGPawnDataManager.h"
 #include "Core/NGDeveloperSettings.h"
 #include "GameModes/NGInGameMode.h"
 #include "Net/UnrealNetwork.h"
@@ -53,7 +54,7 @@ ANGPawnBase::ANGPawnBase() : SpeedScale(100.f), RotationInterpSpeed(10.f)
 	
 	AbilitySystemComponent = CreateDefaultSubobject<UNGAbilitySystemComponent>(TEXT("Ability System Component"));
 
-	AttributeSet = CreateDefaultSubobject<UNGAttributeSet>(TEXT("AttributeSet"));
+	AttributeSet = CreateDefaultSubobject<UNGPawnAttributeSet>(TEXT("AttributeSet"));
 	
 	PathFindingComponent = CreateDefaultSubobject<UNGPathFindingComponent>(TEXT("PathFindingComp"));
 	
@@ -164,25 +165,7 @@ void ANGPawnBase::PossessedBy(AController* NewController)
 
 void ANGPawnBase::Activate()
 {
-	if (HasAuthority())
-	{
-		//이거를 Enemy랑 Unit이랑 분기쳐서 따로하기
-		
-		Multicast_Activate();
-
-		if (UNGUnitDataManager* UnitDataManager = GetWorld()->GetGameInstance()->GetSubsystem<UNGUnitDataManager>())
-		{
-			if (const FUnitAbilityData* UnitData = UnitDataManager->GetUnitAbilityData(IdentificationTag))
-			{
-				InitAbilityData(*UnitData);
-			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("[%s] 데이터 테이블에서 태그(%s)를 찾을 수 없습니다!"), *GetName(), *IdentificationTag.ToString());
-			}
-		}
-	}
-	else
+	if (!HasAuthority())
 	{
 		SetActorHiddenInGame(false);
 		SetActorEnableCollision(true);
@@ -635,7 +618,7 @@ bool ANGPawnBase::IsDead()
 {
 	if (AbilitySystemComponent)
 	{
-		float CurrentHP = AbilitySystemComponent->GetNumericAttribute(UNGAttributeSet::GetHealthAttribute());
+		float CurrentHP = AbilitySystemComponent->GetNumericAttribute(UNGPawnAttributeSet::GetHealthAttribute());
 		
 		return CurrentHP <= 0.f;
 	}
@@ -664,8 +647,8 @@ void ANGPawnBase::UpdateHPBar()
 {
 	if (UUserWidget* HPWidget = HPBarComponent->GetUserWidgetObject())
 	{
-		float CurrentHP = AbilitySystemComponent->GetNumericAttribute(UNGAttributeSet::GetHealthAttribute());
-		float MaxHP = AbilitySystemComponent->GetNumericAttribute(UNGAttributeSet::GetMaxHealthAttribute());
+		float CurrentHP = AbilitySystemComponent->GetNumericAttribute(UNGPawnAttributeSet::GetHealthAttribute());
+		float MaxHP = AbilitySystemComponent->GetNumericAttribute(UNGPawnAttributeSet::GetMaxHealthAttribute());
 		
 		float Percent = (MaxHP > 0.f) ? CurrentHP / MaxHP : 0.f;
 		
@@ -679,17 +662,22 @@ void ANGPawnBase::UpdateHPBar()
 
 bool ANGPawnBase::CanAddUnitOnCombatGrid(EGridType NewGridType) const
 {
-	if (CurrentGridAddress.GridType == EGridType::Wait && NewGridType == EGridType::Combat)
+	UNGAbilitySystemComponent* ASC = CurrentGridAddress.GridOwnerPS ? CurrentGridAddress.GridOwnerPS->GetNGAbilitySystemComponent() : nullptr;
+	if (const UNGPlayerAttributeSet* MyPlayerAttributeSet = ASC ? ASC->GetSet<UNGPlayerAttributeSet>() : nullptr)
 	{
-		TArray<ANGPawnBase*> PlacedUnitPocket;
-		CurrentGridAddress.GridOwnerPS->GetPlayerPocket()->GetPlacedUnits(PlacedUnitPocket);
-
-		if (PlacedUnitPocket.Num() >= CurrentGridAddress.GridOwnerPS->GetPlayerLevel())
+		if (CurrentGridAddress.GridType == EGridType::Wait && NewGridType == EGridType::Combat)
 		{
-			return false;
+			TArray<ANGPawnBase*> PlacedUnitPocket;
+			CurrentGridAddress.GridOwnerPS->GetPlayerPocket()->GetPlacedUnits(PlacedUnitPocket);
+
+			if (PlacedUnitPocket.Num() < MyPlayerAttributeSet->GetLevel())
+			{
+				return true;
+			}
 		}
 	}
-	return true;
+	
+	return false;
 }
 
 void ANGPawnBase::TryMoveTo(const FVector& TargetLocation)

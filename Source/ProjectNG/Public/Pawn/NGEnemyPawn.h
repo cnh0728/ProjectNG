@@ -6,6 +6,7 @@
 #include "Pawn/NGPawnBase.h"
 #include "NGEnemyPawn.generated.h"
 
+struct FEnemyAbilityData;
 class UWidgetComponent;
 class USplineComponent;
 
@@ -18,6 +19,11 @@ public:
 	// Sets default values for this character's properties
 	ANGEnemyPawn();
 
+	virtual void Activate() override;
+	void InitializeEnemyStats(const FEnemyAbilityData& DataRow);
+
+	virtual void OnRep_PlayerState() override;
+	
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

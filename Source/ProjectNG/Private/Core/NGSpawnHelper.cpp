@@ -13,57 +13,58 @@
 #include "Player/NGPlayerController.h"
 #include "ProjectNG/ProjectNG.h"
 
-bool UNGSpawnHelper::SpawnUnitPawn(ANGPlayerController* OwnerController, FGameplayTag UnitTag)
+ANGUnitPawn* UNGSpawnHelper::SpawnUnitPawn(ANGPlayerController* OwnerController, FGameplayTag UnitTag)
 {
-	if (!OwnerController) return false;
+	if (!OwnerController) return nullptr;
 	
 	ANGPlayerState* PS = OwnerController->GetPlayerState<ANGPlayerState>();
-	if (!PS) return false;
+	if (!PS) return nullptr;
 	
 	const FQuadGridMap& WaitGridMap = PS->GetWaitGridMap();
 	
 	TOptional<FIntVector2> EmptyGridIndex = WaitGridMap.GetEmptyGridIndex();
 	
-	if (!EmptyGridIndex.IsSet()) return false;
+	if (!EmptyGridIndex.IsSet()) return nullptr;
 
 	FGridAddress SpawnGridAddress(EmptyGridIndex.GetValue(), EGridType::Wait, PS, 0);
 
 	return SpawnUnitPawnAtGrid(OwnerController, UnitTag, SpawnGridAddress);
 }
 
-bool UNGSpawnHelper::SpawnUnitPawnAtGrid(ANGPlayerController* OwnerController, FGameplayTag UnitTag, const FGridAddress& SpawnGridAddress)
+ANGUnitPawn* UNGSpawnHelper::SpawnUnitPawnAtGrid(ANGPlayerController* OwnerController, FGameplayTag UnitTag,
+                                                 const FGridAddress& SpawnGridAddress)
 {
-	if (!OwnerController || !OwnerController->HasAuthority()) return false;
+	if (!OwnerController || !OwnerController->HasAuthority()) return nullptr;
 
 	ANGPlayerState* PS = OwnerController->GetPlayerState<ANGPlayerState>();
-	if (!PS || SpawnGridAddress.GridOwnerPS != PS) return false;
+	if (!PS || SpawnGridAddress.GridOwnerPS != PS) return nullptr;
 
 	FGridMapBase* GridMap = UGridMapHelper::GetGridMap(SpawnGridAddress);
 	if (!GridMap || !GridMap->IsValidIndex(SpawnGridAddress.GridIndex) || !GridMap->IsGridIndexEmpty(SpawnGridAddress.GridIndex))
 	{
-		return false;
+		return nullptr;
 	}
 
 	UNGPocketComponent* Pocket = PS->GetPlayerPocket();
-	if (!Pocket) return false;
+	if (!Pocket) return nullptr;
 
 	UWorld* World = OwnerController->GetWorld();
-	if (!World)	return false;
+	if (!World)	return nullptr;
 
 	ANGInGameMode* GM = World->GetAuthGameMode<ANGInGameMode>();
-	if (!GM) return false;
+	if (!GM) return nullptr;
 
 	const FUnitData* UnitData = GM->GetUnitData(UnitTag);
-	if (!UnitData || !UnitData->IdentificationTag.IsValid()) return false;
+	if (!UnitData || !UnitData->IdentificationTag.IsValid()) return nullptr;
 
 	TSubclassOf<ANGPawnBase> UnitClass = UnitData->UnitClass;
-	if (!UnitClass) return false;
+	if (!UnitClass) return nullptr;
 
 	FVector SpawnLoc = UGridMapHelper::GetWorldLocation(SpawnGridAddress);
 	FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLoc);
 
 	ANGUnitPawn* NewPawn = SpawnPawn<ANGUnitPawn>(World, UnitClass, SpawnTransform, OwnerController);
-	if (!NewPawn) return false;
+	if (!NewPawn) return nullptr;
 	
 	if (UCapsuleComponent* Capsule = NewPawn->GetCapsuleComponent())
 	{
@@ -72,8 +73,8 @@ bool UNGSpawnHelper::SpawnUnitPawnAtGrid(ANGPlayerController* OwnerController, F
 	
 	NewPawn->Initialize(PS);
 	NewPawn->SetIdentificationTag(UnitData->IdentificationTag);
+	NewPawn->SetUnitName(UnitData->BaseUnitName);
 	NewPawn->Activate();
-
 	
 	//여기서 찾은 그리드에 값 기입
 	FGridData GridData;
@@ -83,15 +84,15 @@ bool UNGSpawnHelper::SpawnUnitPawnAtGrid(ANGPlayerController* OwnerController, F
 	
 	Pocket->ControlPocketSpawning(NewPawn);
 	
-	return true;
+	return NewPawn;
 }
 
-bool UNGSpawnHelper::SpawnEnemyPawn(ANGPlayerController* OwnerController, FEnemySpawnInfo EnemySpawnInfo)
+ANGEnemyPawn* UNGSpawnHelper::SpawnEnemyPawn(ANGPlayerController* OwnerController, FEnemySpawnInfo EnemySpawnInfo)
 {
 	ANGPlayerState* PS = Cast<ANGPlayerController>(OwnerController)->GetPlayerState<ANGPlayerState>();
 	
 	UWorld* World = OwnerController->GetWorld();
-	if (!World)	return false;
+	if (!World)	return nullptr;
 	
 	FGridAddress SpawnGridAddress(EnemySpawnInfo.SpawnGridPoint, EGridType::Combat, PS, 0);
 	
@@ -99,9 +100,10 @@ bool UNGSpawnHelper::SpawnEnemyPawn(ANGPlayerController* OwnerController, FEnemy
 	FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLoc);
 
 	ANGEnemyPawn* NewPawn = SpawnPawn<ANGEnemyPawn>(World, EnemySpawnInfo.EnemyClass, SpawnTransform, OwnerController);
-	if (!NewPawn)	return false;
+	if (!NewPawn)	return nullptr;
 	
 	NewPawn->Initialize(PS);
+	NewPawn->Activate();
 	
 	//여기서 찾은 그리드에 값 기입
 	FGridData GridData;
@@ -111,7 +113,7 @@ bool UNGSpawnHelper::SpawnEnemyPawn(ANGPlayerController* OwnerController, FEnemy
 	
 	// PS->AddCPUEnemyCount();
 	
-	return true;
+	return NewPawn;
 }
 
 ANGPawnBase* UNGSpawnHelper::Internal_SpawnPawn(UObject* WorldContextObject, TSubclassOf<ANGPawnBase> PawnClass,

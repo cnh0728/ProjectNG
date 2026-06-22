@@ -7,7 +7,7 @@
 #include "Core/NGDeveloperSettings.h"
 #include "Core/NGUnitData.h"
 #include "Game/NGGameState.h"
-#include "Game/NGUnitDataManager.h"
+#include "Game/NGPawnDataManager.h"
 #include "Pawn/NGUnitPawn.h"
 #include "Player/NGPlayerState.h"
 
@@ -361,7 +361,7 @@ bool ANGInGameMode::IsExistUnitDataTable() const
 {
 	if (UGameInstance* GI = GetGameInstance())
 	{
-		if (UNGUnitDataManager* UnitDataManager = GI->GetSubsystem<UNGUnitDataManager>())
+		if (UNGPawnDataManager* UnitDataManager = GI->GetSubsystem<UNGPawnDataManager>())
 		{
 			return UnitDataManager->IsExistUnitDataTable();
 		}
@@ -413,11 +413,32 @@ TSubclassOf<ANGUnitPawn> ANGInGameMode::GetUnitClass(FGameplayTag UnitTag) const
 	return FoundRow->UnitClass;
 }
 
+float ANGInGameMode::GetUnitPrice(ANGUnitPawn* Unit) const
+{
+	const FUnitData* UnitData = GetUnitData(Unit->GetIdentificationTag());
+	if (!UnitData) return 0.f;
+	
+	float UnitSellValue = UnitData->Price;
+	UE_LOG(LogTemp, Log, TEXT("Price: %f"), UnitSellValue);
+	
+	return UnitSellValue;
+}
+
+bool ANGInGameMode::CanBuyUnit(FGameplayTag UnitTag, float OwnedGold) const
+{
+	const FUnitData* UnitData = GetUnitData(UnitTag);
+	if (!UnitData) return false;
+	
+	if (UnitData->Price > OwnedGold)	return false;
+	
+	return true;
+}
+
 const FUnitData* ANGInGameMode::GetUnitData(FGameplayTag UnitTag) const
 {
 	if (UGameInstance* GI = GetGameInstance())
 	{
-		if (UNGUnitDataManager* UnitDataManager = GI->GetSubsystem<UNGUnitDataManager>())
+		if (UNGPawnDataManager* UnitDataManager = GI->GetSubsystem<UNGPawnDataManager>())
 		{
 			return UnitDataManager->GetUnitData(UnitTag);
 		}
@@ -429,7 +450,7 @@ void ANGInGameMode::InitializeUnitPool()
 {
 	if (UGameInstance* GI = GetGameInstance())
 	{
-		if (UNGUnitDataManager* UnitDataManager = GI->GetSubsystem<UNGUnitDataManager>())
+		if (UNGPawnDataManager* UnitDataManager = GI->GetSubsystem<UNGPawnDataManager>())
 		{
 			const TMap<FGameplayTag, FUnitData*>& AllUnitData = UnitDataManager->GetAllUnitDataMap();
 			for (const auto& Pair : AllUnitData)

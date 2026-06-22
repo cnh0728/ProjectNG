@@ -13,13 +13,9 @@ void UNGGameplayAbility_MeleeAttack::ActivateAbility(const FGameplayAbilitySpecH
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 	
-	TossTargetData = *TriggerEventData;
-	
 	UAbilityTask_WaitGameplayEvent* EventTask = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, FGameplayTag::RequestGameplayTag(TEXT("Event.Attack.Melee")));
 	EventTask->EventReceived.AddDynamic(this, &UNGGameplayAbility_MeleeAttack::OnAttackReceived);
 	EventTask->ReadyForActivation();
-	
-	
 }
 
 void UNGGameplayAbility_MeleeAttack::OnAttackReceived(FGameplayEventData Payload)

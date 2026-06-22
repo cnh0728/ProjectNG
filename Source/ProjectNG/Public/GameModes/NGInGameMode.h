@@ -45,6 +45,7 @@ public:
 	virtual void BeginPlay() override;
 
 public:
+	float GetUnitPrice(ANGUnitPawn* Unit) const;
 	
 	//유닛을 팔고(반환까지 진행) 유닛의 값을 리턴
 	int32 SellUnit(ANGUnitPawn* Unit);
@@ -64,6 +65,9 @@ public:
 
 	// 특정 티어의 유닛을 랜덤으로 반환합니다.
 	FGameplayTag GetRandomUnitByTier(EUnitTier Tier);
+
+
+	bool CanBuyUnit(FGameplayTag UnitTag, float OwnedGold) const;
 
 	TSubclassOf<ANGUnitPawn> GetUnitClass(FGameplayTag UnitTag) const;
 	const FUnitData* GetUnitData(FGameplayTag UnitTag) const;

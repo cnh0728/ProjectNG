@@ -7,6 +7,8 @@
 #include "UI/NGWidgetController.h"
 #include "NGRollShopWidgetController.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGoldChangedSignature, float, NewGold);
+
 /**
  * 
  */
@@ -18,7 +20,7 @@ class PROJECTNG_API UNGRollShopWidgetController : public UNGWidgetController
 public:
 	virtual void BroadcastInitialValues() override;
 	virtual void BindCallbacksToDependencies() override;
-
+	
 	UFUNCTION(BlueprintCallable, Category = "Game|Shop")
 	void GetPlayerRollPocket(TArray<FGameplayTag>& RollPockets) const;
 
@@ -30,4 +32,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Game|Shop")
 	void BuyUnitFromPocket(FGameplayTag UnitTag);
+	
+	UPROPERTY(BlueprintAssignable, Category = "Game|Shop")
+	FOnGoldChangedSignature OnGoldChanged;
 };

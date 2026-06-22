@@ -19,6 +19,7 @@
 
 #include "ProjectNG/ProjectNG.h"
 #include "UI/NGUnitInfoWidget.h"
+#include "UI/HUD/NGHUD.h"
 #include "UI/WidgetController/UnitDetailsWidgetController.h"
 
 ANGPlayerController::ANGPlayerController() : DragThreshold(10.f), DragHeightOffset(20.f), DragInterpSpeed(20.f)
@@ -281,27 +282,6 @@ void ANGPlayerController::HandleClickReleased(const FInputActionValue& Value)
 	}
 }
 
-void ANGPlayerController::UpdateUnitWidget(ANGPawnBase* NewUnit)
-{
-	//위젯이 없는 상태면 생성
-	if (!UnitInfoWidgetInstance && UnitInfoWidgetClass)
-	{
-		UnitInfoWidgetInstance = CreateWidget<UNGUnitInfoWidget>(this, UnitInfoWidgetClass);
-		if (UnitInfoWidgetInstance)
-		{
-			UnitInfoWidgetInstance->AddToViewport();
-			UnitInfoWidgetInstance->SetVisibility(ESlateVisibility::Collapsed); //일단 숨김
-		}
-	}
-		
-	//위젯 켜고 데이터 주입
-	if (IsValid(UnitInfoWidgetInstance))
-	{
-		UnitInfoWidgetInstance->SetTargetUnit(NewUnit);
-		UnitInfoWidgetInstance->SetVisibility(ESlateVisibility::Visible);
-	}
-}
-
 void ANGPlayerController::SetSelectedUnit(ANGPawnBase* InSelectedUnit)
 {
 	ResetSelectUnit();
@@ -315,12 +295,21 @@ void ANGPlayerController::SetSelectedUnit(ANGPawnBase* InSelectedUnit)
 			ISelectableInterface::Execute_OnSelected(SelectedUnit.Get());
 		}
 		
-		UpdateUnitWidget(SelectedUnit);
-		
-		// if (UUnitDetailsWidgetController* UnitDetailsWidgetController = UNGBlueprintLibrary::GetUnitDetailsWidgetController(this))
-		// {
-		// 	UnitDetailsWidgetController->SetTargetUnit(SelectedUnit.Get());
-		// }
+		if (ANGHUD* MyNGHUD = GetHUD<ANGHUD>())
+		{
+			if (ANGUnitPawn* UnitPawn = Cast<ANGUnitPawn>(SelectedUnit.Get()))
+			{
+				if (UUnitDetailsWidgetController* DetailsWidgetController = MyNGHUD->GetUnitDetailsWidgetController())
+				{
+					DetailsWidgetController->SetTargetUnit(UnitPawn);
+				}
+
+				if (UNGUnitInfoWidget* UnitInfoWidget = MyNGHUD->GetUnitInfoWidget())
+				{
+					UnitInfoWidget->UpdateUnitWidget(UnitPawn);
+				}
+			}
+		}
 	}
 }
 
@@ -335,7 +324,7 @@ void ANGPlayerController::ResetSelectUnit()
 		
 		if (UnitInfoWidgetInstance)
 		{
-			UnitInfoWidgetInstance->ClearTargetUnit();
+			UnitInfoWidgetInstance->ClearUnitDataOnUI();
 			UnitInfoWidgetInstance->SetVisibility(ESlateVisibility::Collapsed);
 		}
 		
@@ -394,15 +383,40 @@ void ANGPlayerController::ResetHoveringUnit()
 	}
 }
 
-void ANGPlayerController::Server_RequestBuyUnit_Implementation(FGameplayTag UnitTag)
+void ANGPlayerController::Server_RequestSellUnit_Implementation(ANGUnitPawn* NewPawn)
 {
+	ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>();
+	if (!GM)	return;
+	
 	if (ANGPlayerState* PS = GetPlayerState<ANGPlayerState>())
 	{
-		if (UNGSpawnHelper::SpawnUnitPawn(this, UnitTag))
+		if (UNGPocketComponent* Pocket = PS->GetPlayerPocket())
 		{
-			UNGPocketComponent* PlayerPocket = PS->GetPlayerPocket();
-			PlayerPocket->AddUnitToBuyingPocket(UnitTag);
-			UE_LOG(LogTemp, Display, TEXT("BuyUnitFromPocket Success"));
+			float UnitPrice = GM->GetUnitPrice(NewPawn);
+			PS->EarnGold(UnitPrice);
+			Pocket->SellUnit(NewPawn);
+			UE_LOG(LogTemp, Display, TEXT("SellUnitFromPocket Success"));
+		}
+	}
+}
+
+void ANGPlayerController::Server_RequestBuyUnit_Implementation(FGameplayTag UnitTag)
+{
+	ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>();
+	if (!GM)	return;
+
+	if (ANGPlayerState* PS = GetPlayerState<ANGPlayerState>())
+	{
+		if (GM->CanBuyUnit(UnitTag, PS->GetOwnedGold()))
+		{
+			if (ANGUnitPawn* NewPawn = UNGSpawnHelper::SpawnUnitPawn(this, UnitTag))
+			{
+				float UnitPrice = GM->GetUnitPrice(NewPawn);
+				PS->EarnGold(-UnitPrice);
+				UNGPocketComponent* PlayerPocket = PS->GetPlayerPocket();
+				PlayerPocket->AddUnitToBuyingPocket(UnitTag);
+				UE_LOG(LogTemp, Display, TEXT("BuyUnitFromPocket Success"));
+			}
 		}
 	}
 }

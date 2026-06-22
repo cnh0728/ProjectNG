@@ -26,10 +26,11 @@ public:
 		return Cast<T>(Internal_SpawnPawn(WorldContextObject, PawnClass, SpawnTransform, Owner));
 	}
 	
-	static bool SpawnUnitPawn(ANGPlayerController* OwnerController, FGameplayTag UnitTag);
-	static bool SpawnUnitPawnAtGrid(ANGPlayerController* OwnerController, FGameplayTag UnitTag, const FGridAddress& SpawnGridAddress);
-	
-	static bool SpawnEnemyPawn(ANGPlayerController* OwnerController, FEnemySpawnInfo EnemySpawnInfo);
+	static ANGUnitPawn* SpawnUnitPawn(ANGPlayerController* OwnerController, FGameplayTag UnitTag);
+	static ANGUnitPawn* SpawnUnitPawnAtGrid(ANGPlayerController* OwnerController, FGameplayTag UnitTag,
+	                                        const FGridAddress& SpawnGridAddress);
+
+	static ANGEnemyPawn* SpawnEnemyPawn(ANGPlayerController* OwnerController, FEnemySpawnInfo EnemySpawnInfo);
 		
 protected:
 	static ANGPawnBase* Internal_SpawnPawn(UObject* WorldContextObject, TSubclassOf<ANGPawnBase> PawnClass,
