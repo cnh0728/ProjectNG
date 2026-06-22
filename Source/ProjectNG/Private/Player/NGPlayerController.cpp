@@ -402,23 +402,24 @@ void ANGPlayerController::Server_RequestSellUnit_Implementation(ANGUnitPawn* New
 
 void ANGPlayerController::Server_RequestBuyUnit_Implementation(FGameplayTag UnitTag)
 {
-	ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>();
-	if (!GM)	return;
-
 	if (ANGPlayerState* PS = GetPlayerState<ANGPlayerState>())
 	{
-		if (GM->CanBuyUnit(UnitTag, PS->GetOwnedGold()))
+		ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>();
+		if (GM ? GM->CanBuyUnit(UnitTag, PS->GetOwnedGold()) : false)
 		{
 			if (ANGUnitPawn* NewPawn = UNGSpawnHelper::SpawnUnitPawn(this, UnitTag))
 			{
 				float UnitPrice = GM->GetUnitPrice(NewPawn);
 				PS->EarnGold(-UnitPrice);
-				UNGPocketComponent* PlayerPocket = PS->GetPlayerPocket();
-				PlayerPocket->AddUnitToBuyingPocket(UnitTag);
+				Client_OnBuyUnit(true);
+				
 				UE_LOG(LogTemp, Display, TEXT("BuyUnitFromPocket Success"));
+				return;
 			}
 		}
 	}
+	
+	Client_OnBuyUnit(false);
 }
 
 void ANGPlayerController::Server_SelectNode_Implementation(int32 NodeID)
@@ -427,6 +428,11 @@ void ANGPlayerController::Server_SelectNode_Implementation(int32 NodeID)
 	{
 		GM->ProcessNodeSelection(this, NodeID);
 	}
+}
+
+void ANGPlayerController::Client_OnBuyUnit_Implementation(bool bIsSuccess)
+{
+	OnBuyUnitSuccess.Broadcast(bIsSuccess);
 }
 
 UNGPocketComponent* ANGPlayerController::GetPlayerPocket() const

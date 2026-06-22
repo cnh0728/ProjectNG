@@ -23,6 +23,7 @@ class UNGPocketComponent;
  */
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnUnitsUpdatedSignature);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBuyUnitSuccessSignature, bool, bIsSuccess);
 
 UCLASS()
 class PROJECTNG_API ANGPlayerController : public APlayerController
@@ -127,9 +128,15 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_SelectNode(int32 NodeID);
 	
+	UFUNCTION(Client, Reliable)
+	void Client_OnBuyUnit(bool bIsSuccess);
+	
 	UNGPocketComponent* GetPlayerPocket() const;
 	void EnterPhase(EGamePhase Phase);
 
+	UPROPERTY(BlueprintAssignable, Category = "Game|Shop")
+	FOnBuyUnitSuccessSignature OnBuyUnitSuccess;
+	
 /*************************************/
 /*				전투					 */
 /*************************************/

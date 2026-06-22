@@ -49,12 +49,6 @@ void UNGPocketComponent::RequestRoll()
 	Server_RequestRoll();
 }
 
-void UNGPocketComponent::AddUnitToBuyingPocket(FGameplayTag UnitTag)
-{
-	LastShopAction = EShopActionType::Buy;
-	RollShopPocket.Remove(UnitTag);
-}
-
 void UNGPocketComponent::TryMergeUnit(FGameplayTag IdentificationTag)
 {
 	CheckAndMergeUnit(IdentificationTag);
