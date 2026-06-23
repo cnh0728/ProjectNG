@@ -1,12 +1,8 @@
 // Copyright (c) 2025 TeamNG. All Rights Reserved.
 
-
 #include "Map/NGMapGenerator.h"
-
 #include "Core/NGGameplayTags.h"
-#include "Components/SplineMeshComponent.h"
 #include "Map/MapNodeDataAsset.h"
-#include "Map/NGMapNode.h"
 
 ANGMapGenerator::ANGMapGenerator()
 {
@@ -21,11 +17,44 @@ void ANGMapGenerator::GenerateMap(int32 Seed)
 	
 	UE_LOG(LogTemp, Warning, TEXT("Map Seed: %d"), RandomSeed);
 	
-	InitializedNodes();
-	SpawnNodes();
+	int32 MaxRetries = 3;
+	bool bSuccess = false;
+	
+	for (int32 i = 0; i < MaxRetries; ++i)
+	{
+		GeneratedNodes.Empty();
+		
+		GenerateLayerNodes();
+		ConnectLayers();
+		
+		if (ValidateConnectivity())
+		{
+			bSuccess = true;
+			break;
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Map generation validation failed. Retrying... (%d/%d)"), i + 1, MaxRetries);
+		}
+	}
+	
+	if (!bSuccess)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to generate a valid map after %d retries."), MaxRetries);
+		return;
+	}
+	
+	AssignNodeTypes();
+	AssignTownBuffs();
+	AssignNodePositions();
 }
 
-FGameplayTag ANGMapGenerator::GetGameplayTagById(const int32 NodeID)
+void ANGMapGenerator::BeginPlay()
+{
+	Super::BeginPlay();
+}
+
+FGameplayTag ANGMapGenerator::GetGameplayTagById(int32 NodeID)
 {
 	for (const FMapNodeData& Node : GeneratedNodes)
 	{
@@ -34,344 +63,321 @@ FGameplayTag ANGMapGenerator::GetGameplayTagById(const int32 NodeID)
 			return Node.NodeTag;
 		}
 	}
-	
 	return FGameplayTag();
 }
 
-void ANGMapGenerator::BeginPlay()
+TArray<const FMapNodeData*> ANGMapGenerator::GetNodesAtLayer(int32 LayerIndex) const
 {
-	Super::BeginPlay();
-	
-	PreInitializeValidPoints();
+	TArray<const FMapNodeData*> Result;
+	for (const FMapNodeData& Node : GeneratedNodes)
+	{
+		if (Node.LayerIndex == LayerIndex)
+		{
+			Result.Add(&Node);
+		}
+	}
+	return Result;
 }
 
-void ANGMapGenerator::InitializedNodes()
+TArray<const FMapNodeData*> ANGMapGenerator::GetTownNodes() const
 {
-	GeneratedNodes.Empty();
+	return GetNodesAtLayer(0);
+}
 
-	if (ValidSpawnPoints.Num() < NumberOfTowns)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Not enough spawn points for towns! Needed: %d, Found: %d"), NumberOfTowns, ValidSpawnPoints.Num());
-		return;
-	}
-
-	TArray<FVector2D> CandidatePoints = ValidSpawnPoints;
-	TArray<FVector2D> TownPoints;
-	TArray<int32> TownIndices;
-
-	// 첫번째 마을 노드 위치 선택
-	int32 FirstTownIdx = RandomStream.RandRange(0, CandidatePoints.Num() - 1);
-	TownPoints.Add(CandidatePoints[FirstTownIdx]);
-	TownIndices.Add(FirstTownIdx);
+int32 ANGMapGenerator::CalculateNodesForLayer(int32 LayerIndex)
+{
+	if (LayerIndex == 0) return NumberOfTowns;
 	
-	// Native GameplayTags
-	const FNGGameplayTags& GameplayTags = FNGGameplayTags::Get();
-
-	// 최장거리 샘플링을 통해 가장 먼 곳에 새로운 마을 노드 위치 선택.
-	while (TownPoints.Num() < NumberOfTowns)
+	if (BottleneckLayers.Contains(LayerIndex))
 	{
-		int32 BestCandidateIdx = -1;
-		float MaxMinDistSq = -1.0f;
+		return BottleneckNodeCount;
+	}
+	
+	if (LayerIndex == NumberOfLayers - 1)
+	{
+		return FMath::Min(MinNodesPerLayer, 3);
+	}
+	
+	float Alpha = static_cast<float>(LayerIndex) / static_cast<float>(NumberOfLayers - 1);
+	int32 BaseCount = FMath::RoundToInt(FMath::Lerp(static_cast<float>(MaxNodesPerLayer), static_cast<float>(MinNodesPerLayer), Alpha));
+	
+	int32 Offset = RandomStream.RandRange(-1, 1);
+	int32 Count = BaseCount + Offset;
+	
+	Count = FMath::Clamp(Count, MinNodesPerLayer, MaxNodesPerLayer);
+	
+	return Count;
+}
 
-		for (int32 i = 0; i < CandidatePoints.Num(); ++i)
+void ANGMapGenerator::GenerateLayerNodes()
+{
+	int32 NodeIDCounter = 0;
+	
+	for (int32 Layer = 0; Layer < NumberOfLayers; ++Layer)
+	{
+		int32 NodeCount = CalculateNodesForLayer(Layer);
+		
+		for (int32 i = 0; i < NodeCount; ++i)
 		{
-			if (TownIndices.Contains(i)) continue;
+			FMapNodeData NewNode;
+			NewNode.NodeID = NodeIDCounter++;
+			NewNode.LayerIndex = Layer;
+			GeneratedNodes.Add(NewNode);
+		}
+	}
+}
 
-			// 현재 후보인 위치에서 가장 가까운 마을까지의 거리를 구함.
-			float MinDistSq = FLT_MAX;
-			for (const FVector2D& TownPos : TownPoints)
-			{
-				float DistSq = FVector2D::DistSquared(CandidatePoints[i], TownPos);
-				if (DistSq < MinDistSq)
-				{
-					MinDistSq = DistSq;
-				}
-			}
+void ANGMapGenerator::ConnectLayers()
+{
+	for (int32 Layer = 0; Layer < NumberOfLayers - 1; ++Layer)
+	{
+		TArray<FMapNodeData*> CurrentLayerNodes;
+		TArray<FMapNodeData*> NextLayerNodes;
+		
+		for (FMapNodeData& Node : GeneratedNodes)
+		{
+			if (Node.LayerIndex == Layer) CurrentLayerNodes.Add(&Node);
+			else if (Node.LayerIndex == Layer + 1) NextLayerNodes.Add(&Node);
+		}
+		
+		if (CurrentLayerNodes.IsEmpty() || NextLayerNodes.IsEmpty()) continue;
+		
+		// 1. Give each current node some forward connections
+		for (FMapNodeData* CurrentNode : CurrentLayerNodes)
+		{
+			int32 NumConnections = RandomStream.RandRange(MinConnectionsPerNode, MaxConnectionsPerNode);
+			NumConnections = FMath::Min(NumConnections, NextLayerNodes.Num());
 			
-			// 그 가장 가까운 거리가 가장 먼 후보를 선택
-			if (MinDistSq > MaxMinDistSq)
+			TArray<FMapNodeData*> AvailableTargets = NextLayerNodes;
+			
+			for (int32 i = 0; i < NumConnections; ++i)
 			{
-				MaxMinDistSq = MinDistSq;
-				BestCandidateIdx = i;
-			}
-		}
-
-		if (BestCandidateIdx != -1)
-		{
-			TownPoints.Add(CandidatePoints[BestCandidateIdx]);
-			TownIndices.Add(BestCandidateIdx);
-		}
-		else
-		{
-			break; // Should not happen if Count < ValidPoints
-		}
-	}
-
-	// 마을 노드 생성.
-	for (int32 i = 0; i < TownPoints.Num(); ++i)
-	{
-		FMapNodeData NewTown;
-		NewTown.NodeID = GeneratedNodes.Num();
-		
-		if (RandomStream.FRand() < 0.5f)
-		{
-			NewTown.NodeTag = GameplayTags.Node_Town_Dwarf;
-		}
-		else
-		{
-			NewTown.NodeTag = GameplayTags.Node_Town_Elf;
-		}
-		
-		float WorldX = (TownPoints[i].X * MapRadius) - (MapRadius / 2.0f);
-		float WorldY = (TownPoints[i].Y * MapRadius) - (MapRadius / 2.0f);
-		NewTown.Location = FVector(WorldX, WorldY, 0.0f);
-
-		GeneratedNodes.Add(NewTown);
-	}
-
-	// 다른 노드들 생성을 위해 남은 위치 인덱스 정리.
-	TArray<int32> RemainingIndices;
-	for(int32 i=0; i<CandidatePoints.Num(); ++i)
-	{
-		if(!TownIndices.Contains(i))
-		{
-			RemainingIndices.Add(i);
-		}
-	}
-
-	// 다양한 위치를 선택하기 위해 인덱스 셔플
-	for (int32 i = 0; i < RemainingIndices.Num(); ++i)
-	{
-		int32 SwapIdx = RandomStream.RandRange(0, RemainingIndices.Num() - 1);
-		RemainingIndices.Swap(i, SwapIdx);
-	}
-	
-	const int32 EventNodeCount = FMath::Min(RemainingIndices.Num(), MaxNodeCount);
-	
-	for (int32 i = 0; i < EventNodeCount; ++i)
-	{
-		int32 idx = RemainingIndices[i];
-		FMapNodeData EventNode;
-		EventNode.NodeID = GeneratedNodes.Num();
-
-		float WorldX = (CandidatePoints[idx].X * MapRadius) - (MapRadius / 2.0f);
-		float WorldY = (CandidatePoints[idx].Y * MapRadius) - (MapRadius / 2.0f);
-		EventNode.Location = FVector(WorldX, WorldY, 0.0f);
-
-		if (RandomStream.FRand() < 0.2f)
-		{
-			EventNode.NodeTag = GameplayTags.Node_Event_Combat;
-		}
-		else
-		{
-			EventNode.NodeTag = GameplayTags.Node_Event_Default;
-		}
-		GeneratedNodes.Add(EventNode);
-	}
-	
-	// 노드 연결
-	ConnectionNodes();
-	
-	// 비주얼 업데이트
-	DrawPathVisual();
-}
-
-void ANGMapGenerator::SpawnNodes()
-{
-	checkf(MapNodeData, TEXT("Please, choose map data asset."));
-	
-	for (const FMapNodeData& NodeData : GeneratedNodes)
-	{
-		FTransform SpawnTransform;
-		SpawnTransform.SetLocation(NodeData.Location);
-		
-		TSubclassOf<ANGMapNode> NodeClass = MapNodeData->GetMapNodeData(NodeData.NodeTag);
-		if (NodeClass)
-		{
-			ANGMapNode* NewNode = GetWorld()->SpawnActor<ANGMapNode>(NodeClass, SpawnTransform);
-			NewNode->InitializeNode(NodeData);
-		}
-	}
-}
-
-void ANGMapGenerator::PreInitializeValidPoints()
-{
-	ValidSpawnPoints.Empty();
-	if (!IsValid(MapMaskTexture)) return;
-	
-	FTexture2DMipMap& Mip = MapMaskTexture->GetPlatformData()->Mips[0];
-	const FColor* PixelData = static_cast<const FColor*>(Mip.BulkData.Lock(LOCK_READ_ONLY));
-	
-	int32 Width = MapMaskTexture->GetSizeX();
-	int32 Height = MapMaskTexture->GetSizeY();
-	
-	TArray<bool> Visited;
-	Visited.SetNumZeroed(Width * Height);
-
-	// using Connected Component Analysis (Blob Detection)
-	for (int32 y = 0; y < Height; ++y)
-	{
-		for (int32 x = 0; x < Width; ++x)
-		{
-			int32 Index = y * Width + x;
-			if (Visited[Index]) continue;
-
-			FColor PixelColor = PixelData[Index];
-			if (PixelColor.R < 10) // 검은색 픽셀을 찾았다면
-			{
-				// FloodFill 알고리즘을 통해 덩어리 검출
-				TArray<FIntPoint> Queue;
-				Queue.Add(FIntPoint(x, y));
-				Visited[Index] = true;
-
-				double SumX = 0;
-				double SumY = 0;
-				int32 BlobPixelCount = 0;
-
-				int32 QIndex = 0;
-				while(QIndex < Queue.Num())
-				{
-					FIntPoint P = Queue[QIndex++];
-					SumX += P.X;
-					SumY += P.Y;
-					BlobPixelCount++;
-
-					// 4방향만 검색
-					const FIntPoint Neighbors[] = {
-						FIntPoint(P.X + 1, P.Y), FIntPoint(P.X - 1, P.Y),
-						FIntPoint(P.X, P.Y + 1), FIntPoint(P.X, P.Y - 1)
-					};
-
-					for(const FIntPoint& NP : Neighbors)
-					{
-						if (NP.X >= 0 && NP.X < Width && NP.Y >= 0 && NP.Y < Height)
-						{
-							int32 NIdx = NP.Y * Width + NP.X;
-							if (!Visited[NIdx] && PixelData[NIdx].R < 10)
-							{
-								Visited[NIdx] = true;
-								Queue.Add(NP);
-							}
-						}
-					}
-				}
-
-				// 중앙 픽셀 계산
-				if (BlobPixelCount > 0)
-				{
-					float CentroidX = SumX / BlobPixelCount;
-					float CentroidY = SumY / BlobPixelCount; // Note: 텍스처의 Y축 위치가 월드 좌표에 대해 반전될 수 있지만, 상대적인 간격 조정에는 문제가 없음.
-					
-					// Normalize UV
-					float U = CentroidX / Width;
-					float V = CentroidY / Height;
-					ValidSpawnPoints.Add(FVector2D(U, V));
-				}
+				int32 TargetIdx = RandomStream.RandRange(0, AvailableTargets.Num() - 1);
+				CurrentNode->ConnectedNodeIDs.AddUnique(AvailableTargets[TargetIdx]->NodeID);
+				AvailableTargets.RemoveAt(TargetIdx);
 			}
 		}
-	}
-	
-	Mip.BulkData.Unlock();
-	UE_LOG(LogTemp, Warning, TEXT("Detected Blobs (Nodes): %d"), ValidSpawnPoints.Num());
-}
-
-void ANGMapGenerator::ConnectionNodes()
-{
-	int32 NodeCount = GeneratedNodes.Num();
-	
-	// KNN Algorithm (K-Nearest Neighbors) + RNG (Relative-Neighborhoods Graph)
-	/**
-	 * KNN: 무조건 자신과 가장 가까운 노드 K개랑만 연결
-	 * RNG: A와 B를 연결하려고 할 때, 둘 사이의 거리보다 A랑도 가깝고 B랑도 가까운 제3의 노드 C가 있다면 연결 X
-	 */
-	for (int32 i = 0; i < NodeCount; ++i)
-	{
-		constexpr int32 NearestCount = 3;
-		FMapNodeData& SourceNodeData = GeneratedNodes[i];
-		TArray<FNodeDistanceInfo> Candidates;
 		
-		for (int32 j = 0; j < NodeCount; ++j)
+		// 2. Ensure every next layer node has at least one incoming connection
+		for (FMapNodeData* NextNode : NextLayerNodes)
 		{
-			if (i == j) continue;
-			
-			float DistSq = FVector::DistSquared(SourceNodeData.Location, GeneratedNodes[j].Location);
-			Candidates.Add({ j, DistSq });
-		}
-		
-		Candidates.Sort();
-		
-		int32 ConnectionCount = FMath::Min(Candidates.Num(), NearestCount);
-		
-		for (int32 k = 0; k < ConnectionCount; ++k)
-		{
-			int32 TargetIndex = Candidates[k].TargetIndex;
-			float TargetDistSq = Candidates[k].DistSquared;
-			
-			FMapNodeData& TargetNodeData = GeneratedNodes[TargetIndex];
-			
-			bool bExistBlocker = false;
-			
-			for (int32 m = 0; m < NodeCount; ++m)
+			bool bHasIncoming = false;
+			for (FMapNodeData* CurrentNode : CurrentLayerNodes)
 			{
-				if (m == i || m == TargetIndex) continue;
-				
-				float DistToC = FVector::DistSquared(SourceNodeData.Location, GeneratedNodes[m].Location);
-				float DistTargetToC = FVector::DistSquared(TargetNodeData.Location, GeneratedNodes[m].Location);
-				
-				if (DistToC < TargetDistSq && DistTargetToC < TargetDistSq)
+				if (CurrentNode->ConnectedNodeIDs.Contains(NextNode->NodeID))
 				{
-					bExistBlocker = true;
+					bHasIncoming = true;
 					break;
 				}
 			}
 			
-			if (!bExistBlocker)
+			if (!bHasIncoming)
 			{
-				SourceNodeData.ConnectedNodeIDs.AddUnique(TargetNodeData.NodeID);
-				TargetNodeData.ConnectedNodeIDs.AddUnique(SourceNodeData.NodeID);
+				int32 SourceIdx = RandomStream.RandRange(0, CurrentLayerNodes.Num() - 1);
+				CurrentLayerNodes[SourceIdx]->ConnectedNodeIDs.AddUnique(NextNode->NodeID);
 			}
 		}
 	}
 }
 
-void ANGMapGenerator::DrawPathVisual()
+bool ANGMapGenerator::ValidateConnectivity()
 {
-	if (!PathMesh) return;
+	TArray<const FMapNodeData*> TownNodes = GetTownNodes();
+	if (TownNodes.IsEmpty()) return false;
 	
-	for (const FMapNodeData& SourceNodeData : GeneratedNodes)
+	for (const FMapNodeData* TownNode : TownNodes)
 	{
-		for (int32 TargetID : SourceNodeData.ConnectedNodeIDs)
+		TArray<int32> Queue;
+		TSet<int32> Visited;
+		
+		Queue.Add(TownNode->NodeID);
+		Visited.Add(TownNode->NodeID);
+		
+		bool bReachedEnd = false;
+		
+		while (Queue.Num() > 0)
 		{
-			// 중복방지 : ID가 작은 쪽에서만 생성
-			if (SourceNodeData.NodeID < TargetID)
+			int32 CurrentID = Queue[0];
+			Queue.RemoveAt(0);
+			
+			const FMapNodeData* CurrentNode = nullptr;
+			for (const FMapNodeData& Node : GeneratedNodes)
 			{
-				const FMapNodeData& TargetNodeData = GeneratedNodes[TargetID];
-				USplineMeshComponent* SplineMesh = NewObject<USplineMeshComponent>(this);
-				SplineMesh->SetCastShadow(false);
-				SplineMesh->SetStaticMesh(PathMesh);
-				
-				SplineMesh->RegisterComponent();
-				if (PathMaterial)
+				if (Node.NodeID == CurrentID)
 				{
-					SplineMesh->SetMaterial(0, PathMaterial);
+					CurrentNode = &Node;
+					break;
 				}
-				
-				FVector StartPos = SourceNodeData.Location;
-				FVector EndPos = TargetNodeData.Location;
-				
-				FVector Direction = EndPos - StartPos;
-				float Distance = Direction.Size();
-				
-				float CurveDir = (RandomStream.FRand() > 0.5f) ? 1.0f : -1.0f;
-				FVector RightVec = FVector::CrossProduct(Direction, FVector::UpVector).GetSafeNormal();
-				
-				FVector TangentOffset = RightVec * (Distance * 0.3f) * CurveDir;
-				
-				SplineMesh->SetStartAndEnd(StartPos, Direction + TangentOffset, EndPos, Direction + TangentOffset);
-				SplineMesh->SetStartScale(FVector2D(1.0f, 1.0f));
-				SplineMesh->SetEndScale(FVector2D(1.0f, 1.0f));
-				SplineMesh->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepWorldTransform);
 			}
+			
+			if (!CurrentNode) continue;
+			
+			if (CurrentNode->LayerIndex == NumberOfLayers - 1)
+			{
+				bReachedEnd = true;
+				break; // Optimization: early exit for this town if it reaches the end
+			}
+			
+			for (int32 ConnectedID : CurrentNode->ConnectedNodeIDs)
+			{
+				if (!Visited.Contains(ConnectedID))
+				{
+					Visited.Add(ConnectedID);
+					Queue.Add(ConnectedID);
+				}
+			}
+		}
+		
+		if (!bReachedEnd)
+		{
+			return false; // This town cannot reach the end
+		}
+	}
+	
+	return true;
+}
+
+ENodeType ANGMapGenerator::PickRandomNodeType(int32 LayerIndex)
+{
+	float EWeight = EmptyWeight;
+	float SWeight = ShopWeight;
+	float CWeight = CombatWeight;
+	float EvWeight = EventWeight;
+	float RWeight = RestWeight;
+	float ElWeight = EliteWeight;
+	
+	if (LayerIndex <= 3)
+	{
+		EWeight *= 1.5f;
+		SWeight *= 1.5f;
+		CWeight *= 0.8f;
+		ElWeight *= 0.0f;
+	}
+	else if (LayerIndex <= 6)
+	{
+		CWeight *= 1.5f;
+		EvWeight *= 1.5f;
+		ElWeight *= 0.5f;
+	}
+	else if (LayerIndex <= 9)
+	{
+		CWeight *= 2.0f;
+		ElWeight *= 2.0f;
+		EWeight *= 0.3f;
+		RWeight *= 0.5f;
+	}
+	
+	float TotalWeight = EWeight + SWeight + CWeight + EvWeight + RWeight + ElWeight;
+	if (TotalWeight <= 0.0f) return ENodeType::Empty;
+	
+	float RandVal = RandomStream.FRandRange(0.0f, TotalWeight);
+	
+	if (RandVal < EWeight) return ENodeType::Empty;
+	RandVal -= EWeight;
+	if (RandVal < SWeight) return ENodeType::Shop;
+	RandVal -= SWeight;
+	if (RandVal < CWeight) return ENodeType::Combat;
+	RandVal -= CWeight;
+	if (RandVal < EvWeight) return ENodeType::Event;
+	RandVal -= EvWeight;
+	if (RandVal < RWeight) return ENodeType::Rest;
+	
+	return ENodeType::Elite;
+}
+
+FGameplayTag ANGMapGenerator::GetTagForNodeType(ENodeType Type)
+{
+	const FNGGameplayTags& GameplayTags = FNGGameplayTags::Get();
+	switch (Type)
+	{
+		case ENodeType::Town:
+			return (RandomStream.FRand() < 0.5f) ? GameplayTags.Node_Town_Elf : GameplayTags.Node_Town_Dwarf;
+		case ENodeType::Empty:   return GameplayTags.Node_Empty;
+		case ENodeType::Shop:    return GameplayTags.Node_Shop;
+		case ENodeType::Combat:  return GameplayTags.Node_Event_Combat;
+		case ENodeType::Event:   return GameplayTags.Node_Event_Default;
+		case ENodeType::Rest:    return GameplayTags.Node_Rest;
+		case ENodeType::Elite:   return GameplayTags.Node_Elite;
+		default:                 return FGameplayTag();
+	}
+}
+
+void ANGMapGenerator::AssignNodeTypes()
+{
+	for (FMapNodeData& Node : GeneratedNodes)
+	{
+		if (Node.LayerIndex == 0)
+		{
+			Node.NodeType = ENodeType::Town;
+		}
+		else if (Node.LayerIndex == NumberOfLayers - 1)
+		{
+			Node.NodeType = (RandomStream.FRand() < 0.5f) ? ENodeType::Combat : ENodeType::Event;
+		}
+		else
+		{
+			Node.NodeType = PickRandomNodeType(Node.LayerIndex);
+		}
+		
+		Node.NodeTag = GetTagForNodeType(Node.NodeType);
+	}
+}
+
+void ANGMapGenerator::AssignTownBuffs()
+{
+	const FNGGameplayTags& GameplayTags = FNGGameplayTags::Get();
+	TArray<FGameplayTag> AvailableBuffs = {
+		GameplayTags.TownBuff_ExtraGold,
+		GameplayTags.TownBuff_AttackBoost,
+		GameplayTags.TownBuff_DefenseBoost,
+		GameplayTags.TownBuff_StartUnit
+	};
+	
+	// Shuffle buffs
+	for (int32 i = AvailableBuffs.Num() - 1; i > 0; --i)
+	{
+		int32 j = RandomStream.RandRange(0, i);
+		AvailableBuffs.Swap(i, j);
+	}
+	
+	int32 BuffIndex = 0;
+	for (FMapNodeData& Node : GeneratedNodes)
+	{
+		if (Node.LayerIndex == 0 && Node.NodeType == ENodeType::Town)
+		{
+			if (AvailableBuffs.IsValidIndex(BuffIndex))
+			{
+				Node.TownBuffTag = AvailableBuffs[BuffIndex++];
+			}
+		}
+	}
+}
+
+void ANGMapGenerator::AssignNodePositions()
+{
+	// Logical coordinates for 2D UI mapping
+	for (int32 Layer = 0; Layer < NumberOfLayers; ++Layer)
+	{
+		TArray<FMapNodeData*> LayerNodes;
+		for (FMapNodeData& Node : GeneratedNodes)
+		{
+			if (Node.LayerIndex == Layer) LayerNodes.Add(&Node);
+		}
+		
+		int32 NumNodes = LayerNodes.Num();
+		if (NumNodes == 0) continue;
+		
+		for (int32 i = 0; i < NumNodes; ++i)
+		{
+			// X: evenly distributed between 0.1 and 0.9 + jitter
+			float BaseX = (NumNodes == 1) ? 0.5f : 0.1f + 0.8f * (static_cast<float>(i) / (NumNodes - 1));
+			float JitterX = RandomStream.FRandRange(-0.05f, 0.05f);
+			if (NumNodes == 1) JitterX = 0.0f; // No jitter for single node
+			
+			float X = FMath::Clamp(BaseX + JitterX, 0.0f, 1.0f);
+			float Y = static_cast<float>(Layer); // Let UI scale the Y axis
+			
+			LayerNodes[i]->Location = FVector(X, Y, 0.0f);
 		}
 	}
 }
