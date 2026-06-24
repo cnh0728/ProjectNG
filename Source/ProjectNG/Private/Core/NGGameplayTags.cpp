@@ -15,24 +15,24 @@ void FNGGameplayTags::InitializeNativeTags()
 	GameplayTags.Node_Town_Dwarf = UGameplayTagsManager::Get().AddNativeGameplayTag(
 		FName("Node.Town.Dwarf"), FString("Dwarf Town Node"));
 	
-	GameplayTags.Node_Event_Default = UGameplayTagsManager::Get().AddNativeGameplayTag(
-		FName("Node.Event.Default"), FString("Default Event Node"));
-	
-	GameplayTags.Node_Event_Combat = UGameplayTagsManager::Get().AddNativeGameplayTag(
-		FName("Node.Event.Combat"), FString("Combat Event Node"));
-	
-	GameplayTags.Node_Event_Hidden = UGameplayTagsManager::Get().AddNativeGameplayTag(
-		FName("Node.Event.Hidden"), FString("Hidden Event Node"));
+	GameplayTags.Node_Town_Human = UGameplayTagsManager::Get().AddNativeGameplayTag(
+		FName("Node.Town.Human"), FString("Human Town Node"));
 
 	// 노드 타입 태그 추가
-	GameplayTags.Node_Empty = UGameplayTagsManager::Get().AddNativeGameplayTag(
-		FName("Node.Empty"), FString("Empty Node"));
+	GameplayTags.Node_General = UGameplayTagsManager::Get().AddNativeGameplayTag(
+		FName("Node.General"), FString("General Node"));
 	GameplayTags.Node_Shop = UGameplayTagsManager::Get().AddNativeGameplayTag(
 		FName("Node.Shop"), FString("Shop Node"));
+	GameplayTags.Node_Combat = UGameplayTagsManager::Get().AddNativeGameplayTag(
+		FName("Node.Combat"), FString("Combat Node"));
+	GameplayTags.Node_Event = UGameplayTagsManager::Get().AddNativeGameplayTag(
+		FName("Node.Event"), FString("Event Node"));
 	GameplayTags.Node_Rest = UGameplayTagsManager::Get().AddNativeGameplayTag(
 		FName("Node.Rest"), FString("Rest Node"));
 	GameplayTags.Node_Elite = UGameplayTagsManager::Get().AddNativeGameplayTag(
 		FName("Node.Elite"), FString("Elite Node"));
+	GameplayTags.Node_Named = UGameplayTagsManager::Get().AddNativeGameplayTag(
+		FName("Node.Named"), FString("Named Node"));
 
 	// 마을 버프 태그 추가
 	GameplayTags.TownBuff_ExtraGold = UGameplayTagsManager::Get().AddNativeGameplayTag(

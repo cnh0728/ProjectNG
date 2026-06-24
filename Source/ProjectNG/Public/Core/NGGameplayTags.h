@@ -24,16 +24,17 @@ public:
 	
 	FGameplayTag Node_Town_Elf;
 	FGameplayTag Node_Town_Dwarf;
-	FGameplayTag Node_Event_Combat;
-	FGameplayTag Node_Event_Default;
-	FGameplayTag Node_Event_Hidden;
+	FGameplayTag Node_Town_Human;
 
-	// 새로 추가된 노드 태그
-	FGameplayTag Node_Empty;
+	// 노드 태그
+	FGameplayTag Node_General;
 	FGameplayTag Node_Shop;
+	FGameplayTag Node_Combat;
+	FGameplayTag Node_Event;
 	FGameplayTag Node_Rest;
 	FGameplayTag Node_Elite;
-
+	FGameplayTag Node_Named;
+	
 	// 마을 버프 태그
 	FGameplayTag TownBuff_ExtraGold;
 	FGameplayTag TownBuff_AttackBoost;

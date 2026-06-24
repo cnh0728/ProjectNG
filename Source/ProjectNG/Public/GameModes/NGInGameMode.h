@@ -13,6 +13,7 @@
  * 
  */
 
+class UNGMapGeneratorComponent;
 class ANGPawnBase;
 
 UCLASS()
@@ -65,14 +66,14 @@ public:
 
 	// 특정 티어의 유닛을 랜덤으로 반환합니다.
 	FGameplayTag GetRandomUnitByTier(EUnitTier Tier);
-
-
+	
 	bool CanBuyUnit(FGameplayTag UnitTag, float OwnedGold) const;
 
 	TSubclassOf<ANGUnitPawn> GetUnitClass(FGameplayTag UnitTag) const;
 	const FUnitData* GetUnitData(FGameplayTag UnitTag) const;
 
-	UNGCombatManagerComponent* GetCombatManagerComponent() { return CombatManagerComponent; };	
+	UNGCombatManagerComponent* GetCombatManagerComponent() { return CombatManagerComponent; };
+	UNGMapGeneratorComponent* GetMapGeneratorComponent() { return MapGeneratorComponent; };
 protected:
 	void InitializeUnitPool();
 
@@ -84,6 +85,9 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Managers")
 	TObjectPtr<UNGCombatManagerComponent> CombatManagerComponent;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Managers")
+	TObjectPtr<UNGMapGeneratorComponent> MapGeneratorComponent;
 
 	FTimerHandle PhaseTimerHandle;
 };

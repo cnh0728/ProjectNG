@@ -8,6 +8,7 @@
 #include "Core/NGUnitData.h"
 #include "Game/NGGameState.h"
 #include "Game/NGPawnDataManager.h"
+#include "Map/NGMapGeneratorComponent.h"
 #include "Pawn/NGUnitPawn.h"
 #include "Player/NGPlayerState.h"
 
@@ -15,6 +16,7 @@
 ANGInGameMode::ANGInGameMode()
 {
 	CombatManagerComponent = CreateDefaultSubobject<UNGCombatManagerComponent>(TEXT("CombatManager"));
+	MapGeneratorComponent = CreateDefaultSubobject<UNGMapGeneratorComponent>(TEXT("MapGenerator"));
 }
 
 void ANGInGameMode::RequestStartCombat(APlayerController* PC, bool bIsCPUCombat)
@@ -322,6 +324,8 @@ void ANGInGameMode::BeginPlay()
 	
 	// Only server
 	InitializeUnitPool();
+	
+	MapGeneratorComponent->GenerateMap(0);
 }
 
 int32 ANGInGameMode::SellUnit(ANGUnitPawn* Unit)

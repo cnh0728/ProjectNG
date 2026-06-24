@@ -3,24 +3,26 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
-#include "NGMapTypes.h"
-#include "NGMapGenerator.generated.h"
+#include "Components/ActorComponent.h"
+#include "Map/NGMapTypes.h"
+#include "NGMapGeneratorComponent.generated.h"
 
 class UMapNodeDataAsset;
 class ANGMapNode;
 
-UCLASS()
-class PROJECTNG_API ANGMapGenerator : public AActor
+UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
+class PROJECTNG_API UNGMapGeneratorComponent : public UActorComponent
 {
 	GENERATED_BODY()
 	
 public:
-	ANGMapGenerator();
+	UNGMapGeneratorComponent();
 
 	// ─── 공개 API ───
+	UFUNCTION(BlueprintCallable, Category = "Map")
 	void GenerateMap(int32 Seed);
 	
+	UFUNCTION(BlueprintCallable, Category = "Map")
 	FGameplayTag GetGameplayTagById(int32 NodeID);
 	
 	const TArray<FMapNodeData>& GetGeneratedNodes() const { return GeneratedNodes; };
@@ -36,16 +38,15 @@ protected:
 
 private:
 	// ─── 생성 파이프라인 ───
-	void GenerateLayerNodes();        // Step 1: 레이어별 노드 생성
-	void ConnectLayers();             // Step 2: 레이어 간 전방 연결
-	void AssignNodeTypes();           // Step 3: 노드 타입 가중치 배정
-	void AssignTownBuffs();           // Step 4: 마을 버프 랜덤 배정
-	void AssignNodePositions();       // Step 5: UI용 논리 좌표 배정
-	bool ValidateConnectivity();      // Step 6: 도달성 검증 (BFS)
+	void GenerateNodes();             // Step 1: 맵 전체 노드 생성
+	void ConnectNodes();              // Step 2: 원형 그래프 및 나뭇가지 연결
+	bool ValidateConnectivity();      // Step 3: 도달성 검증 (BFS)
+	void AssignNodeTypes();           // Step 4: 노드 타입 가중치 배정
+	void AssignTownBuffs();           // Step 5: 마을 버프 랜덤 배정
+	void AssignNodePositions();       // Step 6: UI용 논리 좌표 배정
 
 	// ─── 헬퍼 ───
-	ENodeType PickRandomNodeType(int32 LayerIndex);
-	int32 CalculateNodesForLayer(int32 LayerIndex);
+	ENodeType PickRandomNodeType();
 	FGameplayTag GetTagForNodeType(ENodeType Type);
 
 public:
@@ -53,36 +54,36 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Map|Data")
 	TObjectPtr<UMapNodeDataAsset> MapNodeData;
 
-	// ─── 레이어 설정 ───
+	// ─── 맵 크기 설정 ───
 	UPROPERTY(EditAnywhere, Category = "Map|Config")
-	int32 NumberOfLayers = 11;       // 0 ~ 10 (총 11개 레이어)
+	int32 TotalNodeCountMin = 15;
+
+	UPROPERTY(EditAnywhere, Category = "Map|Config")
+	int32 TotalNodeCountMax = 25;
+
+	UPROPERTY(EditAnywhere, Category = "Map|Config")
+	int32 MinRingNodes = 6;
+
+	UPROPERTY(EditAnywhere, Category = "Map|Config")
+	int32 MaxRingNodes = 8;
 
 	UPROPERTY(EditAnywhere, Category = "Map|Config")
 	int32 NumberOfTowns = 3;         // 시작 마을 수 (고정)
 
-	UPROPERTY(EditAnywhere, Category = "Map|Config")
-	int32 MaxNodesPerLayer = 4;
-
-	UPROPERTY(EditAnywhere, Category = "Map|Config")
-	int32 MinNodesPerLayer = 2;
-
 	// ─── 연결 설정 ───
 	UPROPERTY(EditAnywhere, Category = "Map|Config")
-	int32 MinConnectionsPerNode = 1;
+	int32 MinConnectionsPerNode = 2;
 
 	UPROPERTY(EditAnywhere, Category = "Map|Config")
-	int32 MaxConnectionsPerNode = 3;
-
-	// ─── 병목 레이어 (PvP 조우 보장) ───
-	UPROPERTY(EditAnywhere, Category = "Map|Bottleneck", meta = (ToolTip = "PvP를 보장할 병목 레이어 인덱스. 해당 레이어는 노드 2개로 고정"))
-	TArray<int32> BottleneckLayers = { 4, 7 };
-
-	UPROPERTY(EditAnywhere, Category = "Map|Bottleneck")
-	int32 BottleneckNodeCount = 2;   // 병목 레이어의 노드 수
+	int32 MaxConnectionsPerNode = 4;
+	
+	// ─── 리프 노드 연결 확률 ───
+	UPROPERTY(EditAnywhere, Category = "Map|Config")
+	float LeafConnectionProbability = 0.3f;
 
 	// ─── 노드 타입 가중치 ───
 	UPROPERTY(EditAnywhere, Category = "Map|NodeWeights")
-	float EmptyWeight = 0.30f;
+	float GeneralWeight = 0.30f;
 
 	UPROPERTY(EditAnywhere, Category = "Map|NodeWeights")
 	float ShopWeight = 0.15f;
