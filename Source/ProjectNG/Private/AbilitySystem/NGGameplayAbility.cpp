@@ -6,6 +6,7 @@
 
 #include "AbilitySystemComponent.h"
 #include "AbilitySystem/NGPawnAttributeSet.h"
+#include "Core/NGPawnAnimationSet.h"
 #include "Pawn/NGPawnBase.h"
 
 UNGGameplayAbility::UNGGameplayAbility()
@@ -39,7 +40,10 @@ void UNGGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 		return;
 	}
 
-	UAnimMontage* MontageToPlay = Unit->GetAttackMontage();
+	UNGPawnAnimationSet* AnimSet = Unit->GetAnimationSet();
+
+	FGameplayTag MontageTag = GetAssetTags().First();
+	UAnimMontage* MontageToPlay = AnimSet->FindMontageByTag(MontageTag);
 	
 	float CurrentAS = GetAbilitySystemComponentFromActorInfo()->GetNumericAttribute(UNGPawnAttributeSet::GetAttackSpeedAttribute());
 	

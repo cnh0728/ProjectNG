@@ -305,6 +305,24 @@ void UNGPocketComponent::RemoveUnitFromPocket(ANGPawnBase* Unit)
 	OwnedUnitPocket.Remove(Unit);
 }
 
+void UNGPocketComponent::CollectTotalUnitHPAndMaxHP(float& OutMaxHP, float& OutHP)
+{
+	float TotalHP = 0;
+	float TotalMaxHP = 0;
+	TArray<ANGPawnBase*> PlacedUnitPocket;
+	GetPlacedUnits(PlacedUnitPocket);
+	for (ANGPawnBase* Unit : PlacedUnitPocket)
+	{
+		UNGAbilitySystemComponent* ASC = Unit->GetNGAbilitySystemComponent();
+		const UNGPawnAttributeSet* PawnAttributeSet = ASC ? ASC->GetSet<UNGPawnAttributeSet>() : nullptr;
+		TotalHP += PawnAttributeSet ? PawnAttributeSet->GetHealth() : 0.f;
+		TotalMaxHP += PawnAttributeSet ? PawnAttributeSet->GetMaxHealth() : 0.f;
+	}
+	
+	OutMaxHP = TotalMaxHP;
+	OutHP = TotalHP;
+}
+
 void UNGPocketComponent::Server_RequestRoll_Implementation()
 {
 	if (!GetOwner()->HasAuthority())	return;

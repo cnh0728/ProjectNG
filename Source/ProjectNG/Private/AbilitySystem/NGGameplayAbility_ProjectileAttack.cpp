@@ -19,7 +19,6 @@ void UNGGameplayAbility_ProjectileAttack::ActivateAbility(const FGameplayAbility
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 	
-	
 	UAbilityTask_WaitGameplayEvent* WaitEventTask = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
 		this,
 		FGameplayTag::RequestGameplayTag(FName("Event.Attack.Release"))
@@ -59,6 +58,8 @@ void UNGGameplayAbility_ProjectileAttack::OnReleaseProjectile(FGameplayEventData
 				{
 					FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(DamageEffectClass, GetAbilityLevel());
 					Projectile->SetSpecHandle(SpecHandle);
+					
+					RegerateMana(GetUnitPawnFromActorInfo());
 				}
 			}
 		}

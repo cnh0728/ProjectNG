@@ -72,7 +72,7 @@ public:
 	const FGameplayTag& GetCurrentZoneTag() const { return CurrentZoneTag; }
 
 	void SetGameState(EGameState NewState);
-	void EarnGold(float EarnedGold);
+	void EarnGold(float EarnedGold) const;
 	EGameState GetGameState() const { return CurrentGameState; }
 
 	int32 GetCurrentNodeID() const { return CurrentNodeID; }

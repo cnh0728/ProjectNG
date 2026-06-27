@@ -30,6 +30,8 @@ void UNGGameplayAbility_MeleeAttack::OnAttackReceived(FGameplayEventData Payload
 			TArray<TWeakObjectPtr<AActor>> TargetActors = TossTargetData.TargetData.Get(0)->GetActors();
 
 			ApplyGameplayEffectSpecToTarget(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, SpecHandle, TossTargetData.TargetData);
+			
+			RegerateMana(GetUnitPawnFromActorInfo());
 		}
 	}
 }

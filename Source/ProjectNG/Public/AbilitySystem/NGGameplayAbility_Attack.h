@@ -19,6 +19,7 @@ class PROJECTNG_API UNGGameplayAbility_Attack : public UNGGameplayAbility
 
 protected:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
+	void RegerateMana(const ANGPawnBase* Unit) const;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability")
 	TSubclassOf<UGameplayEffect> DamageEffectClass;

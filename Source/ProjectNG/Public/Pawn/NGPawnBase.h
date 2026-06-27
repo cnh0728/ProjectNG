@@ -11,15 +11,12 @@
 #include "Player/NGPlayerState.h"
 #include "NGPawnBase.generated.h"
 
+class UNGPawnAnimationSet;
 struct FUnitAbilityData;
-class UNGHPBarWidgetComponent;
+class UNGFloatingBarWidgetComponent;
 class UNGPathFindingComponent;
 class UCapsuleComponent;
 class UNGPawnAttributeSet;
-class ANGCharacterBase;
-class ANGEnemyPawn;
-class USphereComponent;
-class UWidgetComponent;
 class UNGAbilitySystemComponent;
 
 UENUM(BlueprintType)
@@ -85,6 +82,10 @@ public:
 
 	void HighlightRangeIndicator(FGridAddress PivotAddress) const;
 	
+	void BindJobSkillTrigger();
+
+	int32 GetOwnerIndex() const { return OwnerIndex; }
+	
 protected:
 	/** 파생 클래스에서 GAS 초기화를 위한 로직을 작성 */
 	virtual void InitAbilityActorInfo()	PURE_VIRTUAL(ANGPawnBase::InitAbilityActorInfo);
@@ -96,10 +97,11 @@ protected:
 	TObjectPtr<UNGAbilitySystemComponent> AbilitySystemComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
-	TObjectPtr<UNGHPBarWidgetComponent> HPBarComponent; 
+	TObjectPtr<UNGFloatingBarWidgetComponent> FloatingBarComponent; 
 	
 	virtual void OnHealthChanged(const FOnAttributeChangeData& Data);
-	
+	virtual void OnManaChanged(const FOnAttributeChangeData& Data);
+
 	virtual void OnAttackRangeChanged(const FOnAttributeChangeData& Data);
 
 	void VisualizePath();
@@ -179,6 +181,8 @@ protected:
 	
 	FTimerHandle PredictGridReachingTimerHandle;
 	
+	FGameplayAbilitySpecHandle JobSkillAbilityHandle;
+	
 protected:
 	UPROPERTY(BlueprintReadOnly, Category = "GAS|AbilitySystemComponent")
 	TObjectPtr<UNGPawnAttributeSet> AttributeSet;
@@ -194,9 +198,9 @@ public:
 	virtual void Initialize(ANGPlayerState* PS);
 	
 	float GetMoveSpeed() const;
-	
-	UAnimMontage* GetAttackMontage() const;
-	
+
+	UNGPawnAnimationSet* GetAnimationSet() const { return AnimationSet; }
+
 	bool IsDead();
 	
 	ANGPawnBase* GetCurrentTarget();
@@ -209,18 +213,16 @@ public:
 	void SetIdentificationTag(const FGameplayTag InIdentificationTag) { IdentificationTag = InIdentificationTag; }
 	
 protected:
-	void UpdateHPBar();
-	
+	void UpdateHPBar() const;
+	void UpdateMPBar() const;
+
 	void InitAbilityData(const FUnitAbilityData& AbilityData);
 	
 	bool CanAddUnitOnCombatGrid(EGridType NewGridType) const;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")
-	TObjectPtr<UAnimMontage> AttackMontage;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")
-	TObjectPtr<UAnimMontage> DamagedMontage;
+	TObjectPtr<UNGPawnAnimationSet> AnimationSet;
 	
 	virtual void NotifyActorBeginCursorOver() override;
 	virtual void NotifyActorEndCursorOver() override;
