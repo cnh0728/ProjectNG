@@ -72,7 +72,7 @@ ANGUnitPawn* UNGSpawnHelper::SpawnUnitPawnAtGrid(ANGPlayerController* OwnerContr
 	}
 	
 	NewPawn->Initialize(PS);
-	NewPawn->SetIdentificationTag(UnitData->IdentificationTag);
+	NewPawn->InitializeUnitData(UnitData);
 	NewPawn->Activate();
 	
 	//여기서 찾은 그리드에 값 기입

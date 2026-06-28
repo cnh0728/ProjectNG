@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "SelectableInterface.h"
+#include "Core/NGUnitData.h"
 #include "Pawn/NGPawnBase.h"
 #include "NGUnitPawn.generated.h"
 
@@ -29,6 +30,8 @@ public:
 	virtual void OnUndrag_Implementation() override;
 	
 	virtual void OnRep_PlayerState() override;
+
+	virtual void InitializeUnitData(const FUnitData* Data);
 	
 protected:
 	virtual void InitAbilityActorInfo() override;

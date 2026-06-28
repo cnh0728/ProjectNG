@@ -31,7 +31,7 @@ void UNGGameplayAbility_MeleeAttack::OnAttackReceived(FGameplayEventData Payload
 
 			ApplyGameplayEffectSpecToTarget(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, SpecHandle, TossTargetData.TargetData);
 			
-			RegerateMana(GetUnitPawnFromActorInfo());
+			RegerateMana(GetNGPawnFromActorInfo());
 		}
 	}
 }

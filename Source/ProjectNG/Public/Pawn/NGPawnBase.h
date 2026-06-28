@@ -7,12 +7,12 @@
 #include "GameFramework/Pawn.h"
 #include "GameplayAbilitySpecHandle.h"
 #include "GameplayCueInterface.h"
+#include "Core/UnitAbilityDataRow.h"
 #include "Interface/Poolable.h"
 #include "Player/NGPlayerState.h"
 #include "NGPawnBase.generated.h"
 
 class UNGPawnAnimationSet;
-struct FUnitAbilityData;
 class UNGFloatingBarWidgetComponent;
 class UNGPathFindingComponent;
 class UCapsuleComponent;
@@ -121,8 +121,8 @@ protected:
 	void CollectInRangeUnits(TArray<ANGPawnBase*>& OutEnemies);
 
 	void ForceTransitionToState(EPawnState NewState);
-	void OnApplyHardCrowdControl();
-	void OnRemoveHardCrowdControl();
+	void OnApplyHardCrowdControl() const;
+	void OnRemoveHardCrowdControl() const;
 	void OnExitCurrentState(EPawnState RestState);
 	void OnEnterNewState(EPawnState EnteringState);
 	void SetNextGridPoint(FIntVector2 NewNextGridPoint);
@@ -168,9 +168,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Combat")
 	float RotationInterpSpeed;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS")
-	TSubclassOf<UGameplayAbility> AttackAbilityClass;
-	
 	UPROPERTY()
 	FGameplayAbilitySpecHandle AttackAbilitySpecHandle;
 	
@@ -187,14 +184,13 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "GAS|AbilitySystemComponent")
 	TObjectPtr<UNGPawnAttributeSet> AttributeSet;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|AbilitySystemComponent")
-	TObjectPtr<UDataTable> DefaultAttributeTable;
-	
 	virtual void InitializeAttributes();
 	
 public:
 	void TransitionToState(EPawnState NewState);
 	
+	void SetAttackCheckTimer(bool bRun) const;
+
 	virtual void Initialize(ANGPlayerState* PS);
 	
 	float GetMoveSpeed() const;
@@ -221,7 +217,7 @@ protected:
 	bool CanAddUnitOnCombatGrid(EGridType NewGridType) const;
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")
+	UPROPERTY(ReplicatedUsing = OnRep_AnimationSet, EditAnywhere, BlueprintReadOnly, Category = "Animation")
 	TObjectPtr<UNGPawnAnimationSet> AnimationSet;
 	
 	virtual void NotifyActorBeginCursorOver() override;
@@ -255,6 +251,10 @@ protected:
 
 	UFUNCTION()
 	void OnRep_CurrentGridAddress();
+	
+	UFUNCTION()
+	void OnRep_AnimationSet() const;
+	
 	void LookAt(ANGPawnBase* Target);
 
 	//클라이언트 reject용

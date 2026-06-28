@@ -19,7 +19,7 @@ void UNGGameplayAbility_JobSkill_John::ActivateAbility(const FGameplayAbilitySpe
 
 void UNGGameplayAbility_JobSkill_John::OnAttackReceived(FGameplayEventData Payload)
 {
-	ANGPawnBase* OwningActor = GetUnitPawnFromActorInfo();
+	ANGPawnBase* OwningActor = GetNGPawnFromActorInfo();
 	UNGAbilitySystemComponent* OwnerASC = OwningActor ? OwningActor->GetNGAbilitySystemComponent() : nullptr;
 	const UNGPawnAttributeSet* OwnerAttributeSet = OwnerASC ? OwnerASC->GetSet<UNGPawnAttributeSet>() : nullptr;
 	

@@ -12,7 +12,7 @@ void UNGGameplayAbility_Attack::ActivateAbility(const FGameplayAbilitySpecHandle
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 	
-	ANGPawnBase* Unit = GetUnitPawnFromActorInfo();
+	ANGPawnBase* Unit = GetNGPawnFromActorInfo();
 	if (!Unit)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("UNGGameplayAbility_Attack::ActivateAbility - No Unit"));

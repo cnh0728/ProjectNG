@@ -15,6 +15,7 @@
 #include "Components/WidgetComponent.h"
 #include "Game/NGPawnDataManager.h"
 #include "Core/NGDeveloperSettings.h"
+#include "Core/NGPawnAnimationSet.h"
 #include "GameModes/NGInGameMode.h"
 #include "Net/UnrealNetwork.h"
 #include "Pawn/NGUnitPawn.h"
@@ -132,6 +133,7 @@ void ANGPawnBase::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& Ou
 	DOREPLIFETIME(ANGPawnBase, NextGridPoint);
 	DOREPLIFETIME(ANGPawnBase, PawnState);
 	DOREPLIFETIME(ANGPawnBase, IdentificationTag);
+	DOREPLIFETIME(ANGPawnBase, AnimationSet);
 }
 
 void ANGPawnBase::HandleGameplayCue(UObject* Self, FGameplayTag GameplayCueTag, EGameplayCueEvent::Type EventType,
@@ -156,6 +158,8 @@ void ANGPawnBase::PossessedBy(AController* NewController)
 
 void ANGPawnBase::Activate()
 {
+	ensureMsgf(IdentificationTag.IsValid(), TEXT("UnitIdTag is not valid for %s"), *GetName());
+	
 	if (!HasAuthority())
 	{
 		SetActorHiddenInGame(false);
@@ -195,27 +199,12 @@ void ANGPawnBase::Multicast_Deactivate_Implementation()
 void ANGPawnBase::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	ensureMsgf(IdentificationTag.IsValid(), TEXT("UnitIdTag is not valid for %s"), *GetName());
-	
+		
 	if (AbilitySystemComponent)
 	{
 		InitializeAttributes();
-		
-		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
-			AttributeSet->GetHealthAttribute()).AddUObject(this, &ANGPawnBase::OnHealthChanged);
-
-		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
-			AttributeSet->GetManaAttribute()).AddUObject(this, &ANGPawnBase::OnManaChanged);
-		
-		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
-			AttributeSet->GetAttackRangeAttribute()).AddUObject(this, &ANGPawnBase::OnAttackRangeChanged);
-
-		AttackAbilitySpecHandle = AbilitySystemComponent->GiveAbility(
-			FGameplayAbilitySpec(AttackAbilityClass, 1, INDEX_NONE, this)
-		);
 	}
-		
+
 	UpdateHPBar();
 	UpdateMPBar();
 }
@@ -401,15 +390,26 @@ void ANGPawnBase::TransitionToState(EPawnState NewState)
 	OnEnterNewState(NewState);
 }
 
-void ANGPawnBase::OnApplyHardCrowdControl()
+void ANGPawnBase::SetAttackCheckTimer(bool bRun) const
 {
-	GetWorld()->GetTimerManager().PauseTimer(AttackCheckTimerHandle);
+	if (bRun)
+	{
+		GetWorld()->GetTimerManager().UnPauseTimer(AttackCheckTimerHandle);
+	}else
+	{
+		GetWorld()->GetTimerManager().PauseTimer(AttackCheckTimerHandle);
+	}
+}
+
+void ANGPawnBase::OnApplyHardCrowdControl() const
+{
+	SetAttackCheckTimer(false);
 	GetWorld()->GetTimerManager().PauseTimer(PredictGridReachingTimerHandle);
 }
 
-void ANGPawnBase::OnRemoveHardCrowdControl()
+void ANGPawnBase::OnRemoveHardCrowdControl() const
 {
-	GetWorld()->GetTimerManager().UnPauseTimer(AttackCheckTimerHandle);
+	SetAttackCheckTimer(true);
 	GetWorld()->GetTimerManager().UnPauseTimer(PredictGridReachingTimerHandle);
 }
 
@@ -562,15 +562,16 @@ void ANGPawnBase::OnAttackRangeChanged(const FOnAttributeChangeData& Data)
 
 void ANGPawnBase::InitializeAttributes()
 {
-	if (!DefaultAttributeTable)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("No AttributeTable"));
-		return;
-	}
-	
 	if (AbilitySystemComponent)
 	{
-		// AbilitySystemComponent->InitStats(UNGAttributeSet::StaticClass(), DefaultAttributeTable);
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+			AttributeSet->GetHealthAttribute()).AddUObject(this, &ANGPawnBase::OnHealthChanged);
+
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+			AttributeSet->GetManaAttribute()).AddUObject(this, &ANGPawnBase::OnManaChanged);
+		
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+			AttributeSet->GetAttackRangeAttribute()).AddUObject(this, &ANGPawnBase::OnAttackRangeChanged);
 	}
 }
 
@@ -685,7 +686,7 @@ void ANGPawnBase::UpdateMPBar() const
 		}
 	}else
 	{
-		UE_LOG(LogTemp, Error, TEXT("Can't update HPBar"));
+		UE_LOG(LogTemp, Error, TEXT("Can't update MPBar"));
 	}
 }
 
@@ -891,6 +892,24 @@ void ANGPawnBase::OnRep_CurrentGridAddress()
 	UpdatePawnCurrentLocation(CurrentGridAddress);
 }
 
+void ANGPawnBase::OnRep_AnimationSet() const
+{
+	if (!AnimationSet->SkeletalMesh.IsNull())
+	{
+		// 상점 로딩 같은 대량 작업 시에는 Async 비동기 로드가 정석
+		USkeletalMesh* LoadedMesh = AnimationSet->SkeletalMesh.LoadSynchronous();
+		if (LoadedMesh && GetMesh())
+		{
+			GetMesh()->SetSkeletalMesh(LoadedMesh);
+		}
+	}
+
+	if (AnimationSet->AnimBlueprintClass && GetMesh())
+	{
+		GetMesh()->SetAnimInstanceClass(AnimationSet->AnimBlueprintClass);
+	}
+}
+
 void ANGPawnBase::LookAt(ANGPawnBase* Target)
 {
 	if (!Target) return;
@@ -1017,6 +1036,14 @@ void ANGPawnBase::InitAbilityData(const FUnitAbilityData& AbilityData)
 		FGameplayAbilitySpec AbilitySpec(AbilityData.JobSkill, 1);
 		JobSkillAbilityHandle = AbilitySystemComponent->GiveAbility(AbilitySpec);
 		BindJobSkillTrigger();
+	}
+	
+	if (AbilityData.DefaultAttackSkill)
+	{
+		FGameplayAbilitySpec AbilitySpec(AbilityData.DefaultAttackSkill, 1);
+		AttackAbilitySpecHandle = AbilitySystemComponent->GiveAbility(
+			FGameplayAbilitySpec(AbilityData.DefaultAttackSkill, 1, INDEX_NONE, this)
+		);
 	}
 	
 	// Initialize Stat

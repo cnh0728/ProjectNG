@@ -43,9 +43,9 @@ void UNGGameplayAbility_ProjectileAttack::OnReleaseProjectile(FGameplayEventData
 			
 			if (Pool)
 			{
-				FVector SpawnLocation = GetUnitPawnFromActorInfo()->GetActorLocation() + GetUnitPawnFromActorInfo()->GetActorForwardVector() * 100.f;
+				FVector SpawnLocation = GetNGPawnFromActorInfo()->GetActorLocation() + GetNGPawnFromActorInfo()->GetActorForwardVector() * 100.f;
 	
-				FTransform SpawnTransform = GetUnitPawnFromActorInfo()->GetActorTransform();
+				FTransform SpawnTransform = GetNGPawnFromActorInfo()->GetActorTransform();
 				SpawnTransform.SetLocation(SpawnLocation);
 				
 				//TODO: LoadSynchronous는 로딩시 멈춤유발가능성, 대용량로드시 멈춰도될때 전부 로드해놓기
@@ -59,7 +59,7 @@ void UNGGameplayAbility_ProjectileAttack::OnReleaseProjectile(FGameplayEventData
 					FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(DamageEffectClass, GetAbilityLevel());
 					Projectile->SetSpecHandle(SpecHandle);
 					
-					RegerateMana(GetUnitPawnFromActorInfo());
+					RegerateMana(GetNGPawnFromActorInfo());
 				}
 			}
 		}

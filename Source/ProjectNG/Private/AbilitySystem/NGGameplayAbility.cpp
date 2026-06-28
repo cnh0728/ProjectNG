@@ -24,7 +24,14 @@ void UNGGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 	
-	ANGPawnBase* Unit = GetUnitPawnFromActorInfo();
+	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UNGGameplayAbility::ActivateAbility - No CommitAbility"));
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
+	}
+	
+	ANGPawnBase* Unit = GetNGPawnFromActorInfo();
 	if (!Unit)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("UNGGameplayAbility::ActivateAbility - No Unit"));
@@ -45,28 +52,27 @@ void UNGGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 	FGameplayTag MontageTag = GetAssetTags().First();
 	UAnimMontage* MontageToPlay = AnimSet->FindMontageByTag(MontageTag);
 	
-	float CurrentAS = GetAbilitySystemComponentFromActorInfo()->GetNumericAttribute(UNGPawnAttributeSet::GetAttackSpeedAttribute());
-	
-	if (MontageToPlay)
-	{
-		float AnimLength = MontageToPlay->GetPlayLength();
-		float FinalPlayRate = AnimLength / CurrentAS;
-		
-		UAbilityTask_PlayMontageAndWait* AbilityTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
-			this, TEXT("Anim"), MontageToPlay, FinalPlayRate);
-		AbilityTask->OnCompleted.AddDynamic(this, &UNGGameplayAbility::OnMontageFinished);
-		AbilityTask->OnInterrupted.AddDynamic(this, &UNGGameplayAbility::OnMontageFinished);
-		AbilityTask->OnCancelled.AddDynamic(this, &UNGGameplayAbility::OnMontageFinished);
-		AbilityTask->ReadyForActivation();
-	}else
+	if (!MontageToPlay)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("UNGGameplayAbility::ActivateAbility - No MontageToPlay"));
-		
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
 	}
+	
+	float CurrentAS = GetAbilitySystemComponentFromActorInfo()->GetNumericAttribute(UNGPawnAttributeSet::GetAttackSpeedAttribute());
+	
+	float AnimLength = MontageToPlay->GetPlayLength();
+	float FinalPlayRate = AnimLength / CurrentAS;
+	
+	UAbilityTask_PlayMontageAndWait* AbilityTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
+		this, TEXT("Anim"), MontageToPlay, FinalPlayRate);
+	AbilityTask->OnCompleted.AddDynamic(this, &UNGGameplayAbility::OnMontageFinished);
+	AbilityTask->OnInterrupted.AddDynamic(this, &UNGGameplayAbility::OnMontageFinished);
+	AbilityTask->OnCancelled.AddDynamic(this, &UNGGameplayAbility::OnMontageFinished);
+	AbilityTask->ReadyForActivation();
 }
 
-ANGPawnBase* UNGGameplayAbility::GetUnitPawnFromActorInfo() const
+ANGPawnBase* UNGGameplayAbility::GetNGPawnFromActorInfo() const
 {
 	return Cast<ANGPawnBase>(GetAvatarActorFromActorInfo());
 }

@@ -7,7 +7,6 @@
 #include "Abilities/GameplayAbility.h"
 #include "Engine/DataTable.h"
 #include "UnitAbilityDataRow.generated.h"
-class UNGGameplayAbility_JobSkill;
 class UNGGameplayAbility;
 
 USTRUCT(BlueprintType)
@@ -45,4 +44,7 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability", DisplayName = "고유 직업 스킬")
 	TSubclassOf<UNGGameplayAbility> JobSkill;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability", DisplayName = "평타 스킬")
+	TSubclassOf<UNGGameplayAbility> DefaultAttackSkill;
 };
