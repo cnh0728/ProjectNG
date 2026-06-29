@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AbilitySystem/FAttackLevelData.h"
 #include "Engine/DeveloperSettings.h"
 #include "NGDeveloperSettings.generated.h"
 
@@ -35,4 +36,6 @@ public:
 	UPROPERTY(Config, EditAnywhere, Category = "NG Pool Settings")
 	TSoftObjectPtr<UNGEnemyDataAsset> EnemyDataAsset;
 	
+	UPROPERTY(Config, EditAnywhere, Category = "NG Pool Settings")
+	TSoftObjectPtr<UDataTable> AttackLevelData;
 };

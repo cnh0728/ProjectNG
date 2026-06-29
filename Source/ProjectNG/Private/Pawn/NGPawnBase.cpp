@@ -160,6 +160,23 @@ void ANGPawnBase::Activate()
 {
 	ensureMsgf(IdentificationTag.IsValid(), TEXT("UnitIdTag is not valid for %s"), *GetName());
 	
+	if (HasAuthority())
+	{
+		Multicast_Activate();
+
+		if (UNGPawnDataManager* UnitDataManager = GetWorld()->GetGameInstance()->GetSubsystem<UNGPawnDataManager>())
+		{
+			if (const FUnitAbilityData* UnitData = UnitDataManager->GetUnitAbilityData(IdentificationTag))
+			{
+				InitAbilityData(*UnitData);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("[%s] 데이터 테이블에서 태그(%s)를 찾을 수 없습니다!"), *GetName(), *IdentificationTag.ToString());
+			}
+		}
+	}
+	
 	if (!HasAuthority())
 	{
 		SetActorHiddenInGame(false);

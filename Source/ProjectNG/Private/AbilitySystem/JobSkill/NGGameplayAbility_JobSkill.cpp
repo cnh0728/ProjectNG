@@ -11,8 +11,6 @@ void UNGGameplayAbility_JobSkill::ActivateAbility(const FGameplayAbilitySpecHand
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 	
-	TossTargetData = *TriggerEventData;
-	
 	UE_LOG(LogTemp, Log, TEXT("UNGGameplayAbility_JobSkill::ActivateAbility"));
 	
 	// UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 0.1f);

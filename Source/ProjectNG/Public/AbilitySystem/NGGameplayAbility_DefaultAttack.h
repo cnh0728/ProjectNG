@@ -3,23 +3,22 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "NGGameplayAbility.h"
-#include "NGGameplayAbility_DefaultAttack.h"
-#include "NGGameplayAbility_ProjectileAttack.generated.h"
+#include "NGGameplayAbility_Attack.h"
+#include "NGGameplayAbility_DefaultAttack.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PROJECTNG_API UNGGameplayAbility_ProjectileAttack : public UNGGameplayAbility_DefaultAttack
+class PROJECTNG_API UNGGameplayAbility_DefaultAttack : public UNGGameplayAbility_Attack
 {
 	GENERATED_BODY()
+protected:
 	
-public:
-	UNGGameplayAbility_ProjectileAttack();
-	
+	void RegerateMana(const ANGPawnBase* Unit) const;
+
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 
-protected:
 	virtual void OnAttackReceived(FGameplayEventData Payload) override;
+
 };

@@ -31,8 +31,6 @@ void UNGGameplayAbility_JobSkill_John::OnAttackReceived(FGameplayEventData Paylo
 	
 	FGridAddress OwnerGridAddress = OwningActor->GetGridAddress();
 	
-	FGameplayEffectSpecHandle SpecHandle = OwnerASC->MakeOutgoingSpec(DamageEffectClass, GetAbilityLevel(), OwnerASC->MakeEffectContext());
-	
 	if (SpecHandle.IsValid())
 	{
 		if (FGridMapBase* GridMap = UGridMapHelper::GetGridMap(OwnerGridAddress))

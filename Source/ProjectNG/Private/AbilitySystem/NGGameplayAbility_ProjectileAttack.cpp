@@ -23,13 +23,15 @@ void UNGGameplayAbility_ProjectileAttack::ActivateAbility(const FGameplayAbility
 		this,
 		FGameplayTag::RequestGameplayTag(FName("Event.Attack.Release"))
 		);
-	WaitEventTask->EventReceived.AddDynamic(this, &UNGGameplayAbility_ProjectileAttack::OnReleaseProjectile);
+	WaitEventTask->EventReceived.AddDynamic(this, &UNGGameplayAbility_ProjectileAttack::OnAttackReceived);
 	WaitEventTask->ReadyForActivation();
 	
 }
 
-void UNGGameplayAbility_ProjectileAttack::OnReleaseProjectile(FGameplayEventData Payload)
+void UNGGameplayAbility_ProjectileAttack::OnAttackReceived(FGameplayEventData Payload)
 {
+	Super::OnAttackReceived(Payload);
+	
 	if (!GetWorld()) return;
 	if (!K2_HasAuthority())	return;
 
@@ -56,10 +58,7 @@ void UNGGameplayAbility_ProjectileAttack::OnReleaseProjectile(FGameplayEventData
 				
 				if (Projectile && DamageEffectClass)
 				{
-					FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(DamageEffectClass, GetAbilityLevel());
 					Projectile->SetSpecHandle(SpecHandle);
-					
-					RegerateMana(GetNGPawnFromActorInfo());
 				}
 			}
 		}

@@ -5,6 +5,7 @@
 
 #include "AbilitySystemComponent.h"
 #include "AbilitySystem/NGPawnAttributeSet.h"
+#include "Core/NGGameplayTags.h"
 
 void UNGGameplayAbility_Attack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
                                                 const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
@@ -23,24 +24,25 @@ void UNGGameplayAbility_Attack::ActivateAbility(const FGameplayAbilitySpecHandle
 	TossTargetData = *TriggerEventData;
 }
 
-
-void UNGGameplayAbility_Attack::RegerateMana(const ANGPawnBase* Unit) const
+void UNGGameplayAbility_Attack::OnAttackReceived(FGameplayEventData Payload)
 {
-	if (UNGAbilitySystemComponent* AbilitySystemComponent = Unit->GetNGAbilitySystemComponent())
+	ANGPawnBase* OwningActor = GetNGPawnFromActorInfo();
+	UNGAbilitySystemComponent* OwnerASC = OwningActor ? OwningActor->GetNGAbilitySystemComponent() : nullptr;
+	if (!OwnerASC)	return;
+	
+	SpecHandle = MakeOutgoingGameplayEffectSpec(DamageEffectClass, GetAbilityLevel());
+	
+	//Effect에다가 태그를 한개 달아 보내기 위한 과정
+	FGameplayTag AbilityTag;
+	for (const FGameplayTag& Tag : GetAssetTags())
 	{
-		if (const UNGPawnAttributeSet* AttributeSet = AbilitySystemComponent->GetSet<UNGPawnAttributeSet>())
+		if (Tag.MatchesTag(NGGameplayTags::Event))
 		{
-			float ManaRegenValue = AttributeSet->GetManaRegeneration();
-
-			if (ManaRegenValue > 0.f)
-			{
-				UE_LOG(LogTemp, Log, TEXT("%s: RegenerateMana - %f"), *Unit->GetName(), ManaRegenValue);
-				
-				AbilitySystemComponent->ApplyModToAttribute(
-				UNGPawnAttributeSet::GetManaAttribute(),
-				EGameplayModOp::Additive,
-				ManaRegenValue);
-			}
+			AbilityTag = Tag;
+			break;
 		}
 	}
+	SpecHandle.Data->DynamicAssetTags.AddTag(AbilityTag);
+	/////////////////////////////////////////////
+	
 }
