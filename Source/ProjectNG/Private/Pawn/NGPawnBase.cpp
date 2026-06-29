@@ -892,21 +892,53 @@ void ANGPawnBase::OnRep_CurrentGridAddress()
 	UpdatePawnCurrentLocation(CurrentGridAddress);
 }
 
-void ANGPawnBase::OnRep_AnimationSet() const
+void ANGPawnBase::OnRep_AnimationSet()
 {
-	if (!AnimationSet->SkeletalMesh.IsNull())
-	{
-		// 상점 로딩 같은 대량 작업 시에는 Async 비동기 로드가 정석
-		USkeletalMesh* LoadedMesh = AnimationSet->SkeletalMesh.LoadSynchronous();
-		if (LoadedMesh && GetMesh())
-		{
-			GetMesh()->SetSkeletalMesh(LoadedMesh);
-		}
-	}
+	ApplyAnimationSet();
+}
 
-	if (AnimationSet->AnimBlueprintClass && GetMesh())
+void ANGPawnBase::InitializeUnitData(const FUnitData* Data)
+{
+	if (!HasAuthority())	return;
+	
+	if (!Data)	return;
+	
+	SetIdentificationTag(Data->IdentificationTag);
+	
+	if (Data->AnimationSet)
 	{
-		GetMesh()->SetAnimInstanceClass(AnimationSet->AnimBlueprintClass);
+		AnimationSet = Data->AnimationSet;
+		
+		ApplyAnimationSet();
+	}
+	
+	UE_LOG(LogTemp, Log, TEXT("Success InitializeUnitData!"));
+}
+
+void ANGPawnBase::ApplyAnimationSet() const
+{
+	if (!AnimationSet)	return;
+	
+	if (USkeletalMeshComponent* Mesh = GetMesh())
+	{
+		Mesh->SetAnimationMode(EAnimationMode::AnimationBlueprint);
+		
+		if (!AnimationSet->SkeletalMesh.IsNull())
+		{
+			// 상점 로딩 같은 대량 작업 시에는 Async 비동기 로드가 정석
+			USkeletalMesh* LoadedMesh = AnimationSet->SkeletalMesh.LoadSynchronous();
+			if (LoadedMesh && Mesh)
+			{
+				Mesh->SetSkeletalMesh(LoadedMesh);
+			}
+		}
+
+		if (AnimationSet->AnimBlueprintClass && Mesh)
+		{
+			Mesh->SetAnimInstanceClass(AnimationSet->AnimBlueprintClass);
+		}
+		
+		Mesh->InitAnim(true);
 	}
 }
 

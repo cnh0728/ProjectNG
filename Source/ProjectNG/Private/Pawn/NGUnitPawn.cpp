@@ -131,20 +131,6 @@ void ANGUnitPawn::OnRep_PlayerState()
 	Activate();
 }
 
-void ANGUnitPawn::InitializeUnitData(const FUnitData* Data)
-{
-	if (!Data)	return;
-	
-	SetIdentificationTag(Data->IdentificationTag);
-	
-	if (Data->AnimationSet)
-	{
-		AnimationSet = Data->AnimationSet;
-	}
-	
-	UE_LOG(LogTemp, Log, TEXT("Success InitializeUnitData!"));
-}
-
 void ANGUnitPawn::Deactivate()
 {
 	GetWorld()->GetTimerManager().ClearTimer(AttackCheckTimerHandle);

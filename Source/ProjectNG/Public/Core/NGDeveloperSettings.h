@@ -25,9 +25,6 @@ public:
 	
 	UPROPERTY(Config, EditAnywhere, Category = "NG Pool Settings")
 	TMap<TSubclassOf<ANGProjectile>, TSoftClassPtr<ANGProjectile>> ProjectileClass;
-	
-	UPROPERTY(Config, EditAnywhere, Category = "NG Pool Settings")
-	TMap<TSubclassOf<ANGPawnBase>, TSoftClassPtr<ANGPawnBase>> PawnClass;
 
 	UPROPERTY(Config, EditAnywhere, Category = "NG Pool Settings")
 	TSoftClassPtr<AArena> ArenaClass;

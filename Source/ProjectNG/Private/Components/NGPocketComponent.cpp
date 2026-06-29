@@ -392,6 +392,12 @@ void UNGPocketComponent::Server_RequestRoll_Implementation()
 		}
 	}
 
+	//디버깅용도
+	if (bDebugJohnAppeared)
+	{
+		RollShopPocket[0] = FGameplayTag::RequestGameplayTag(TEXT("Unit.Tier1.John"));
+	}
+	
 	LastShopAction = EShopActionType::Roll;
 	
 	// 서버에서는 롤포켓할필요 없지않나

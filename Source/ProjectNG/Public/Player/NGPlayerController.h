@@ -164,6 +164,9 @@ protected:
 /*************************************/
 
 public:
+	UFUNCTION(Server,Reliable)
+	void Server_RequestToggleJohnAppeared();
+	
 	UFUNCTION(Server, Reliable)
 	void Server_RequestStartCombat(bool bIsCPUCombat);
 	
@@ -179,6 +182,9 @@ public:
 	UFUNCTION(Exec)
 	void Cmd_ToggleDebugGrid();
 
+	UFUNCTION(Exec)
+	void Cmd_ToggleJohn();
+	
 private:
 	bool bShowDebugGrid;
 	

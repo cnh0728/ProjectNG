@@ -80,6 +80,8 @@ private:
 	TObjectPtr<UDataTable> ProbabilityTable;
 
 public:
+	bool bDebugJohnAppeared = true;
+	
 	void GetPlacedUnits(TArray<ANGPawnBase*>& OutUnits);
 	
 	bool IsAnnihilated();

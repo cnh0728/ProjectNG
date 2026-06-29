@@ -7,6 +7,7 @@
 #include "GameFramework/Pawn.h"
 #include "GameplayAbilitySpecHandle.h"
 #include "GameplayCueInterface.h"
+#include "Core/NGUnitData.h"
 #include "Core/UnitAbilityDataRow.h"
 #include "Interface/Poolable.h"
 #include "Player/NGPlayerState.h"
@@ -51,6 +52,8 @@ public:
 	
 	virtual void Deactivate() override;
 	//~End IPoolable
+	
+	virtual void InitializeUnitData(const FUnitData* Data);
 
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_Activate();
@@ -253,8 +256,10 @@ protected:
 	void OnRep_CurrentGridAddress();
 	
 	UFUNCTION()
-	void OnRep_AnimationSet() const;
+	void OnRep_AnimationSet();
 	
+	void ApplyAnimationSet() const;
+
 	void LookAt(ANGPawnBase* Target);
 
 	//클라이언트 reject용

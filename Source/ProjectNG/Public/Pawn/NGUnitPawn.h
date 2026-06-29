@@ -30,8 +30,6 @@ public:
 	virtual void OnUndrag_Implementation() override;
 	
 	virtual void OnRep_PlayerState() override;
-
-	virtual void InitializeUnitData(const FUnitData* Data);
 	
 protected:
 	virtual void InitAbilityActorInfo() override;
