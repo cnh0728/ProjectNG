@@ -325,7 +325,19 @@ void ANGInGameMode::BeginPlay()
 	// Only server
 	InitializeUnitPool();
 	
-	MapGeneratorComponent->GenerateMap(0);
+	// Create Map
+	if (MapGeneratorComponent)
+	{
+		// 임의의 시드값으로 맵 생성
+		int32 Seed = FMath::Rand();
+		MapGeneratorComponent->GenerateMap(Seed);
+
+		// 생성된 맵 데이터를 GameState에 전달 (이를 통해 모든 클라이언트에게 동기화됨)
+		if (ANGGameState* NGGameState = GetGameState<ANGGameState>())
+		{
+			NGGameState->SetMapNodes(MapGeneratorComponent->GetGeneratedNodes());
+		}
+	}
 }
 
 int32 ANGInGameMode::SellUnit(ANGUnitPawn* Unit)

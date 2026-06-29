@@ -141,10 +141,10 @@ public:
 /*				전투					 */
 /*************************************/
 public:
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Game|Combat")
 	void Server_EnterPhase(EGamePhase Phase);
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Game|Combat")
 	void Server_RequestFlee();
 	
 /*************************************/

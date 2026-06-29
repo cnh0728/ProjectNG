@@ -4,8 +4,21 @@
 #include "Blueprint/UserWidget.h"
 #include "UI/NGUnitInfoWidget.h"
 #include "UI/NGUserWidget.h"
+#include "UI/WidgetController/NGMainWidgetController.h"
 #include "UI/WidgetController/NGRollShopWidgetController.h"
-#include "UI/WidgetController/UnitDetailsWidgetController.h"
+#include "UI/WidgetController/NGMapWidgetController.h"
+
+UNGMainWidgetController* ANGHUD::CreateMainWidgetController(const FWidgetParams& WidgetControllerParams)
+{
+    if (MainWidgetController == nullptr)
+    {
+        MainWidgetController = NewObject<UNGMainWidgetController>(this, MainWidgetControllerClass);
+        MainWidgetController->AssignWidgetControllerParams(WidgetControllerParams);
+        MainWidgetController->BindCallbacksToDependencies();
+    }
+    
+    return MainWidgetController;
+}
 
 UNGRollShopWidgetController* ANGHUD::CreateRollShopWidgetController(const FWidgetParams& WidgetControllerParams)
 {
@@ -19,44 +32,30 @@ UNGRollShopWidgetController* ANGHUD::CreateRollShopWidgetController(const FWidge
     return RollShopWidgetController;
 }
 
-UUnitDetailsWidgetController* ANGHUD::CreateUnitDetailsWidgetController(const FWidgetParams& WidgetControllerParams)
+UNGMapWidgetController* ANGHUD::CreateMapWidgetController(const FWidgetParams& WidgetControllerParams)
 {
-    if (UnitDetailsWidgetController == nullptr)
+    if (MapWidgetController == nullptr)
     {
-        UnitDetailsWidgetController = NewObject<UUnitDetailsWidgetController>(this, UnitDetailsWidgetControllerClass);
-        UnitDetailsWidgetController->AssignWidgetControllerParams(WidgetControllerParams);
-        UnitDetailsWidgetController->BindCallbacksToDependencies();
-        UnitDetailsWidgetController->SetAttributeInfo(AttributeInfo);
+        MapWidgetController = NewObject<UNGMapWidgetController>(this, MapWidgetControllerClass);
+        MapWidgetController->AssignWidgetControllerParams(WidgetControllerParams);
+        MapWidgetController->BindCallbacksToDependencies();
     }
     
-    return UnitDetailsWidgetController;
+    return MapWidgetController;
 }
 
 void ANGHUD::InitializeHUD(APlayerController* PC, APlayerState* PS)
 {
     checkf(MainWidgetClass, TEXT("[HUD] MainWidgetClass not initialized"));
     checkf(RollShopWidgetControllerClass, TEXT("[HUD] RollShopWidgetController not initialized"));
-    checkf(UnitInfoWidgetClass, TEXT("[HUD] UnitInfoWidgetClass not initialized"));
-    
+
     UUserWidget* Widget = CreateWidget<UUserWidget>(GetWorld(), MainWidgetClass);
     MainWidget = Cast<UNGUserWidget>(Widget);
 
     const FWidgetParams WidgetParams(PC, PS);
-    UNGRollShopWidgetController* MainWidgetC = CreateRollShopWidgetController(WidgetParams); 
+    UNGMainWidgetController* MainWidgetC = CreateMainWidgetController(WidgetParams);
     MainWidget->ConnectWidgetController(MainWidgetC);
     MainWidgetC->BroadcastInitialValues();
-    
-    UnitInfoWidget = CreateWidget<UNGUnitInfoWidget>(GetWorld(), UnitInfoWidgetClass);
-    
-    if (UnitInfoWidget)
-    {
-        UUnitDetailsWidgetController* UnitDetailsWidgetC = CreateUnitDetailsWidgetController(WidgetParams);
-        UnitInfoWidget->ConnectWidgetController(UnitDetailsWidgetC);
-        UnitDetailsWidgetC->BroadcastInitialValues();
-        
-        UnitInfoWidget->AddToViewport();
-        UnitInfoWidget->SetVisibility(ESlateVisibility::Collapsed);
-    }
     
     if (Widget)
     {

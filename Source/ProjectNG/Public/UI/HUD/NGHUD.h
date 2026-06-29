@@ -7,10 +7,13 @@
 #include "UI/NGWidgetController.h"
 #include "NGHUD.generated.h"
 
+class UNGMainWidgetController;
 class UNGUnitInfoWidget;
 class UUnitDetailsWidgetController;
 class UNGUnitAttributeInfoDataAsset;
 class UNGRollShopWidgetController;
+class UNGMapWidgetController;
+class UNGMapScreenWidget;
 class UNGUserWidget;
 
 UCLASS()
@@ -20,11 +23,13 @@ class PROJECTNG_API ANGHUD : public AHUD
 
 public:
     // 🎯 헤더와 cpp의 시그니처를 완전히 일치시킵니다.
+    UNGMainWidgetController* CreateMainWidgetController(const FWidgetParams& WidgetControllerParams);
     UNGRollShopWidgetController* CreateRollShopWidgetController(const FWidgetParams& WidgetControllerParams);
-    UUnitDetailsWidgetController* CreateUnitDetailsWidgetController(const FWidgetParams& WidgetControllerParams);
+    UNGMapWidgetController* CreateMapWidgetController(const FWidgetParams& WidgetControllerParams);
 
+    UNGMainWidgetController* GetMainWidgetController() { return MainWidgetController;}
     UNGRollShopWidgetController* GetRollShopWidgetController() { return RollShopWidgetController; }
-    UUnitDetailsWidgetController* GetUnitDetailsWidgetController() { return UnitDetailsWidgetController; }
+    UNGMapWidgetController* GetMapWidgetController() { return MapWidgetController; }
     UNGUnitInfoWidget* GetUnitInfoWidget() { return UnitInfoWidget; }
     
     void InitializeHUD(APlayerController* PC, APlayerState* PS);
@@ -41,6 +46,14 @@ private:
     UPROPERTY(EditAnywhere, Category = "UI")
     TSubclassOf<UUserWidget> MainWidgetClass;
     //~ End Main Widget
+    
+    // ~Begin MainWidgetController
+    UPROPERTY()
+    TObjectPtr<UNGMainWidgetController> MainWidgetController;
+    
+    UPROPERTY(EditAnywhere, Category = "UI")
+    TSubclassOf<UNGMainWidgetController> MainWidgetControllerClass;
+    // ~End MainWidgetController
 
     //~ Begin RollShop Widget
     UPROPERTY()
@@ -57,12 +70,12 @@ private:
     UPROPERTY(EditAnywhere, Category = "UI")
     TSubclassOf<UNGUnitInfoWidget> UnitInfoWidgetClass; 
     //~ End UnitDetail Widget
-    
-    // ~Begin UnitDetails WidgetController
+
+    //~ Begin Map WidgetController
     UPROPERTY()
-    TObjectPtr<UUnitDetailsWidgetController> UnitDetailsWidgetController;
-    
+    TObjectPtr<UNGMapWidgetController> MapWidgetController;
+
     UPROPERTY(EditAnywhere, Category = "UI")
-    TSubclassOf<UUnitDetailsWidgetController> UnitDetailsWidgetControllerClass;
-    // ~End UnitDetails WidgetController
+    TSubclassOf<UNGMapWidgetController> MapWidgetControllerClass;
+    //~ End Map WidgetController
 };

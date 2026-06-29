@@ -4,7 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameStateBase.h"
+#include "Map/NGMapTypes.h"
 #include "NGGameState.generated.h"
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnMapDataReadySignature);
 
 class ANGPlayerState;
 class AArena;
@@ -46,4 +49,19 @@ public:
 
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Game|Turn")
 	float RemainingTime = 0.f;
+
+public:
+	// 맵 데이터
+	UPROPERTY(ReplicatedUsing = OnRep_MapNodes, BlueprintReadOnly, Category = "Game|Map")
+	TArray<FMapNodeData> MapNodes;
+
+	UFUNCTION()
+	void OnRep_MapNodes();
+
+	// 맵 동기화 완료 이벤트
+	UPROPERTY(BlueprintAssignable, Category = "Game|Map")
+	FOnMapDataReadySignature OnMapDataReady;
+
+	// 서버 전용: 맵 데이터 세팅
+	void SetMapNodes(const TArray<FMapNodeData>& InNodes);
 };

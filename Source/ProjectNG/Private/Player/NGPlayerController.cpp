@@ -20,7 +20,6 @@
 #include "ProjectNG/ProjectNG.h"
 #include "UI/NGUnitInfoWidget.h"
 #include "UI/HUD/NGHUD.h"
-#include "UI/WidgetController/UnitDetailsWidgetController.h"
 
 ANGPlayerController::ANGPlayerController() : DragThreshold(10.f), DragHeightOffset(20.f), DragInterpSpeed(20.f)
 {
@@ -299,15 +298,7 @@ void ANGPlayerController::SetSelectedUnit(ANGPawnBase* InSelectedUnit)
 		{
 			if (ANGUnitPawn* UnitPawn = Cast<ANGUnitPawn>(SelectedUnit.Get()))
 			{
-				if (UUnitDetailsWidgetController* DetailsWidgetController = MyNGHUD->GetUnitDetailsWidgetController())
-				{
-					DetailsWidgetController->SetTargetUnit(UnitPawn);
-				}
-
-				if (UNGUnitInfoWidget* UnitInfoWidget = MyNGHUD->GetUnitInfoWidget())
-				{
-					UnitInfoWidget->UpdateUnitWidget(UnitPawn);
-				}
+				// Todo: 유닛 선택시 표시할 UI
 			}
 		}
 	}
@@ -328,10 +319,7 @@ void ANGPlayerController::ResetSelectUnit()
 			UnitInfoWidgetInstance->SetVisibility(ESlateVisibility::Collapsed);
 		}
 		
-		if (UUnitDetailsWidgetController* UnitDetailsWidgetController = UNGBlueprintLibrary::GetUnitDetailsWidgetController(this))
-		{
-			UnitDetailsWidgetController->ClearTargetUnit();
-		}
+		// Todo: 유닛 선택 UI 비활성화
 		
 		SelectedUnit = nullptr;
 	}

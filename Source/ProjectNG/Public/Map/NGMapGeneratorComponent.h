@@ -46,6 +46,9 @@ private:
 	void AssignNodePositions();       // Step 6: UI용 논리 좌표 배정
 
 	// ─── 헬퍼 ───
+	void ResolveNodePositionOverlaps();
+	void AdjustLongConnectedNodeDistances();
+
 	ENodeType PickRandomNodeType();
 	FGameplayTag GetTagForNodeType(ENodeType Type);
 

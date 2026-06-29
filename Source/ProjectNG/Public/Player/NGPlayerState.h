@@ -73,6 +73,8 @@ public:
 
 	void SetGameState(EGameState NewState);
 	void EarnGold(float EarnedGold);
+	
+	UFUNCTION(BlueprintCallable)
 	EGameState GetGameState() const { return CurrentGameState; }
 
 	int32 GetCurrentNodeID() const { return CurrentNodeID; }
