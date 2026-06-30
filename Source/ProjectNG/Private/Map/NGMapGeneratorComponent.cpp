@@ -339,18 +339,17 @@ ENodeType UNGMapGeneratorComponent::PickRandomNodeType()
 
 FGameplayTag UNGMapGeneratorComponent::GetTagForNodeType(ENodeType Type)
 {
-	const FNGGameplayTags& GameplayTags = FNGGameplayTags::Get();
 	switch (Type)
 	{
 		case ENodeType::Town:
-			return (RandomStream.FRand() < 0.5f) ? GameplayTags.Node_Town_Elf : GameplayTags.Node_Town_Dwarf;
-		case ENodeType::General: return GameplayTags.Node_General;
-		case ENodeType::Shop:    return GameplayTags.Node_Shop;
-		case ENodeType::Combat:  return GameplayTags.Node_Combat;
-		case ENodeType::Event:   return GameplayTags.Node_Event;
-		case ENodeType::Rest:    return GameplayTags.Node_Rest;
-		case ENodeType::Elite:   return GameplayTags.Node_Elite;
-		case ENodeType::Named:   return GameplayTags.Node_Named;
+			return (RandomStream.FRand() < 0.5f) ? NGGameplayTags::Node_Town_Elf : NGGameplayTags::Node_Town_Dwarf;
+		case ENodeType::General: return NGGameplayTags::Node_General;
+		case ENodeType::Shop:    return NGGameplayTags::Node_Shop;
+		case ENodeType::Combat:  return NGGameplayTags::Node_Combat;
+		case ENodeType::Event:   return NGGameplayTags::Node_Event;
+		case ENodeType::Rest:    return NGGameplayTags::Node_Rest;
+		case ENodeType::Elite:   return NGGameplayTags::Node_Elite;
+		case ENodeType::Named:   return NGGameplayTags::Node_Named;
 		default:                 return FGameplayTag();
 	}
 }
@@ -378,12 +377,11 @@ void UNGMapGeneratorComponent::AssignNodeTypes()
 
 void UNGMapGeneratorComponent::AssignTownBuffs()
 {
-	const FNGGameplayTags& GameplayTags = FNGGameplayTags::Get();
 	TArray<FGameplayTag> AvailableBuffs = {
-		GameplayTags.TownBuff_ExtraGold,
-		GameplayTags.TownBuff_AttackBoost,
-		GameplayTags.TownBuff_DefenseBoost,
-		GameplayTags.TownBuff_StartUnit
+		NGGameplayTags::TownBuff_ExtraGold,
+		NGGameplayTags::TownBuff_AttackBoost,
+		NGGameplayTags::TownBuff_DefenseBoost,
+		NGGameplayTags::TownBuff_StartUnit
 	};
 
 	for (int32 i = AvailableBuffs.Num() - 1; i > 0; --i)

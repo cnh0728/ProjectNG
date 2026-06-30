@@ -516,6 +516,16 @@ void ANGPlayerController::Server_RequestStartCombat_Implementation(bool bIsCPUCo
 	}
 }
 
+void ANGPlayerController::Server_RequestToggleJohnAppeared_Implementation()
+{
+	ANGPlayerState* PS = GetPlayerState<ANGPlayerState>();
+	UNGPocketComponent* Pocket = PS ? PS->GetPlayerPocket() : nullptr;
+	if (Pocket)
+	{
+		Pocket->bDebugJohnAppeared = !Pocket->bDebugJohnAppeared;
+	}
+}
+
 void ANGPlayerController::Cmd_StartCombat(bool bIsCPUCombat)
 {
 	Server_RequestStartCombat(bIsCPUCombat);
@@ -529,4 +539,9 @@ void ANGPlayerController::Cmd_FinishCombat()
 void ANGPlayerController::Cmd_ToggleDebugGrid()
 {
 	bShowDebugGrid = !bShowDebugGrid;
+}
+
+void ANGPlayerController::Cmd_ToggleJohn()
+{
+	Server_RequestToggleJohnAppeared();
 }

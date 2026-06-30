@@ -3,44 +3,36 @@
 
 #include "Core/NGGameplayTags.h"
 
-#include "GameplayTagsManager.h"
-
-FNGGameplayTags FNGGameplayTags::GameplayTags;
-
-void FNGGameplayTags::InitializeNativeTags()
+namespace NGGameplayTags
 {
-	GameplayTags.Node_Town_Elf = UGameplayTagsManager::Get().AddNativeGameplayTag(
-	FName("Node.Town.Elf"),FString("Elf Town Node"));
+	UE_DEFINE_GAMEPLAY_TAG(Node_Town_Elf, "Node.Town.Elf");
+	UE_DEFINE_GAMEPLAY_TAG(Node_Town_Dwarf, "Node.Town.Dwarf");
+	UE_DEFINE_GAMEPLAY_TAG(Node_Town_Human, "Node.Town.Human");
+	UE_DEFINE_GAMEPLAY_TAG(Node_Event_Default, "Node.Event.Default");
+	UE_DEFINE_GAMEPLAY_TAG(Node_Event_Combat, "Node.Event.Combat");
+	UE_DEFINE_GAMEPLAY_TAG(Node_Event_Hidden, "Node.Event.Hidden");
 	
-	GameplayTags.Node_Town_Dwarf = UGameplayTagsManager::Get().AddNativeGameplayTag(
-		FName("Node.Town.Dwarf"), FString("Dwarf Town Node"));
+	UE_DEFINE_GAMEPLAY_TAG(Node_General, "Node.General");
+	UE_DEFINE_GAMEPLAY_TAG(Node_Shop, "Node.Shop");
+	UE_DEFINE_GAMEPLAY_TAG(Node_Combat, "Node.Combat");
+	UE_DEFINE_GAMEPLAY_TAG(Node_Event, "Node.Event");
+	UE_DEFINE_GAMEPLAY_TAG(Node_Rest, "Node.Rest");
+	UE_DEFINE_GAMEPLAY_TAG(Node_Elite, "Node.Elite");
+	UE_DEFINE_GAMEPLAY_TAG(Node_Named, "Node.Named");
 	
-	GameplayTags.Node_Town_Human = UGameplayTagsManager::Get().AddNativeGameplayTag(
-		FName("Node.Town.Human"), FString("Human Town Node"));
+	UE_DEFINE_GAMEPLAY_TAG(TownBuff_ExtraGold, "TownBuff.ExtraGold");
+	UE_DEFINE_GAMEPLAY_TAG(TownBuff_AttackBoost, "TownBuff.AttackBoost");
+	UE_DEFINE_GAMEPLAY_TAG(TownBuff_DefenseBoost, "TownBuff.DefenseBoost");
+	UE_DEFINE_GAMEPLAY_TAG(TownBuff_StartUnit, "TownBuff.StartUnit");
 
-	// 노드 타입 태그 추가
-	GameplayTags.Node_General = UGameplayTagsManager::Get().AddNativeGameplayTag(
-		FName("Node.General"), FString("General Node"));
-	GameplayTags.Node_Shop = UGameplayTagsManager::Get().AddNativeGameplayTag(
-		FName("Node.Shop"), FString("Shop Node"));
-	GameplayTags.Node_Combat = UGameplayTagsManager::Get().AddNativeGameplayTag(
-		FName("Node.Combat"), FString("Combat Node"));
-	GameplayTags.Node_Event = UGameplayTagsManager::Get().AddNativeGameplayTag(
-		FName("Node.Event"), FString("Event Node"));
-	GameplayTags.Node_Rest = UGameplayTagsManager::Get().AddNativeGameplayTag(
-		FName("Node.Rest"), FString("Rest Node"));
-	GameplayTags.Node_Elite = UGameplayTagsManager::Get().AddNativeGameplayTag(
-		FName("Node.Elite"), FString("Elite Node"));
-	GameplayTags.Node_Named = UGameplayTagsManager::Get().AddNativeGameplayTag(
-		FName("Node.Named"), FString("Named Node"));
-
-	// 마을 버프 태그 추가
-	GameplayTags.TownBuff_ExtraGold = UGameplayTagsManager::Get().AddNativeGameplayTag(
-		FName("TownBuff.ExtraGold"), FString("Extra Gold Buff"));
-	GameplayTags.TownBuff_AttackBoost = UGameplayTagsManager::Get().AddNativeGameplayTag(
-		FName("TownBuff.AttackBoost"), FString("Attack Boost Buff"));
-	GameplayTags.TownBuff_DefenseBoost = UGameplayTagsManager::Get().AddNativeGameplayTag(
-		FName("TownBuff.DefenseBoost"), FString("Defense Boost Buff"));
-	GameplayTags.TownBuff_StartUnit = UGameplayTagsManager::Get().AddNativeGameplayTag(
-		FName("TownBuff.StartUnit"), FString("Start Unit Buff"));
+	UE_DEFINE_GAMEPLAY_TAG(Ability_Attack, "Ability.Attack");
+	UE_DEFINE_GAMEPLAY_TAG(Event_Attack_Melee, "Event.Attack.Melee");
+	UE_DEFINE_GAMEPLAY_TAG(Event_Attack_Release, "Event.Attack.Release");
+	UE_DEFINE_GAMEPLAY_TAG(Event_JobSkill_John, "Event.JobSkill.John");
+	
+	UE_DEFINE_GAMEPLAY_TAG(Event, "Event");
+	UE_DEFINE_GAMEPLAY_TAG(Data_BaseDamage,	"Data.BaseDamage");
+	UE_DEFINE_GAMEPLAY_TAG(Data_ADMultiplier, "Data.ADMultiplier");
+	UE_DEFINE_GAMEPLAY_TAG(Data_APMultiplier, "Data.APMultiplier");
+	UE_DEFINE_GAMEPLAY_TAG(Data_SkillMultiplier, "Data.SkillMultiplier");
 }

@@ -115,6 +115,15 @@ void ANGPlayerState::InitializePostLogin()
 void ANGPlayerState::CaptureSnapShot()
 {
 	CombatGridMapSnapShot = CombatGridMap;
+	
+	if (UNGPocketComponent* Pocket = GetPlayerPocket())
+	{
+		float MaxHP;
+		float HP;
+		Pocket->CollectTotalUnitHPAndMaxHP(MaxHP, HP);
+		Pocket->SetTotalUnitHPSnapShot(HP);
+		Pocket->SetTotalUnitMaxHPSnapShot(MaxHP);
+	}
 }
 
 void ANGPlayerState::OnEnterGameState(const EGameState& NewState)
@@ -158,31 +167,21 @@ void ANGPlayerState::SetGameState(EGameState NewState)
 	
 }
 
-void ANGPlayerState::EarnGold(float EarnedGold)
+void ANGPlayerState::EarnGold(float EarnedGold) const
 {
 	if(!AbilitySystemComponent)	return;
 
-	UGameplayEffect* GoldEffect = NewObject<UGameplayEffect>(GetTransientPackage(), FName(TEXT("InstantGoldEffect")));
-	GoldEffect->DurationPolicy = EGameplayEffectDurationType::Instant;
-	
-	int32 ModifierIndex = GoldEffect->Modifiers.Num();
-	GoldEffect->Modifiers.Add(FGameplayModifierInfo());
-	FGameplayModifierInfo& ModInfo = GoldEffect->Modifiers[ModifierIndex];
-	
-	ModInfo.Attribute = UNGPlayerAttributeSet::GetGoldAttribute();
-	ModInfo.ModifierOp = EGameplayModOp::Additive;
-	
-	ModInfo.ModifierMagnitude = FGameplayEffectModifierMagnitude(FScalableFloat(EarnedGold));
-	
-	FGameplayEffectSpec Spec(GoldEffect, FGameplayEffectContextHandle(), 1.f);
-	AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(Spec);
+	AbilitySystemComponent->ApplyModToAttribute(
+		UNGPlayerAttributeSet::GetGoldAttribute(),
+		EGameplayModOp::Additive,
+		EarnedGold);
 	
 	UE_LOG(LogTemp, Log, TEXT("Price: %f New Gold : %f"), EarnedGold, AttributeSet->GetGold());
 }
 
 void ANGPlayerState::OnCombatEnd(FCombatResultData CombatResult)
 {
-	EarnGold(CombatResult.EarnedGold);
+	EarnGold(CombatResult.EarnedReward.Gold);
 	
 	switch (CombatResult.WinResult)
 	{

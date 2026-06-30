@@ -3,44 +3,41 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameplayTagContainer.h"
-#include "UObject/Object.h"
-#include "NGGameplayTags.generated.h"
+#include "NativeGameplayTags.h"
 
-/**
- * 
- */
-
-USTRUCT(BlueprintType)
-struct FNGGameplayTags
+namespace NGGameplayTags
 {
-	GENERATED_BODY()
-public:
-	static const FNGGameplayTags& Get() {return GameplayTags;}
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Node_Town_Elf);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Node_Town_Dwarf);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Node_Town_Human);
 	
-	static void InitializeNativeTags();
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Node_Event_Default);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Node_Event_Combat);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Node_Event_Hidden);
 	
-	FGameplayTag Event_Attack_Hit;
-	
-	FGameplayTag Node_Town_Elf;
-	FGameplayTag Node_Town_Dwarf;
-	FGameplayTag Node_Town_Human;
-
-	// 노드 태그
-	FGameplayTag Node_General;
-	FGameplayTag Node_Shop;
-	FGameplayTag Node_Combat;
-	FGameplayTag Node_Event;
-	FGameplayTag Node_Rest;
-	FGameplayTag Node_Elite;
-	FGameplayTag Node_Named;
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Node_General);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Node_Shop);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Node_Combat);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Node_Event);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Node_Rest);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Node_Elite);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Node_Named);
 	
 	// 마을 버프 태그
-	FGameplayTag TownBuff_ExtraGold;
-	FGameplayTag TownBuff_AttackBoost;
-	FGameplayTag TownBuff_DefenseBoost;
-	FGameplayTag TownBuff_StartUnit;
-
-private:
-	static FNGGameplayTags GameplayTags;
-};
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TownBuff_ExtraGold);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TownBuff_AttackBoost);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TownBuff_DefenseBoost);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TownBuff_StartUnit);
+	
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Attack);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Attack_Melee);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Attack_Release);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_JobSkill_John);
+	
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event);
+	
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_BaseDamage);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_ADMultiplier);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_APMultiplier);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_SkillMultiplier);
+}

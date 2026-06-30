@@ -72,7 +72,7 @@ public:
 	const FGameplayTag& GetCurrentZoneTag() const { return CurrentZoneTag; }
 
 	void SetGameState(EGameState NewState);
-	void EarnGold(float EarnedGold);
+	void EarnGold(float EarnedGold) const;
 	
 	UFUNCTION(BlueprintCallable)
 	EGameState GetGameState() const { return CurrentGameState; }
