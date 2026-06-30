@@ -16,6 +16,12 @@
 class UNGMapGeneratorComponent;
 class ANGPawnBase;
 
+namespace EGameTime
+{
+	constexpr float NodeSelectionTime = 30.0f;
+	constexpr float ActionPhaseTime = 60.0f;
+}
+
 UCLASS()
 class PROJECTNG_API ANGInGameMode : public ANGGameModeBase
 {
@@ -32,7 +38,9 @@ public:
 	
 	// Game Flow
 	void StartTurn();
+	void StartTownSelection();
 	void StartNodeSelection();
+	void OnTownSelectionTimerTick();
 	void OnNodeSelectionTimerTick();
 	void ProcessNodeSelection(AController* Controller, int32 NodeID);
 	void CheckAllPlayersReadyForNodeSelection();

@@ -70,7 +70,7 @@ void ANGInGameMode::OnGameStart()
 	if (GS)
 	{
 		GS->CurrentTurn = 0;
-		StartTurn();
+		StartTownSelection();
 	}
 }
 
@@ -130,39 +130,118 @@ void ANGInGameMode::StartTurn()
 	StartNodeSelection();
 }
 
+void ANGInGameMode::StartTownSelection()
+{
+	ANGGameState* GS = GetGameState<ANGGameState>();
+	if (!GS) return;
+	
+	UE_LOG(LogTemp, Warning, TEXT("=== Turn %d: Town Selection Phase Started ==="), GS->CurrentTurn);
+	GS->SetGameFlow(EGameplayPhase::TownSelection, EGameTime::NodeSelectionTime);
+	
+	for (APlayerState* RawPS : GS->PlayerArray)
+	{
+		if (ANGPlayerState* PS = Cast<ANGPlayerState>(RawPS))
+		{
+			PS->SetHasSelectedNode(false);
+			PS->SetCurrentNodeID(-1);
+			PS->SetTargetNodeID(-1);
+		}
+	}
+	
+	GetWorldTimerManager().SetTimer(PhaseTimerHandle, this, &ThisClass::OnTownSelectionTimerTick, EGameTime::NodeSelectionTime, false);
+}
+
 void ANGInGameMode::StartNodeSelection()
 {
 	ANGGameState* GS = GetGameState<ANGGameState>();
 	if (!GS) return;
 
-	GS->CurrentPhase = EGameplayPhase::NodeSelection;
-	GS->RemainingTime = 15.f;
+	GS->SetGameFlow(EGameplayPhase::NodeSelection, EGameTime::NodeSelectionTime);
 
-	GetWorldTimerManager().SetTimer(PhaseTimerHandle, this, &ThisClass::OnNodeSelectionTimerTick, 1.0f, true);
-	UE_LOG(LogTemp, Warning, TEXT("=== Turn %d: Node Selection Phase Started (15s) ==="), GS->CurrentTurn);
+	GetWorldTimerManager().SetTimer(PhaseTimerHandle, this, &ThisClass::OnNodeSelectionTimerTick, EGameTime::NodeSelectionTime, false);
+	UE_LOG(LogTemp, Warning, TEXT("=== Turn %d: Node Selection Phase Started (%.1fs) ==="), GS->CurrentTurn, EGameTime::NodeSelectionTime);
+}
+
+void ANGInGameMode::OnTownSelectionTimerTick()
+{
+	ANGGameState* GS = GetGameState<ANGGameState>();
+	if (!GS) return;
+
+	const FMapNodeData* FallbackTownNode = GS->MapNodes.FindByPredicate([](const FMapNodeData& Node)
+	{
+		return Node.NodeType == ENodeType::Town;
+	});
+	
+	if (!FallbackTownNode)
+	{
+		UE_LOG(LogTemp, Error, TEXT("No fallback town node found."));
+		return;
+	}
+	
+	for (APlayerState* RawPS : GS->PlayerArray)
+	{
+		ANGPlayerState* PS = Cast<ANGPlayerState>(RawPS);
+		if (!PS || PS->HasSelectedNode())
+		{
+			continue;
+		}
+
+		PS->SetCurrentNodeID(FallbackTownNode->NodeID);
+		PS->SetTargetNodeID(FallbackTownNode->NodeID);
+		PS->SetHasSelectedNode(true);
+		
+		// Todo: 마을 버프 적용
+		// ApplyTownBuff(PS, *FallbackTownNode);
+		
+		UE_LOG(LogTemp, Warning, TEXT("Town Selection: Player %s selected fallback town node (%d)"), *PS->GetPlayerName(), FallbackTownNode->NodeID);
+	}
+	
+	StartTurn();
 }
 
 void ANGInGameMode::OnNodeSelectionTimerTick()
 {
 	ANGGameState* GS = GetGameState<ANGGameState>();
 	if (!GS) return;
-	
-	if (GS->RemainingTime > 0.f)
-	{
-		GS->RemainingTime -= 1.f;
-	}
-	else
-	{
-		GetWorldTimerManager().ClearTimer(PhaseTimerHandle);
-		StartActionPhase();
-	}
+
+	StartActionPhase();
 }
 
 void ANGInGameMode::ProcessNodeSelection(AController* Controller, int32 NodeID)
 {
-	ANGPlayerState* PS = Controller->GetPlayerState<ANGPlayerState>();
-	if (PS && !PS->HasSelectedNode())
+	ANGGameState* GS = GetGameState<ANGGameState>();
+	ANGPlayerState* PS = Controller ? Controller->GetPlayerState<ANGPlayerState>() : nullptr;
+	if (!GS || !PS || PS->HasSelectedNode()) return;
+	
+	const FMapNodeData* NodeData = GS->MapNodes.FindByPredicate([NodeID](const FMapNodeData& Data) {
+		return Data.NodeID == NodeID;
+	});
+
+	if (!NodeData) return;
+	
+	// 분기 1: 시작 마을 선택
+	if (GS->CurrentPhase == EGameplayPhase::TownSelection)
 	{
+		if (NodeData->NodeType != ENodeType::Town) return;
+		PS->SetCurrentNodeID(NodeID);
+		PS->SetTargetNodeID(NodeID);
+		PS->SetHasSelectedNode(true);
+		
+		// Todo: 시작 마을 버프 적용
+		// ApplyTownBuff(PS, *Node);
+		CheckAllPlayersReadyForNodeSelection();
+		return;
+	}
+	
+	// 분기 2: 일반 노드 선택
+	if (GS->CurrentPhase == EGameplayPhase::NodeSelection)
+	{
+		const FMapNodeData* CurrentNode = GS->MapNodes.FindByPredicate([PS](const FMapNodeData& Data) {
+			return Data.NodeID == PS->GetCurrentNodeID();
+		});
+		
+		if (!CurrentNode || !CurrentNode->ConnectedNodeIDs.Contains(NodeID)) return;
+		
 		PS->SetTargetNodeID(NodeID);
 		PS->SetHasSelectedNode(true);
 		
@@ -187,7 +266,15 @@ void ANGInGameMode::CheckAllPlayersReadyForNodeSelection()
 	}
 	
 	GetWorldTimerManager().ClearTimer(PhaseTimerHandle);
-	StartActionPhase();
+	
+	if (GS->CurrentPhase == EGameplayPhase::TownSelection)
+	{
+		StartTurn();
+	}
+	else
+	{
+		StartActionPhase();
+	}
 }
 
 void ANGInGameMode::StartActionPhase()
@@ -195,10 +282,9 @@ void ANGInGameMode::StartActionPhase()
 	ANGGameState* GS = GetGameState<ANGGameState>();
 	if (!GS) return;
 
-	GS->CurrentPhase = EGameplayPhase::ActionPhase;
-	GS->RemainingTime = 60.f;
+	GS->SetGameFlow(EGameplayPhase::ActionPhase, EGameTime::ActionPhaseTime);
 
-	UE_LOG(LogTemp, Warning, TEXT("=== Action Phase Started (60s) ==="));
+	UE_LOG(LogTemp, Warning, TEXT("=== Action Phase Started (%f s) ==="), EGameTime::ActionPhaseTime);
 
 	TArray<ANGPlayerState*> PlayingPlayers;
 	for (APlayerState* RawPS : GS->PlayerArray)
@@ -268,23 +354,15 @@ void ANGInGameMode::StartActionPhase()
 	CombatManagerComponent->MatchingCombatUser();
 	CombatManagerComponent->StartCountingCombat();
 
-	GetWorldTimerManager().SetTimer(PhaseTimerHandle, this, &ThisClass::OnActionPhaseTimerTick, 1.0f, true);
+	GetWorldTimerManager().SetTimer(PhaseTimerHandle, this, &ThisClass::OnActionPhaseTimerTick, EGameTime::ActionPhaseTime, false);
 }
 
 void ANGInGameMode::OnActionPhaseTimerTick()
 {
 	ANGGameState* GS = GetGameState<ANGGameState>();
 	if (!GS) return;
-	
-	if (GS->RemainingTime > 0.f)
-	{
-		GS->RemainingTime -= 1.f;
-	}
-	else
-	{
-		GetWorldTimerManager().ClearTimer(PhaseTimerHandle);
-		EndTurn();
-	}
+
+	EndTurn();
 }
 
 void ANGInGameMode::CheckAllPlayersFinishedAction()
@@ -312,7 +390,7 @@ void ANGInGameMode::EndTurn()
 	ANGGameState* GS = GetGameState<ANGGameState>();
 	if (!GS) return;
 
-	GS->CurrentPhase = EGameplayPhase::TurnEnd;
+	GS->SetGameFlow(EGameplayPhase::TurnEnd, 0.f);
 	UE_LOG(LogTemp, Warning, TEXT("=== Turn %d Ended ==="), GS->CurrentTurn);
 	
 	StartTurn();
@@ -338,6 +416,11 @@ void ANGInGameMode::BeginPlay()
 			NGGameState->SetMapNodes(MapGeneratorComponent->GetGeneratedNodes());
 		}
 	}
+	
+	// Todo: 현재 게임 시작 시 바로 호출되어 모든 플레이어의 화면이 정상적이지 않은 상태에서 시작함.
+	// 따라서, 앞 선 로딩화면이나, 시작 연출을 표시하고 넘어가는 로직이 필요.
+	// 생성되었을 경우 밑의 OnGameStart 함수는 다른 곳에서 호출할 수 있도록.
+	OnGameStart();
 }
 
 int32 ANGInGameMode::SellUnit(ANGUnitPawn* Unit)

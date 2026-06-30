@@ -65,4 +65,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "NG|Data", meta = (ExpandEnumAsExecs = "OutResult"))
 	static void GetUnitDataRowFromTableByTag(UDataTable* DataTable, FGameplayTag UnitTag, EGetDataTableRowResult& OutResult, FUnitData& OutRow);
+	
+	UFUNCTION(BlueprintPure, Category = "NG|Time")
+	static FText FormatSecondsAsMMSS(float TimeInSeconds);
 };

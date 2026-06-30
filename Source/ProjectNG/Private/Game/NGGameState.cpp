@@ -23,6 +23,8 @@ void ANGGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	DOREPLIFETIME(ANGGameState, CurrentPhase);
 	DOREPLIFETIME(ANGGameState, CurrentTurn);
 	DOREPLIFETIME(ANGGameState, RemainingTime);
+	DOREPLIFETIME(ANGGameState, PhaseStartServerTime);
+	DOREPLIFETIME(ANGGameState, PhaseDuration);
 	DOREPLIFETIME(ANGGameState, MapNodes);
 }
 
@@ -33,6 +35,46 @@ void ANGGameState::SetMapNodes(const TArray<FMapNodeData>& InNodes)
 		MapNodes = InNodes;
 		OnRep_MapNodes(); // 서버(로컬)에서도 이벤트 발생을 위해 수동 호출
 	}
+}
+
+void ANGGameState::OnRep_GameFlow()
+{
+	BroadcastGameFlowChanged();
+}
+
+void ANGGameState::BroadcastGameFlowChanged()
+{
+	OnGameFlowChanged.Broadcast(CurrentPhase, CurrentTurn, PhaseStartServerTime, PhaseDuration, GetRemainingTimeByServerClock());
+}
+
+void ANGGameState::SetGameFlow(EGameplayPhase NewPhase, float NewPhaseDuration)
+{
+	CurrentPhase = NewPhase;
+	PhaseDuration = NewPhaseDuration;
+	PhaseStartServerTime = GetServerWorldTimeSeconds();
+	RemainingTime = NewPhaseDuration;
+	BroadcastGameFlowChanged();
+}
+
+float ANGGameState::GetRemainingTimeByServerClock() const
+{
+	if (PhaseDuration <= 0.f)
+	{
+		return 0.f;
+	}
+
+	const float ElapsedTime = GetServerWorldTimeSeconds() - PhaseStartServerTime;
+	return FMath::Clamp(PhaseDuration - ElapsedTime, 0.f, PhaseDuration);
+}
+
+float ANGGameState::GetPhasePercentRemaining() const
+{
+	if (PhaseDuration <= 0.f)
+	{
+		return 0.f;
+	}
+
+	return GetRemainingTimeByServerClock() / PhaseDuration;
 }
 
 void ANGGameState::OnRep_MapNodes()

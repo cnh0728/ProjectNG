@@ -7,8 +7,6 @@
 #include "Map/NGMapTypes.h"
 #include "NGGameState.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnMapDataReadySignature);
-
 class ANGPlayerState;
 class AArena;
 class UNGCombatManagerComponent;
@@ -17,10 +15,14 @@ UENUM(BlueprintType)
 enum class EGameplayPhase : uint8
 {
 	None,
+	TownSelection,
 	NodeSelection,
 	ActionPhase,
 	TurnEnd
 };
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnMapDataReadySignature);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FiveParams(FOnGameFlowChangedSignature, EGameplayPhase, CurrentPhase, int32, CurrentTurn, float, PhaseStartServerTime, float, PhaseDuration, float, RemainingTime);
 
 /**
  * 
@@ -41,14 +43,36 @@ public:
 	
 	float GridMargin;
 	
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Game|Turn")
+	UPROPERTY(ReplicatedUsing = OnRep_GameFlow, BlueprintReadOnly, Category = "Game|Turn")
 	EGameplayPhase CurrentPhase = EGameplayPhase::None;
 
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Game|Turn")
+	UPROPERTY(ReplicatedUsing = OnRep_GameFlow, BlueprintReadOnly, Category = "Game|Turn")
 	int32 CurrentTurn = 0;
 
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Game|Turn")
+	UPROPERTY(ReplicatedUsing = OnRep_GameFlow, BlueprintReadOnly, Category = "Game|Turn")
 	float RemainingTime = 0.f;
+
+	UPROPERTY(ReplicatedUsing = OnRep_GameFlow, BlueprintReadOnly, Category = "Game|Turn")
+	float PhaseStartServerTime = 0.f;
+
+	UPROPERTY(ReplicatedUsing = OnRep_GameFlow, BlueprintReadOnly, Category = "Game|Turn")
+	float PhaseDuration = 0.f;
+	
+	UPROPERTY(BlueprintAssignable, Category = "Game|Turn")
+	FOnGameFlowChangedSignature OnGameFlowChanged;
+	
+	UFUNCTION()
+	void OnRep_GameFlow();
+	
+	void BroadcastGameFlowChanged();
+
+	void SetGameFlow(EGameplayPhase NewPhase, float NewPhaseDuration);
+
+	UFUNCTION(BlueprintPure, Category = "Game|Turn")
+	float GetRemainingTimeByServerClock() const;
+
+	UFUNCTION(BlueprintPure, Category = "Game|Turn")
+	float GetPhasePercentRemaining() const;
 
 public:
 	// 맵 데이터

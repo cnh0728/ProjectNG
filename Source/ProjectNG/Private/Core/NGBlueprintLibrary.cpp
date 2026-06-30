@@ -115,3 +115,12 @@ void UNGBlueprintLibrary::GetUnitDataRowFromTableByTag(UDataTable* DataTable, FG
 
 	OutResult = EGetDataTableRowResult::RowNotFound;
 }
+
+FText UNGBlueprintLibrary::FormatSecondsAsMMSS(float TimeInSeconds)
+{
+	int32 TotalSeconds = FMath::FloorToInt(TimeInSeconds);
+	int32 Minutes = TotalSeconds / 60;
+	int32 Seconds = TotalSeconds % 60;
+	
+	return FText::FromString(FString::Printf(TEXT("%02d:%02d"), Minutes, Seconds));
+}
