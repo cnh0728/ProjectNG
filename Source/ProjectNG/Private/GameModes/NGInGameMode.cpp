@@ -204,7 +204,7 @@ void ANGInGameMode::OnNodeSelectionTimerTick()
 	ANGGameState* GS = GetGameState<ANGGameState>();
 	if (!GS || GS->CurrentPhase != EGameplayPhase::NodeSelection) return;
 
-	CompleteCurrentPlayerMovement(true);
+	CompleteCurrentPlayerMovementAutomatically();
 }
 
 void ANGInGameMode::RollMovementDice(AController* Controller)
@@ -220,12 +220,20 @@ void ANGInGameMode::RollMovementDice(AController* Controller)
 		return;
 	}
 
+	RollDiceForPlayer(PS);
+}
+
+void ANGInGameMode::RollDiceForPlayer(ANGPlayerState* PlayerState)
+{
+	ANGGameState* GS = GetGameState<ANGGameState>();
+	if (!GS || !PlayerState) return;
+
 	const int32 DiceResult = FMath::RandRange(1, 6);
-	const TArray<int32> ReachableNodeIDs = FindReachableNodeIDs(PS->GetCurrentNodeID(), DiceResult);
-	GS->SetMovementTurn(PS, DiceResult, ReachableNodeIDs);
+	const TArray<int32> ReachableNodeIDs = FindReachableNodeIDs(PlayerState->GetCurrentNodeID(), DiceResult);
+	GS->SetMovementTurn(PlayerState, DiceResult, ReachableNodeIDs);
 
 	UE_LOG(LogTemp, Log, TEXT("Player %s rolled %d (%d reachable nodes)."),
-		*PS->GetPlayerName(), DiceResult, ReachableNodeIDs.Num());
+		*PlayerState->GetPlayerName(), DiceResult, ReachableNodeIDs.Num());
 }
 
 void ANGInGameMode::ProcessNodeSelection(AController* Controller, int32 NodeID)
@@ -301,18 +309,32 @@ void ANGInGameMode::AdvanceMovementPlayer()
 	BeginCurrentPlayerMovement();
 }
 
-void ANGInGameMode::CompleteCurrentPlayerMovement(bool bStayOnCurrentNode)
+void ANGInGameMode::CompleteCurrentPlayerMovementAutomatically()
 {
 	ANGGameState* GS = GetGameState<ANGGameState>();
 	ANGPlayerState* PS = GS ? GS->ActiveMovementPlayer.Get() : nullptr;
 	if (!GS || !PS) return;
 
-	if (bStayOnCurrentNode)
+	if (GS->DiceResult <= 0)
+	{
+		RollDiceForPlayer(PS);
+	}
+
+	if (!GS->ReachableNodeIDs.IsEmpty())
+	{
+		const int32 RandomIndex = FMath::RandRange(0, GS->ReachableNodeIDs.Num() - 1);
+		PS->SetTargetNodeID(GS->ReachableNodeIDs[RandomIndex]);
+	}
+	else
 	{
 		PS->SetTargetNodeID(PS->GetCurrentNodeID());
 	}
 
 	PS->SetHasSelectedNode(true);
+
+	UE_LOG(LogTemp, Log, TEXT("Player %s automatically selected node %d after timeout."),
+		*PS->GetPlayerName(), PS->GetTargetNodeID());
+
 	AdvanceMovementPlayer();
 }
 

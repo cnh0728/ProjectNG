@@ -87,7 +87,8 @@ protected:
 	void InitializeUnitPool();
 	void BeginCurrentPlayerMovement();
 	void AdvanceMovementPlayer();
-	void CompleteCurrentPlayerMovement(bool bStayOnCurrentNode);
+	void CompleteCurrentPlayerMovementAutomatically();
+	void RollDiceForPlayer(ANGPlayerState* PlayerState);
 	TArray<int32> FindReachableNodeIDs(int32 StartNodeID, int32 MaxDistance) const;
 
 	// Key: GameplayTag, Value: remain count
