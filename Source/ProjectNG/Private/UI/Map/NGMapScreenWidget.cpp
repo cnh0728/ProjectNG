@@ -22,6 +22,7 @@ void UNGMapScreenWidget::NativeDestruct()
 	if (ANGGameState* GameState = GetWorld() ? GetWorld()->GetGameState<ANGGameState>() : nullptr)
 	{
 		GameState->OnGameFlowChanged.RemoveDynamic(this, &ThisClass::HandleGameFlowChanged);
+		GameState->OnMovementTurnChanged.RemoveDynamic(this, &ThisClass::HandleMovementTurnChanged);
 	}
 
 	Super::NativeDestruct();
@@ -116,27 +117,35 @@ void UNGMapScreenWidget::RefreshNodeAvailability()
 		}
 
 		bool bSelectable = false;
-		if (GameState && PlayerState && !PlayerState->HasSelectedNode())
+		if (GameState && PlayerState)
 		{
 			if (GameState->CurrentPhase == EGameplayPhase::TownSelection)
 			{
-				bSelectable = NodeWidget->NodeData.NodeType == ENodeType::Town;
+				bSelectable = !PlayerState->HasSelectedNode()
+					&& NodeWidget->NodeData.NodeType == ENodeType::Town;
 			}
 			else if (GameState->CurrentPhase == EGameplayPhase::NodeSelection)
 			{
-				const FMapNodeData* CurrentNode = GameState->MapNodes.FindByPredicate(
-					[PlayerState](const FMapNodeData& Node)
-					{
-						return Node.NodeID == PlayerState->GetCurrentNodeID();
-					});
-
-				bSelectable = CurrentNode
-					&& Pair.Key != PlayerState->GetCurrentNodeID()
-					&& CurrentNode->ConnectedNodeIDs.Contains(Pair.Key);
+				bSelectable = GameState->ActiveMovementPlayer == PlayerState
+					&& GameState->DiceResult > 0
+					&& GameState->ReachableNodeIDs.Contains(Pair.Key);
 			}
 		}
 
 		NodeWidget->SetNodeSelectable(bSelectable);
+	}
+
+	const bool bIsMyTurn = GameState && PlayerState
+		&& GameState->CurrentPhase == EGameplayPhase::NodeSelection
+		&& GameState->ActiveMovementPlayer == PlayerState;
+	UpdateMovementTurnVisual(bIsMyTurn, bIsMyTurn ? GameState->DiceResult : 0);
+}
+
+void UNGMapScreenWidget::RollMovementDice()
+{
+	if (ANGPlayerController* PlayerController = GetOwningPlayer<ANGPlayerController>())
+	{
+		PlayerController->Server_RollMovementDice();
 	}
 }
 
@@ -146,10 +155,16 @@ void UNGMapScreenWidget::HandleGameFlowChanged(EGameplayPhase CurrentPhase, int3
 	RefreshNodeAvailability();
 }
 
+void UNGMapScreenWidget::HandleMovementTurnChanged()
+{
+	RefreshNodeAvailability();
+}
+
 void UNGMapScreenWidget::BindGameFlowEvent()
 {
 	if (ANGGameState* GameState = GetWorld() ? GetWorld()->GetGameState<ANGGameState>() : nullptr)
 	{
 		GameState->OnGameFlowChanged.AddUniqueDynamic(this, &ThisClass::HandleGameFlowChanged);
+		GameState->OnMovementTurnChanged.AddUniqueDynamic(this, &ThisClass::HandleMovementTurnChanged);
 	}
 }

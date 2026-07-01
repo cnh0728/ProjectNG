@@ -418,6 +418,14 @@ void ANGPlayerController::Server_SelectNode_Implementation(int32 NodeID)
 	}
 }
 
+void ANGPlayerController::Server_RollMovementDice_Implementation()
+{
+	if (ANGInGameMode* GM = GetWorld()->GetAuthGameMode<ANGInGameMode>())
+	{
+		GM->RollMovementDice(this);
+	}
+}
+
 void ANGPlayerController::Client_OnBuyUnit_Implementation(bool bIsSuccess)
 {
 	OnBuyUnitSuccess.Broadcast(bIsSuccess);

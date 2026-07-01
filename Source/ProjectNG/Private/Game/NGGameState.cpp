@@ -25,6 +25,9 @@ void ANGGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	DOREPLIFETIME(ANGGameState, RemainingTime);
 	DOREPLIFETIME(ANGGameState, PhaseStartServerTime);
 	DOREPLIFETIME(ANGGameState, PhaseDuration);
+	DOREPLIFETIME(ANGGameState, ActiveMovementPlayer);
+	DOREPLIFETIME(ANGGameState, DiceResult);
+	DOREPLIFETIME(ANGGameState, ReachableNodeIDs);
 	DOREPLIFETIME(ANGGameState, MapNodes);
 }
 
@@ -75,6 +78,20 @@ float ANGGameState::GetPhasePercentRemaining() const
 	}
 
 	return GetRemainingTimeByServerClock() / PhaseDuration;
+}
+
+void ANGGameState::OnRep_MovementTurn()
+{
+	OnMovementTurnChanged.Broadcast();
+}
+
+void ANGGameState::SetMovementTurn(ANGPlayerState* NewActivePlayer, int32 NewDiceResult,
+	const TArray<int32>& NewReachableNodeIDs)
+{
+	ActiveMovementPlayer = NewActivePlayer;
+	DiceResult = NewDiceResult;
+	ReachableNodeIDs = NewReachableNodeIDs;
+	OnMovementTurnChanged.Broadcast();
 }
 
 void ANGGameState::OnRep_MapNodes()

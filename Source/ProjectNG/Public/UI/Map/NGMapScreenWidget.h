@@ -25,9 +25,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MapUI")
 	void RefreshNodeAvailability();
 
+	UFUNCTION(BlueprintCallable, Category = "MapUI")
+	void RollMovementDice();
+
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "MapUI")
+	void UpdateMovementTurnVisual(bool bIsMyTurn, int32 DiceResult);
 
 private:
 	UFUNCTION()
@@ -36,6 +42,9 @@ private:
 	UFUNCTION()
 	void HandleGameFlowChanged(EGameplayPhase CurrentPhase, int32 CurrentTurn, float PhaseStartServerTime,
 		float PhaseDuration, float RemainingTime);
+
+	UFUNCTION()
+	void HandleMovementTurnChanged();
 
 	void BindGameFlowEvent();
 

@@ -22,6 +22,7 @@ enum class EGameplayPhase : uint8
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnMapDataReadySignature);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnMovementTurnChangedSignature);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_FiveParams(FOnGameFlowChangedSignature, EGameplayPhase, CurrentPhase, int32, CurrentTurn, float, PhaseStartServerTime, float, PhaseDuration, float, RemainingTime);
 
 /**
@@ -73,6 +74,24 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Game|Turn")
 	float GetPhasePercentRemaining() const;
+
+	UPROPERTY(ReplicatedUsing = OnRep_MovementTurn, BlueprintReadOnly, Category = "Game|Movement")
+	TObjectPtr<ANGPlayerState> ActiveMovementPlayer;
+
+	UPROPERTY(ReplicatedUsing = OnRep_MovementTurn, BlueprintReadOnly, Category = "Game|Movement")
+	int32 DiceResult = 0;
+
+	UPROPERTY(ReplicatedUsing = OnRep_MovementTurn, BlueprintReadOnly, Category = "Game|Movement")
+	TArray<int32> ReachableNodeIDs;
+
+	UPROPERTY(BlueprintAssignable, Category = "Game|Movement")
+	FOnMovementTurnChangedSignature OnMovementTurnChanged;
+
+	UFUNCTION()
+	void OnRep_MovementTurn();
+
+	void SetMovementTurn(ANGPlayerState* NewActivePlayer, int32 NewDiceResult,
+		const TArray<int32>& NewReachableNodeIDs);
 
 public:
 	// 맵 데이터

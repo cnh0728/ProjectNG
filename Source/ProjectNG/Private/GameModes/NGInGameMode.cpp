@@ -157,8 +157,8 @@ void ANGInGameMode::StartNodeSelection()
 	if (!GS) return;
 
 	GS->SetGameFlow(EGameplayPhase::NodeSelection, EGameTime::NodeSelectionTime);
-
-	GetWorldTimerManager().SetTimer(PhaseTimerHandle, this, &ThisClass::OnNodeSelectionTimerTick, EGameTime::NodeSelectionTime, false);
+	ActiveMovementPlayerIndex = 0;
+	BeginCurrentPlayerMovement();
 	UE_LOG(LogTemp, Warning, TEXT("=== Turn %d: Node Selection Phase Started (%.1fs) ==="), GS->CurrentTurn, EGameTime::NodeSelectionTime);
 }
 
@@ -202,9 +202,30 @@ void ANGInGameMode::OnTownSelectionTimerTick()
 void ANGInGameMode::OnNodeSelectionTimerTick()
 {
 	ANGGameState* GS = GetGameState<ANGGameState>();
-	if (!GS) return;
+	if (!GS || GS->CurrentPhase != EGameplayPhase::NodeSelection) return;
 
-	StartActionPhase();
+	CompleteCurrentPlayerMovement(true);
+}
+
+void ANGInGameMode::RollMovementDice(AController* Controller)
+{
+	ANGGameState* GS = GetGameState<ANGGameState>();
+	ANGPlayerState* PS = Controller ? Controller->GetPlayerState<ANGPlayerState>() : nullptr;
+	if (!GS || !PS
+		|| GS->CurrentPhase != EGameplayPhase::NodeSelection
+		|| GS->ActiveMovementPlayer != PS
+		|| GS->DiceResult != 0
+		|| PS->HasSelectedNode())
+	{
+		return;
+	}
+
+	const int32 DiceResult = FMath::RandRange(1, 6);
+	const TArray<int32> ReachableNodeIDs = FindReachableNodeIDs(PS->GetCurrentNodeID(), DiceResult);
+	GS->SetMovementTurn(PS, DiceResult, ReachableNodeIDs);
+
+	UE_LOG(LogTemp, Log, TEXT("Player %s rolled %d (%d reachable nodes)."),
+		*PS->GetPlayerName(), DiceResult, ReachableNodeIDs.Num());
 }
 
 void ANGInGameMode::ProcessNodeSelection(AController* Controller, int32 NodeID)
@@ -236,17 +257,101 @@ void ANGInGameMode::ProcessNodeSelection(AController* Controller, int32 NodeID)
 	// 분기 2: 일반 노드 선택
 	if (GS->CurrentPhase == EGameplayPhase::NodeSelection)
 	{
-		const FMapNodeData* CurrentNode = GS->MapNodes.FindByPredicate([PS](const FMapNodeData& Data) {
-			return Data.NodeID == PS->GetCurrentNodeID();
-		});
-		
-		if (!CurrentNode || NodeID == PS->GetCurrentNodeID() || !CurrentNode->ConnectedNodeIDs.Contains(NodeID)) return;
+		if (GS->ActiveMovementPlayer != PS
+			|| GS->DiceResult <= 0
+			|| !GS->ReachableNodeIDs.Contains(NodeID))
+		{
+			return;
+		}
 		
 		PS->SetTargetNodeID(NodeID);
 		PS->SetHasSelectedNode(true);
-		
-		CheckAllPlayersReadyForNodeSelection();
+		AdvanceMovementPlayer();
 	}
+}
+
+void ANGInGameMode::BeginCurrentPlayerMovement()
+{
+	ANGGameState* GS = GetGameState<ANGGameState>();
+	if (!GS || GS->CurrentPhase != EGameplayPhase::NodeSelection) return;
+
+	while (GS->PlayerArray.IsValidIndex(ActiveMovementPlayerIndex))
+	{
+		ANGPlayerState* PS = Cast<ANGPlayerState>(GS->PlayerArray[ActiveMovementPlayerIndex]);
+		if (PS)
+		{
+			GS->SetMovementTurn(PS, 0, TArray<int32>());
+			GS->SetGameFlow(EGameplayPhase::NodeSelection, EGameTime::NodeSelectionTime);
+			GetWorldTimerManager().SetTimer(PhaseTimerHandle, this,
+				&ThisClass::OnNodeSelectionTimerTick, EGameTime::NodeSelectionTime, false);
+			return;
+		}
+
+		++ActiveMovementPlayerIndex;
+	}
+
+	GS->SetMovementTurn(nullptr, 0, TArray<int32>());
+	StartActionPhase();
+}
+
+void ANGInGameMode::AdvanceMovementPlayer()
+{
+	GetWorldTimerManager().ClearTimer(PhaseTimerHandle);
+	++ActiveMovementPlayerIndex;
+	BeginCurrentPlayerMovement();
+}
+
+void ANGInGameMode::CompleteCurrentPlayerMovement(bool bStayOnCurrentNode)
+{
+	ANGGameState* GS = GetGameState<ANGGameState>();
+	ANGPlayerState* PS = GS ? GS->ActiveMovementPlayer.Get() : nullptr;
+	if (!GS || !PS) return;
+
+	if (bStayOnCurrentNode)
+	{
+		PS->SetTargetNodeID(PS->GetCurrentNodeID());
+	}
+
+	PS->SetHasSelectedNode(true);
+	AdvanceMovementPlayer();
+}
+
+TArray<int32> ANGInGameMode::FindReachableNodeIDs(int32 StartNodeID, int32 MaxDistance) const
+{
+	TArray<int32> Result;
+	const ANGGameState* GS = GetGameState<ANGGameState>();
+	if (!GS || StartNodeID < 0 || MaxDistance <= 0) return Result;
+
+	TMap<int32, int32> Distances;
+	TArray<int32> Queue;
+	Distances.Add(StartNodeID, 0);
+	Queue.Add(StartNodeID);
+
+	for (int32 QueueIndex = 0; QueueIndex < Queue.Num(); ++QueueIndex)
+	{
+		const int32 CurrentNodeID = Queue[QueueIndex];
+		const int32 CurrentDistance = Distances[CurrentNodeID];
+		if (CurrentDistance >= MaxDistance) continue;
+
+		const FMapNodeData* CurrentNode = GS->MapNodes.FindByPredicate(
+			[CurrentNodeID](const FMapNodeData& Node)
+			{
+				return Node.NodeID == CurrentNodeID;
+			});
+		if (!CurrentNode) continue;
+
+		for (int32 ConnectedNodeID : CurrentNode->ConnectedNodeIDs)
+		{
+			if (Distances.Contains(ConnectedNodeID)) continue;
+
+			const int32 ConnectedDistance = CurrentDistance + 1;
+			Distances.Add(ConnectedNodeID, ConnectedDistance);
+			Queue.Add(ConnectedNodeID);
+			Result.Add(ConnectedNodeID);
+		}
+	}
+
+	return Result;
 }
 
 void ANGInGameMode::CheckAllPlayersReadyForNodeSelection()
@@ -282,6 +387,7 @@ void ANGInGameMode::StartActionPhase()
 	ANGGameState* GS = GetGameState<ANGGameState>();
 	if (!GS) return;
 
+	GS->SetMovementTurn(nullptr, 0, TArray<int32>());
 	GS->SetGameFlow(EGameplayPhase::ActionPhase, EGameTime::ActionPhaseTime);
 
 	UE_LOG(LogTemp, Warning, TEXT("=== Action Phase Started (%f s) ==="), EGameTime::ActionPhaseTime);

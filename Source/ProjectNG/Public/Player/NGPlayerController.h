@@ -127,6 +127,9 @@ public:
 
 	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Game|Map")
 	void Server_SelectNode(int32 NodeID);
+
+	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Game|Map")
+	void Server_RollMovementDice();
 	
 	UFUNCTION(Client, Reliable)
 	void Client_OnBuyUnit(bool bIsSuccess);

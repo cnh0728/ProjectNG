@@ -42,6 +42,7 @@ public:
 	void StartNodeSelection();
 	void OnTownSelectionTimerTick();
 	void OnNodeSelectionTimerTick();
+	void RollMovementDice(AController* Controller);
 	void ProcessNodeSelection(AController* Controller, int32 NodeID);
 	void CheckAllPlayersReadyForNodeSelection();
 	
@@ -84,6 +85,10 @@ public:
 	UNGMapGeneratorComponent* GetMapGeneratorComponent() { return MapGeneratorComponent; };
 protected:
 	void InitializeUnitPool();
+	void BeginCurrentPlayerMovement();
+	void AdvanceMovementPlayer();
+	void CompleteCurrentPlayerMovement(bool bStayOnCurrentNode);
+	TArray<int32> FindReachableNodeIDs(int32 StartNodeID, int32 MaxDistance) const;
 
 	// Key: GameplayTag, Value: remain count
 	TMap<FGameplayTag, int32> UnitPool;
@@ -98,4 +103,5 @@ protected:
 	TObjectPtr<UNGMapGeneratorComponent> MapGeneratorComponent;
 
 	FTimerHandle PhaseTimerHandle;
+	int32 ActiveMovementPlayerIndex = INDEX_NONE;
 };
