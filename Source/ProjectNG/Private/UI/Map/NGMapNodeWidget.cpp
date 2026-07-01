@@ -14,3 +14,9 @@ void UNGMapNodeWidget::HandleNodeClicked()
 {
 	OnNodeClicked.Broadcast(NodeData.NodeID);
 }
+
+void UNGMapNodeWidget::SetNodeSelectable(bool bInSelectable)
+{
+	SetIsEnabled(bInSelectable);
+	UpdateAvailabilityVisual(bInSelectable);
+}

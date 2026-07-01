@@ -211,7 +211,7 @@ void ANGInGameMode::ProcessNodeSelection(AController* Controller, int32 NodeID)
 {
 	ANGGameState* GS = GetGameState<ANGGameState>();
 	ANGPlayerState* PS = Controller ? Controller->GetPlayerState<ANGPlayerState>() : nullptr;
-	if (!GS || !PS || PS->HasSelectedNode()) return;
+	if (!GS || !PS || PS->HasSelectedNode() || NodeID < 0) return;
 	
 	const FMapNodeData* NodeData = GS->MapNodes.FindByPredicate([NodeID](const FMapNodeData& Data) {
 		return Data.NodeID == NodeID;
@@ -240,7 +240,7 @@ void ANGInGameMode::ProcessNodeSelection(AController* Controller, int32 NodeID)
 			return Data.NodeID == PS->GetCurrentNodeID();
 		});
 		
-		if (!CurrentNode || !CurrentNode->ConnectedNodeIDs.Contains(NodeID)) return;
+		if (!CurrentNode || NodeID == PS->GetCurrentNodeID() || !CurrentNode->ConnectedNodeIDs.Contains(NodeID)) return;
 		
 		PS->SetTargetNodeID(NodeID);
 		PS->SetHasSelectedNode(true);

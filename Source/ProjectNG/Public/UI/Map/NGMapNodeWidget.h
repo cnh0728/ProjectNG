@@ -27,6 +27,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MapUI")
 	void HandleNodeClicked();
 
+	UFUNCTION(BlueprintCallable, Category = "MapUI")
+	void SetNodeSelectable(bool bInSelectable);
+
 	// 클릭 이벤트 브로드캐스터
 	UPROPERTY(BlueprintAssignable, Category = "MapUI")
 	FOnMapNodeClickedSignature OnNodeClicked;
@@ -43,4 +46,7 @@ protected:
 	// 블루프린트에서 UI 요소를 업데이트하기 위한 이벤트
 	UFUNCTION(BlueprintImplementableEvent, Category = "MapUI")
 	void UpdateVisuals();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "MapUI")
+	void UpdateAvailabilityVisual(bool bIsSelectable);
 };

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Game/NGGameState.h"
 #include "UI/NGUserWidget.h"
 #include "Map/NGMapTypes.h"
 #include "NGMapScreenWidget.generated.h"
@@ -20,6 +21,23 @@ class PROJECTNG_API UNGMapScreenWidget : public UNGUserWidget
 public:
 	UFUNCTION(BlueprintCallable, Category = "MapUI")
 	void BuildMapUI(const TArray<FMapNodeData>& MapData, UMapNodeDataAsset* DataAsset);
+
+	UFUNCTION(BlueprintCallable, Category = "MapUI")
+	void RefreshNodeAvailability();
+
+protected:
+	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
+
+private:
+	UFUNCTION()
+	void HandleNodeClicked(int32 NodeID);
+
+	UFUNCTION()
+	void HandleGameFlowChanged(EGameplayPhase CurrentPhase, int32 CurrentTurn, float PhaseStartServerTime,
+		float PhaseDuration, float RemainingTime);
+
+	void BindGameFlowEvent();
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "MapUI")
@@ -39,4 +57,7 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UNGMapConnectionLayerWidget> ConnectionLayerWidget;
+
+	UPROPERTY(Transient)
+	TMap<int32, TObjectPtr<UNGMapNodeWidget>> NodeWidgets;
 };

@@ -125,7 +125,7 @@ public:
 	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Game|Shop")
 	void Server_RequestBuyUnit(FGameplayTag UnitTag);
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "Game|Map")
 	void Server_SelectNode(int32 NodeID);
 	
 	UFUNCTION(Client, Reliable)

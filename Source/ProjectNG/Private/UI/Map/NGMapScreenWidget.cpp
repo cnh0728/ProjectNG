@@ -7,6 +7,25 @@
 #include "Blueprint/WidgetTree.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
+#include "Game/NGGameState.h"
+#include "Player/NGPlayerController.h"
+#include "Player/NGPlayerState.h"
+
+void UNGMapScreenWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+	BindGameFlowEvent();
+}
+
+void UNGMapScreenWidget::NativeDestruct()
+{
+	if (ANGGameState* GameState = GetWorld() ? GetWorld()->GetGameState<ANGGameState>() : nullptr)
+	{
+		GameState->OnGameFlowChanged.RemoveDynamic(this, &ThisClass::HandleGameFlowChanged);
+	}
+
+	Super::NativeDestruct();
+}
 
 void UNGMapScreenWidget::BuildMapUI(const TArray<FMapNodeData>& MapData, UMapNodeDataAsset* DataAsset)
 {
@@ -17,6 +36,8 @@ void UNGMapScreenWidget::BuildMapUI(const TArray<FMapNodeData>& MapData, UMapNod
 
 	MapCanvas->ClearChildren();
 	CachedMapData = MapData;
+	NodeWidgets.Reset();
+	BindGameFlowEvent();
 
 	ConnectionLayerWidget = WidgetTree->ConstructWidget<UNGMapConnectionLayerWidget>(UNGMapConnectionLayerWidget::StaticClass());
 	if (ConnectionLayerWidget)
@@ -42,10 +63,10 @@ void UNGMapScreenWidget::BuildMapUI(const TArray<FMapNodeData>& MapData, UMapNod
 		}
 
 		FMapNodeVisualData VisualData;
-		if (DataAsset->GetMapNodeVisual(Node.NodeTag, VisualData))
-		{
-			NodeWidget->InitializeNode(Node, VisualData);
-		}
+		DataAsset->GetMapNodeVisual(Node.NodeTag, VisualData);
+		NodeWidget->InitializeNode(Node, VisualData);
+		NodeWidget->OnNodeClicked.AddDynamic(this, &ThisClass::HandleNodeClicked);
+		NodeWidgets.Add(Node.NodeID, NodeWidget);
 
 		UCanvasPanelSlot* CanvasSlot = MapCanvas->AddChildToCanvas(NodeWidget);
 		if (CanvasSlot)
@@ -56,5 +77,79 @@ void UNGMapScreenWidget::BuildMapUI(const TArray<FMapNodeData>& MapData, UMapNod
 			CanvasSlot->SetAutoSize(true);
 			CanvasSlot->SetZOrder(1);
 		}
+	}
+
+	RefreshNodeAvailability();
+}
+
+void UNGMapScreenWidget::HandleNodeClicked(int32 NodeID)
+{
+	ANGPlayerController* PlayerController = GetOwningPlayer<ANGPlayerController>();
+	if (!PlayerController || NodeID < 0)
+	{
+		return;
+	}
+
+	PlayerController->Server_SelectNode(NodeID);
+
+	for (const TPair<int32, TObjectPtr<UNGMapNodeWidget>>& Pair : NodeWidgets)
+	{
+		if (Pair.Value)
+		{
+			Pair.Value->SetNodeSelectable(false);
+		}
+	}
+}
+
+void UNGMapScreenWidget::RefreshNodeAvailability()
+{
+	const ANGGameState* GameState = GetWorld() ? GetWorld()->GetGameState<ANGGameState>() : nullptr;
+	const ANGPlayerController* PlayerController = GetOwningPlayer<ANGPlayerController>();
+	const ANGPlayerState* PlayerState = PlayerController ? PlayerController->GetPlayerState<ANGPlayerState>() : nullptr;
+
+	for (const TPair<int32, TObjectPtr<UNGMapNodeWidget>>& Pair : NodeWidgets)
+	{
+		UNGMapNodeWidget* NodeWidget = Pair.Value;
+		if (!NodeWidget)
+		{
+			continue;
+		}
+
+		bool bSelectable = false;
+		if (GameState && PlayerState && !PlayerState->HasSelectedNode())
+		{
+			if (GameState->CurrentPhase == EGameplayPhase::TownSelection)
+			{
+				bSelectable = NodeWidget->NodeData.NodeType == ENodeType::Town;
+			}
+			else if (GameState->CurrentPhase == EGameplayPhase::NodeSelection)
+			{
+				const FMapNodeData* CurrentNode = GameState->MapNodes.FindByPredicate(
+					[PlayerState](const FMapNodeData& Node)
+					{
+						return Node.NodeID == PlayerState->GetCurrentNodeID();
+					});
+
+				bSelectable = CurrentNode
+					&& Pair.Key != PlayerState->GetCurrentNodeID()
+					&& CurrentNode->ConnectedNodeIDs.Contains(Pair.Key);
+			}
+		}
+
+		NodeWidget->SetNodeSelectable(bSelectable);
+	}
+}
+
+void UNGMapScreenWidget::HandleGameFlowChanged(EGameplayPhase CurrentPhase, int32 CurrentTurn,
+	float PhaseStartServerTime, float PhaseDuration, float RemainingTime)
+{
+	RefreshNodeAvailability();
+}
+
+void UNGMapScreenWidget::BindGameFlowEvent()
+{
+	if (ANGGameState* GameState = GetWorld() ? GetWorld()->GetGameState<ANGGameState>() : nullptr)
+	{
+		GameState->OnGameFlowChanged.AddUniqueDynamic(this, &ThisClass::HandleGameFlowChanged);
 	}
 }
