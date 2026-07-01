@@ -19,6 +19,7 @@ class ANGPawnBase;
 namespace EGameTime
 {
 	constexpr float NodeSelectionTime = 30.0f;
+	constexpr float PreparationTime = 30.0f;
 	constexpr float ActionPhaseTime = 60.0f;
 }
 
@@ -39,6 +40,8 @@ public:
 	// Game Flow
 	void StartTurn();
 	void StartTownSelection();
+	void StartPreparationPhase();
+	void OnPreparationTimerExpired();
 	void StartNodeSelection();
 	void OnTownSelectionTimerTick();
 	void OnNodeSelectionTimerTick();

@@ -196,6 +196,45 @@ void ANGInGameMode::OnTownSelectionTimerTick()
 		UE_LOG(LogTemp, Warning, TEXT("Town Selection: Player %s selected fallback town node (%d)"), *PS->GetPlayerName(), FallbackTownNode->NodeID);
 	}
 	
+	StartPreparationPhase();
+}
+
+void ANGInGameMode::StartPreparationPhase()
+{
+	ANGGameState* GS = GetGameState<ANGGameState>();
+	if (!GS) return;
+
+	GS->SetMovementTurn(nullptr, 0, TArray<int32>());
+	GS->SetGameFlow(EGameplayPhase::Preparation, EGameTime::PreparationTime);
+
+	for (APlayerState* RawPS : GS->PlayerArray)
+	{
+		if (ANGPlayerState* PS = Cast<ANGPlayerState>(RawPS))
+		{
+			PS->SetGameState(EGameState::Maintaining);
+		}
+	}
+
+	GetWorldTimerManager().SetTimer(PhaseTimerHandle, this,
+		&ThisClass::OnPreparationTimerExpired, EGameTime::PreparationTime, false);
+
+	UE_LOG(LogTemp, Warning, TEXT("=== Preparation Phase Started (%.1fs) ==="),
+		EGameTime::PreparationTime);
+}
+
+void ANGInGameMode::OnPreparationTimerExpired()
+{
+	ANGGameState* GS = GetGameState<ANGGameState>();
+	if (!GS || GS->CurrentPhase != EGameplayPhase::Preparation) return;
+
+	for (APlayerState* RawPS : GS->PlayerArray)
+	{
+		if (ANGPlayerState* PS = Cast<ANGPlayerState>(RawPS))
+		{
+			PS->SetGameState(EGameState::Exploration);
+		}
+	}
+
 	StartTurn();
 }
 
@@ -396,7 +435,7 @@ void ANGInGameMode::CheckAllPlayersReadyForNodeSelection()
 	
 	if (GS->CurrentPhase == EGameplayPhase::TownSelection)
 	{
-		StartTurn();
+		StartPreparationPhase();
 	}
 	else
 	{

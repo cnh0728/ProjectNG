@@ -16,6 +16,7 @@ enum class EGameplayPhase : uint8
 {
 	None,
 	TownSelection,
+	Preparation,
 	NodeSelection,
 	ActionPhase,
 	TurnEnd
